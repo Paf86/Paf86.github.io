@@ -4,12 +4,16 @@
     <!-- Важно: Файлът трябва да бъде запазен с кодиране (Encoding) UTF-8 -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Пълен списък на AutoLISP команди</title>
+    <title>PAF's PROGRAMS SUITE</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; color: #333; line-height: 1.6; margin: 0; padding: 20px; }
         .container { max-width: 950px; margin: 0 auto; background-color: #fff; padding: 25px 35px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; }
-        h1, h3 { text-align: center; color: #1d3557; border-bottom: 2px solid #457b9d; padding-bottom: 10px; margin-bottom: 30px; }
-        h3 { border-bottom: none; color: #555; font-weight: normal; margin-top: -20px; margin-bottom: 25px; }
+        
+        /* КОРЕКЦИЯ: Променени стилове за заглавията */
+        h1 { text-align: center; color: #1d3557; border-bottom: 2px solid #457b9d; padding-bottom: 10px; margin-bottom: 10px; }
+        .main-subtitle { text-align: center; font-size: 1.2em; font-weight: 500; color: #e63946; margin: 0 0 5px 0; padding: 0; }
+        #command-counter { text-align: center; border-bottom: none; color: #555; font-weight: normal; margin-top: 0; margin-bottom: 30px; }
+
         .header-buttons { position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; }
         .header-btn { background-color: #e63946; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: background-color 0.3s; }
         .header-btn:hover { background-color: #a8202b; }
@@ -22,7 +26,7 @@
         #suggestion-form textarea { height: 100px; resize: vertical; }
         #suggestion-form button { background-color: #457b9d; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-top: 15px; font-size: 16px; }
         
-        /* Стилове за предложения (без промяна) */
+        /* Стилове за предложения */
         #suggestions-list .suggestion-item { border-bottom: 1px solid #eee; padding: 15px 5px; display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
         #suggestions-list .suggestion-details { flex-grow: 1; }
         #suggestions-list .suggester-name { font-weight: bold; color: #1d3557; }
@@ -85,7 +89,9 @@
             </button>
         </div>
 
-        <h1>Интерактивен списък на AutoLISP команди</h1>
+        <!-- КОРЕКЦИЯ: Променени заглавия -->
+        <h1>PAF's PROGRAMS SUITE</h1>
+        <h3 class="main-subtitle">Интерактивен списък на AutoLISP команди (Total Programs Suite)</h3>
         <h3 id="command-counter">Зареждане на командите...</h3>
 
         <div class="search-container">
@@ -293,19 +299,15 @@
                     category.classList.toggle('hidden', !hasVisibleChildren);
                 });
 
-                // --- НАЧАЛО НА КОРЕКЦИЯТА ---
                 const isAnyFilterActive = activeCategory !== 'all' || activeLetter.toUpperCase() !== 'ALL';
                 const visibleCategories = commandsContainer.querySelectorAll('details.category:not(.hidden)');
                 const allCategories = commandsContainer.querySelectorAll('details.category');
 
                 if (isAnyFilterActive) {
-                    // Ако е активен какъвто и да е филтър, отвори всички видими категории
                     visibleCategories.forEach(cat => cat.setAttribute('open', ''));
                 } else {
-                    // Ако и двата филтъра са "ВСИЧКИ", затвори абсолютно всички категории
                     allCategories.forEach(cat => cat.removeAttribute('open'));
                 }
-                // --- КРАЙ НА КОРЕКЦИЯТА ---
             }
 
             categoryFilter.addEventListener('click', function(e) {
