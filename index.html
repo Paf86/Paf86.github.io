@@ -293,12 +293,19 @@
                     category.classList.toggle('hidden', !hasVisibleChildren);
                 });
 
+                // --- НАЧАЛО НА КОРЕКЦИЯТА ---
+                const isAnyFilterActive = activeCategory !== 'all' || activeLetter.toUpperCase() !== 'ALL';
                 const visibleCategories = commandsContainer.querySelectorAll('details.category:not(.hidden)');
-                if (activeLetter.toUpperCase() !== 'ALL') {
+                const allCategories = commandsContainer.querySelectorAll('details.category');
+
+                if (isAnyFilterActive) {
+                    // Ако е активен какъвто и да е филтър, отвори всички видими категории
                     visibleCategories.forEach(cat => cat.setAttribute('open', ''));
                 } else {
-                    visibleCategories.forEach(cat => cat.removeAttribute('open'));
+                    // Ако и двата филтъра са "ВСИЧКИ", затвори абсолютно всички категории
+                    allCategories.forEach(cat => cat.removeAttribute('open'));
                 }
+                // --- КРАЙ НА КОРЕКЦИЯТА ---
             }
 
             categoryFilter.addEventListener('click', function(e) {
@@ -329,4 +336,3 @@
     </script>
 </body>
 </html>
-
