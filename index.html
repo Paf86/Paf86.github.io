@@ -9,7 +9,6 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; color: #333; line-height: 1.6; margin: 0; padding: 20px; }
         .container { max-width: 950px; margin: 0 auto; background-color: #fff; padding: 25px 35px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; }
         
-        /* КОРЕКЦИЯ: Променени стилове за заглавията */
         h1 { text-align: center; color: #1d3557; border-bottom: 2px solid #457b9d; padding-bottom: 10px; margin-bottom: 10px; }
         .main-subtitle { text-align: center; font-size: 1.2em; font-weight: 500; color: #e63946; margin: 0 0 5px 0; padding: 0; }
         #command-counter { text-align: center; border-bottom: none; color: #555; font-weight: normal; margin-top: 0; margin-bottom: 30px; }
@@ -89,7 +88,6 @@
             </button>
         </div>
 
-        <!-- КОРЕКЦИЯ: Променени заглавия -->
         <h1>PAF's PROGRAMS SUITE</h1>
         <h3 class="main-subtitle">Интерактивен списък на AutoLISP команди (Total Programs Suite)</h3>
         <h3 id="command-counter">Зареждане на командите...</h3>
@@ -109,9 +107,20 @@
         <div id="commands-container"></div>
     </div> 
        
-    <!-- Модални прозорци и Firebase SDKs (без промяна) -->
+    <!-- Модални прозорци и Firebase SDKs -->
     <div id="suggestion-form-modal" class="modal">
-        <div class="modal-content"><span class="close-button">×</span><h2>Направи предложение</h2><form id="suggestion-form"><label for="suggester-name">Име:</label><input type="text" id="suggester-name" required><label for="suggestion-text">Предложение:</label><textarea id="suggestion-text" required></textarea><button type="submit">Изпрати</button></form></div>
+        <!-- КОРЕКЦИЯ: Променени текстове във формата -->
+        <div class="modal-content">
+            <span class="close-button">×</span>
+            <h2>Направи предложение</h2>
+            <form id="suggestion-form">
+                <label for="suggester-name">Твоето име:</label>
+                <input type="text" id="suggester-name" required>
+                <label for="suggestion-text">Предложение за нова LISP команда:</label>
+                <textarea id="suggestion-text" required></textarea>
+                <button type="submit">Изпрати</button>
+            </form>
+        </div>
     </div>
     <div id="suggestions-list-modal" class="modal">
         <div class="modal-content"><span class="close-button">×</span><h2>Списък с предложения</h2><div id="suggestions-list"></div></div>
