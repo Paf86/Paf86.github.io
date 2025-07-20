@@ -161,7 +161,6 @@
                 snapshot.forEach(childSnapshot => {
                     const key = childSnapshot.key; const suggestion = childSnapshot.val(); const item = document.createElement('div'); item.className = 'suggestion-item';
                     const detailsDiv = document.createElement('div'); detailsDiv.className = 'suggestion-details';
-                    // --- КОРЕКЦИЯ ТУК ---
                     detailsDiv.innerHTML = `<p class="suggested-by-label">Предложил:</p><p class="suggester-name">${suggestion.name || 'Анонимен'}</p><p class="suggestion-text">${suggestion.text}</p>`;
                     item.appendChild(detailsDiv);
                     const rightColumn = document.createElement('div'); rightColumn.className = 'actions-container'; const statusContainer = document.createElement('div'); statusContainer.className = 'status-container'; const statusBtn = document.createElement('button'); statusBtn.className = 'status-toggle'; statusBtn.dataset.id = key;
@@ -218,12 +217,7 @@
             return { categorizedData: categorizedData, uniqueCommandCount: uniqueCommandKeys.size };
         }
         
-        function createShortDescription(fullDesc) {
-            let shortDesc = fullDesc; const firstSentenceEnd = shortDesc.search(/[.!?]/);
-            if (firstSentenceEnd !== -1) { shortDesc = shortDesc.substring(0, firstSentenceEnd + 1); } 
-            else if (shortDesc.length > 80) { shortDesc = shortDesc.substring(0, 80) + '...'; }
-            return shortDesc.charAt(0).toUpperCase() + shortDesc.slice(1);
-        }
+        // --- КОРЕКЦИЯ: ФУНКЦИЯТА createShortDescription Е ПРЕМАХНАТА ---
 
         function renderAllCommands(data, container, filterContainer, counterEl, uniqueCommandCount, config) {
             container.innerHTML = ''; filterContainer.innerHTML = '<button class="category-filter-button active" data-filter="all">ВСИЧКИ СЕКЦИИ</button>';
@@ -234,16 +228,26 @@
                     const filterButton = document.createElement('button'); filterButton.className = 'category-filter-button'; filterButton.dataset.filter = categoryId; filterButton.textContent = categoryInfo.filterName; filterContainer.appendChild(filterButton);
                     const detailsElement = document.createElement('details'); detailsElement.className = 'category'; detailsElement.dataset.category = categoryId;
                     const summaryElement = document.createElement('summary'); summaryElement.innerHTML = `<h2>${categoryInfo.title}</h2>`; detailsElement.appendChild(summaryElement);
+                    
+                    // --- КОРЕКЦИЯ ТУК ---
                     commands.forEach(command => {
-                        const commandEntry = document.createElement('div'); commandEntry.className = 'command-entry'; commandEntry.dataset.letter = command.name.charAt(0).toUpperCase();
-                        const shortDesc = createShortDescription(command.description);
+                        const commandEntry = document.createElement('div');
+                        commandEntry.className = 'command-entry';
+                        commandEntry.dataset.letter = command.name.charAt(0).toUpperCase();
+                        
+                        // Използваме пълното описание директно
+                        const fullDescription = command.description.charAt(0).toUpperCase() + command.description.slice(1);
+
                         commandEntry.innerHTML = `
                             <div class="command-header">
                                 <button class="command-button">${command.name}</button>
-                                <span class="short-description">${shortDesc}</span>
+                                <span class="short-description">${fullDescription}</span>
                             </div>`;
+                        
+                        // Записваме оригиналните текстове, за да работят търсенето и филтрите правилно
                         commandEntry.querySelector('.command-button').dataset.originalText = command.name;
-                        commandEntry.querySelector('.short-description').dataset.originalText = shortDesc;
+                        commandEntry.querySelector('.short-description').dataset.originalText = fullDescription; 
+                        
                         detailsElement.appendChild(commandEntry);
                     });
                     container.appendChild(detailsElement);
