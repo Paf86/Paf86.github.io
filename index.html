@@ -188,31 +188,52 @@
         }
 
         function parseLispFileImproved(content, config) {
-            const categorizedData = {}; Object.values(config).forEach(c => categorizedData[c.id] = []);
-            const lispNameToIdMap = {}; for (const key in config) { lispNameToIdMap[key] = config[key].id; }
-            const functionBlocks = content.split(/defun create_dclhelplisp/);
-            functionBlocks.forEach(block => {
-                const categoryMatch = block.match(/^([^\s(]+)/); if (!categoryMatch) return;
-                const lispCategoryName = categoryMatch[1]; const categoryId = lispNameToIdMap[lispCategoryName]; if (!categoryId) return;
-                const itemsMatch = block.match(/\(setq\s+(?:command_items|menu_items)\s+'\(([\s\S]+?)\)\)/); if (!itemsMatch) return;
-                const itemsContent = itemsMatch[1]; const commandRegex = /\(\s*"([^"]*)"\s+"([^"]*)"\s+"([\s\S]*?)"\s*\)/g;
-                let match;
-                while ((match = commandRegex.exec(itemsContent)) !== null) {
-                    const commandName = match[2].trim(); if (commandName.startsWith("---") || commandName === "") continue;
-                    let fullDescription = match[3].replace(/^- /, '').replace(/\\t/g, ' ').replace(/\s+/g, ' ').trim();
-                    categorizedData[categoryId].push({ name: commandName, description: fullDescription, });
-                }
+    const categorizedData = {};
+    Object.values(config).forEach(c => categorizedData[c.id] = []);
+    const lispNameToIdMap = {};
+    for (const key in config) {
+        lispNameToIdMap[key] = config[key].id;
+    }
+    const functionBlocks = content.split(/defun create_dclhelplisp/);
+    functionBlocks.forEach(block => {
+        const categoryMatch = block.match(/^([^\s(]+)/);
+        if (!categoryMatch) return;
+        const lispCategoryName = categoryMatch[1];
+        const categoryId = lispNameToIdMap[lispCategoryName];
+        if (!categoryId) return;
+        const itemsMatch = block.match(/\(setq\s+(?:command_items|menu_items)\s+'\(([\s\S]+?)\)\)/);
+        if (!itemsMatch) return;
+        const itemsContent = itemsMatch[1];
+        const commandRegex = /\(\s*"([^"]*)"\s+"([^"]*)"\s+"([\s\S]*?)"\s*\)/g; // Проблемният ред
+        let match;
+        while ((match = commandRegex.exec(itemsContent)) !== null) {
+            const commandName = match[2].trim();
+            if (commandName.startsWith("---") || commandName === "") continue;
+            let fullDescription = match[3].replace(/^- /, '').replace(/\\t/g, ' ').replace(/\s+/g, ' ').trim();
+            categorizedData[categoryId].push({
+                name: commandName,
+                description: fullDescription,
             });
-            const commandMapRegex = /\(\s*"([^"]+)"\s*\.\s*"[^"]*"\s*\)/g; const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
-            const uniqueCommandKeys = new Set();
-            if (commandMapSectionMatch) {
-                const mapContent = commandMapSectionMatch[1]; let match;
-                while ((match = commandMapRegex.exec(mapContent)) !== null) {
-                    const key = match[1]; if (!config[key] && key !== 'back' && key !== 'pps_back' && !/^[А-Я]/.test(key)) { uniqueCommandKeys.add(key); }
-                }
-            }
-            return { categorizedData: categorizedData, uniqueCommandCount: uniqueCommandKeys.size };
         }
+    });
+    const commandMapRegex = /\(\s*"([^"]+)"\s*\.\s*"[^"]*"\s*\)/g;
+    const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
+    const uniqueCommandKeys = new Set();
+    if (commandMapSectionMatch) {
+        const mapContent = commandMapSectionMatch[1];
+        let match;
+        while ((match = commandMapRegex.exec(mapContent)) !== null) {
+            const key = match[1];
+            if (!config[key] && key !== 'back' && key !== 'pps_back' && !/^[А-Я]/.test(key)) {
+                uniqueCommandKeys.add(key);
+            }
+        }
+    }
+    return {
+        categorizedData: categorizedData,
+        uniqueCommandCount: uniqueCommandKeys.size
+    };
+}
         
         function createShortDescription(fullDesc) {
             let shortDesc = fullDesc; const firstSentenceEnd = shortDesc.search(/[.!?]/);
