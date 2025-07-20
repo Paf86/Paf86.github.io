@@ -78,10 +78,10 @@
         
         /* Стил за маркиране на текст */
         mark {
-            background-color: #fffb8f; /* Мек жълт цвят */
+            background-color: rgba(255, 251, 143, 0.6); /* Полупрозрачен мек жълт цвят */
             padding: 1px 0;
             border-radius: 3px;
-            color: #333;
+            color: inherit; /* Запазва цвета на текста от родителския елемент */
         }
 
     </style>
@@ -238,10 +238,8 @@
                                 <button class="command-button">${command.name}</button>
                                 <span class="short-description">${shortDesc}</span>
                             </div>`;
-                        // Съхраняваме оригиналните текстове за по-лесно възстановяване
                         commandEntry.querySelector('.command-button').dataset.originalText = command.name;
                         commandEntry.querySelector('.short-description').dataset.originalText = shortDesc;
-
                         detailsElement.appendChild(commandEntry);
                     });
                     container.appendChild(detailsElement);
@@ -258,7 +256,6 @@
             let activeCategory = 'all'; let activeLetter = 'all'; 
 
             function escapeRegex(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
-
             function highlightText(originalText, searchTerm) {
                 if (!searchTerm) { return originalText; }
                 const escapedSearchTerm = escapeRegex(searchTerm);
@@ -288,17 +285,13 @@
                         const descriptionSpan = entry.querySelector('.short-description');
                         const originalCommandName = commandButton.dataset.originalText;
                         const originalDescription = descriptionSpan.dataset.originalText;
-
                         const isMatch = originalCommandName.toLowerCase().includes(searchTermLower) || originalDescription.toLowerCase().includes(searchTermLower);
                         entry.classList.toggle('hidden', !isMatch);
-                        
                         if (isMatch) {
                             hasVisibleChildren = true;
-                            // Прилагаме или премахваме маркирането
                             commandButton.innerHTML = highlightText(originalCommandName, searchTerm);
                             descriptionSpan.innerHTML = highlightText(originalDescription, searchTerm);
                         } else {
-                             // Възстановяваме оригиналния текст, ако няма съвпадение
                             commandButton.innerHTML = originalCommandName;
                             descriptionSpan.innerHTML = originalDescription;
                         }
@@ -331,9 +324,19 @@
                 else { categories.forEach(cat => cat.removeAttribute('open')); }
             }
 
+            function clearHighlights() {
+                const allCommands = commandsContainer.querySelectorAll('.command-entry');
+                allCommands.forEach(entry => {
+                    const commandButton = entry.querySelector('.command-button');
+                    const descriptionSpan = entry.querySelector('.short-description');
+                    commandButton.innerHTML = commandButton.dataset.originalText;
+                    descriptionSpan.innerHTML = descriptionSpan.dataset.originalText;
+                });
+            }
+
             categoryFilter.addEventListener('click', function(e) {
                 const button = e.target.closest('.category-filter-button'); if (!button) return;
-                searchBar.value = ''; searchBar.dispatchEvent(new Event('input')); // Изчистваме и маркирането
+                searchBar.value = ''; clearHighlights();
                 activeCategory = button.dataset.filter;
                 if (categoryFilter.querySelector('.active')) { categoryFilter.querySelector('.active').classList.remove('active'); }
                 button.classList.add('active'); applyFilters();
@@ -341,7 +344,7 @@
 
             alphabetFilter.addEventListener('click', function(e) {
                 const button = e.target.closest('.filter-button'); if (!button) return;
-                searchBar.value = ''; searchBar.dispatchEvent(new Event('input')); // Изчистваме и маркирането
+                searchBar.value = ''; clearHighlights();
                 activeLetter = button.dataset.filter;
                 if (alphabetFilter.querySelector('.active')) { alphabetFilter.querySelector('.active').classList.remove('active'); }
                 button.classList.add('active'); applyFilters();
