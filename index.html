@@ -251,18 +251,26 @@
                     const filterButton = document.createElement('button'); filterButton.className = 'category-filter-button'; filterButton.dataset.filter = categoryId; filterButton.textContent = categoryInfo.filterName; filterContainer.appendChild(filterButton);
                     const detailsElement = document.createElement('details'); detailsElement.className = 'category'; detailsElement.dataset.category = categoryId;
                     const summaryElement = document.createElement('summary'); summaryElement.innerHTML = `<h2>${categoryInfo.title}</h2>`; detailsElement.appendChild(summaryElement);
-                    commands.forEach(command => {
-                        const commandEntry = document.createElement('div'); commandEntry.className = 'command-entry'; commandEntry.dataset.letter = command.name.charAt(0).toUpperCase();
-                        const shortDesc = createShortDescription(command.description);
-                        commandEntry.innerHTML = `
-                            <div class="command-header">
-                                <button class="command-button">${command.name}</button>
-                                <span class="short-description">${shortDesc}</span>
-                            </div>`;
-                        commandEntry.querySelector('.command-button').dataset.originalText = command.name;
-                        commandEntry.querySelector('.short-description').dataset.originalText = shortDesc;
-                        detailsElement.appendChild(commandEntry);
-                    });
+commands.forEach(command => {
+    const commandEntry = document.createElement('div');
+    commandEntry.className = 'command-entry';
+    commandEntry.dataset.letter = command.name.charAt(0).toUpperCase();
+
+    // Пълното описание се използва директно
+    const fullDescription = command.description.charAt(0).toUpperCase() + command.description.slice(1);
+
+    commandEntry.innerHTML = `
+        <div class="command-header">
+            <button class="command-button">${command.name}</button>
+            <span class="short-description">${fullDescription}</span>
+        </div>`;
+    commandEntry.querySelector('.command-button').dataset.originalText = command.name;
+    
+    // Записваме пълния текст, за да може и търсачката да търси в него
+    commandEntry.querySelector('.short-description').dataset.originalText = fullDescription;
+
+    detailsElement.appendChild(commandEntry);
+});
                     container.appendChild(detailsElement);
                 }
             }
