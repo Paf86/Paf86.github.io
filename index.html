@@ -27,7 +27,8 @@
         
         #suggestions-list .suggestion-item { border-bottom: 1px solid #eee; padding: 15px 5px; display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
         #suggestions-list .suggestion-details { flex-grow: 1; }
-        #suggestions-list .suggester-name { font-weight: bold; color: #1d3557; }
+        .suggested-by-label { font-size: 0.9em; color: #555; margin-bottom: 2px; }
+        #suggestions-list .suggester-name { font-weight: bold; color: #1d3557; margin-top: 0; }
         #suggestions-list .suggestion-text { margin-top: 5px; white-space: pre-wrap; }
         #suggestions-list .status-container { display: flex; flex-direction: column; align-items: flex-end; min-width: 170px; }
         #suggestions-list .actions-container { display: flex; align-items: flex-start; }
@@ -114,7 +115,7 @@
         <div id="commands-container"></div>
     </div> 
        
-    <div id="suggestion-form-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2>Направи предложение</h2><form id="suggestion-form"><label for="suggester-name">Име:</label><input type="text" id="suggester-name" required><label for="suggestion-text">Предложение:</label><textarea id="suggestion-text" required></textarea><button type="submit">Изпрати</button></form></div></div>
+    <div id="suggestion-form-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2>Направи предложение</h2><form id="suggestion-form"><label for="suggester-name">Твоето име:</label><input type="text" id="suggester-name" required><label for="suggestion-text">Предложи нова LISP команда:</label><textarea id="suggestion-text" required></textarea><button type="submit">Изпрати</button></form></div></div>
     <div id="suggestions-list-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2>Списък с предложения</h2><div id="suggestions-list"></div></div></div>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -159,7 +160,10 @@
                 if (!snapshot.exists()) { suggestionsListDiv.innerHTML = '<p>Все още няма подадени предложения.</p>'; return; }
                 snapshot.forEach(childSnapshot => {
                     const key = childSnapshot.key; const suggestion = childSnapshot.val(); const item = document.createElement('div'); item.className = 'suggestion-item';
-                    const detailsDiv = document.createElement('div'); detailsDiv.className = 'suggestion-details'; detailsDiv.innerHTML = `<p class="suggester-name">${suggestion.name || 'Анонимен'}:</p><p class="suggestion-text">${suggestion.text}</p>`; item.appendChild(detailsDiv);
+                    const detailsDiv = document.createElement('div'); detailsDiv.className = 'suggestion-details';
+                    // --- КОРЕКЦИЯ ТУК ---
+                    detailsDiv.innerHTML = `<p class="suggested-by-label">Предложил:</p><p class="suggester-name">${suggestion.name || 'Анонимен'}</p><p class="suggestion-text">${suggestion.text}</p>`;
+                    item.appendChild(detailsDiv);
                     const rightColumn = document.createElement('div'); rightColumn.className = 'actions-container'; const statusContainer = document.createElement('div'); statusContainer.className = 'status-container'; const statusBtn = document.createElement('button'); statusBtn.className = 'status-toggle'; statusBtn.dataset.id = key;
                     if (suggestion.status === 'done') {
                         statusBtn.textContent = '✅ Направено'; statusBtn.classList.add('is-done'); const newCommandDiv = document.createElement('div'); newCommandDiv.className = 'new-command-section'; newCommandDiv.innerHTML = `<p class="label">Нова команда:</p>`;
@@ -188,52 +192,31 @@
         }
 
         function parseLispFileImproved(content, config) {
-    const categorizedData = {};
-    Object.values(config).forEach(c => categorizedData[c.id] = []);
-    const lispNameToIdMap = {};
-    for (const key in config) {
-        lispNameToIdMap[key] = config[key].id;
-    }
-    const functionBlocks = content.split(/defun create_dclhelplisp/);
-    functionBlocks.forEach(block => {
-        const categoryMatch = block.match(/^([^\s(]+)/);
-        if (!categoryMatch) return;
-        const lispCategoryName = categoryMatch[1];
-        const categoryId = lispNameToIdMap[lispCategoryName];
-        if (!categoryId) return;
-        const itemsMatch = block.match(/\(setq\s+(?:command_items|menu_items)\s+'\(([\s\S]+?)\)\)/);
-        if (!itemsMatch) return;
-        const itemsContent = itemsMatch[1];
-        const commandRegex = /\(\s*"([^"]*)"\s+"([^"]*)"\s+"([\s\S]*?)"\s*\)/g; // Проблемният ред
-        let match;
-        while ((match = commandRegex.exec(itemsContent)) !== null) {
-            const commandName = match[2].trim();
-            if (commandName.startsWith("---") || commandName === "") continue;
-            let fullDescription = match[3].replace(/^- /, '').replace(/\\t/g, ' ').replace(/\s+/g, ' ').trim();
-            categorizedData[categoryId].push({
-                name: commandName,
-                description: fullDescription,
+            const categorizedData = {}; Object.values(config).forEach(c => categorizedData[c.id] = []);
+            const lispNameToIdMap = {}; for (const key in config) { lispNameToIdMap[key] = config[key].id; }
+            const functionBlocks = content.split(/defun create_dclhelplisp/);
+            functionBlocks.forEach(block => {
+                const categoryMatch = block.match(/^([^\s(]+)/); if (!categoryMatch) return;
+                const lispCategoryName = categoryMatch[1]; const categoryId = lispNameToIdMap[lispCategoryName]; if (!categoryId) return;
+                const itemsMatch = block.match(/\(setq\s+(?:command_items|menu_items)\s+'\(([\s\S]+?)\)\)/); if (!itemsMatch) return;
+                const itemsContent = itemsMatch[1]; const commandRegex = /\(\s*"([^"]*)"\s+"([^"]*)"\s+"([\s\S]*?)"\s*\)/g;
+                let match;
+                while ((match = commandRegex.exec(itemsContent)) !== null) {
+                    const commandName = match[2].trim(); if (commandName.startsWith("---") || commandName === "") continue;
+                    let fullDescription = match[3].replace(/^- /, '').replace(/\\t/g, ' ').replace(/\s+/g, ' ').trim();
+                    categorizedData[categoryId].push({ name: commandName, description: fullDescription, });
+                }
             });
-        }
-    });
-    const commandMapRegex = /\(\s*"([^"]+)"\s*\.\s*"[^"]*"\s*\)/g;
-    const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
-    const uniqueCommandKeys = new Set();
-    if (commandMapSectionMatch) {
-        const mapContent = commandMapSectionMatch[1];
-        let match;
-        while ((match = commandMapRegex.exec(mapContent)) !== null) {
-            const key = match[1];
-            if (!config[key] && key !== 'back' && key !== 'pps_back' && !/^[А-Я]/.test(key)) {
-                uniqueCommandKeys.add(key);
+            const commandMapRegex = /\(\s*"([^"]+)"\s*\.\s*"[^"]*"\s*\)/g; const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
+            const uniqueCommandKeys = new Set();
+            if (commandMapSectionMatch) {
+                const mapContent = commandMapSectionMatch[1]; let match;
+                while ((match = commandMapRegex.exec(mapContent)) !== null) {
+                    const key = match[1]; if (!config[key] && key !== 'back' && key !== 'pps_back' && !/^[А-Я]/.test(key)) { uniqueCommandKeys.add(key); }
+                }
             }
+            return { categorizedData: categorizedData, uniqueCommandCount: uniqueCommandKeys.size };
         }
-    }
-    return {
-        categorizedData: categorizedData,
-        uniqueCommandCount: uniqueCommandKeys.size
-    };
-}
         
         function createShortDescription(fullDesc) {
             let shortDesc = fullDesc; const firstSentenceEnd = shortDesc.search(/[.!?]/);
@@ -251,26 +234,18 @@
                     const filterButton = document.createElement('button'); filterButton.className = 'category-filter-button'; filterButton.dataset.filter = categoryId; filterButton.textContent = categoryInfo.filterName; filterContainer.appendChild(filterButton);
                     const detailsElement = document.createElement('details'); detailsElement.className = 'category'; detailsElement.dataset.category = categoryId;
                     const summaryElement = document.createElement('summary'); summaryElement.innerHTML = `<h2>${categoryInfo.title}</h2>`; detailsElement.appendChild(summaryElement);
-commands.forEach(command => {
-    const commandEntry = document.createElement('div');
-    commandEntry.className = 'command-entry';
-    commandEntry.dataset.letter = command.name.charAt(0).toUpperCase();
-
-    // Пълното описание се използва директно
-    const fullDescription = command.description.charAt(0).toUpperCase() + command.description.slice(1);
-
-    commandEntry.innerHTML = `
-        <div class="command-header">
-            <button class="command-button">${command.name}</button>
-            <span class="short-description">${fullDescription}</span>
-        </div>`;
-    commandEntry.querySelector('.command-button').dataset.originalText = command.name;
-    
-    // Записваме пълния текст, за да може и търсачката да търси в него
-    commandEntry.querySelector('.short-description').dataset.originalText = fullDescription;
-
-    detailsElement.appendChild(commandEntry);
-});
+                    commands.forEach(command => {
+                        const commandEntry = document.createElement('div'); commandEntry.className = 'command-entry'; commandEntry.dataset.letter = command.name.charAt(0).toUpperCase();
+                        const shortDesc = createShortDescription(command.description);
+                        commandEntry.innerHTML = `
+                            <div class="command-header">
+                                <button class="command-button">${command.name}</button>
+                                <span class="short-description">${shortDesc}</span>
+                            </div>`;
+                        commandEntry.querySelector('.command-button').dataset.originalText = command.name;
+                        commandEntry.querySelector('.short-description').dataset.originalText = shortDesc;
+                        detailsElement.appendChild(commandEntry);
+                    });
                     container.appendChild(detailsElement);
                 }
             }
