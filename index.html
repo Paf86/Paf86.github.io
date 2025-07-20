@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <!-- Важно: Файлът трябва да бъде запазен с кодиране (Encoding) UTF-8 -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Пълен списък на AutoLISP команди</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; color: #333; line-height: 1.6; margin: 0; padding: 20px; }
+        .container { max-width: 950px; margin: 0 auto; background-color: #fff; padding: 25px 35px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; }
+        h1, h3 { text-align: center; color: #1d3557; border-bottom: 2px solid #457b9d; padding-bottom: 10px; margin-bottom: 30px; }
+        h3 { border-bottom: none; color: #555; font-weight: normal; margin-top: -20px; margin-bottom: 25px; }
+        .header-buttons { position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; }
+        .header-btn { background-color: #e63946; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: background-color 0.3s; }
+        .header-btn:hover { background-color: #a8202b; }
+        #suggestion-count { background-color: white; color: #e63946; border-radius: 50%; padding: 0px 6px; font-size: 12px; margin-left: 5px; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 8px; position: relative; }
+        .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        #suggestion-form label { display: block; margin-top: 10px; font-weight: bold; }
+        #suggestion-form input[type="text"], #suggestion-form textarea { width: 95%; padding: 10px; margin-top: 5px; border-radius: 4px; border: 1px solid #ccc; }
+        #suggestion-form textarea { height: 100px; resize: vertical; }
+        #suggestion-form button { background-color: #457b9d; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-top: 15px; font-size: 16px; }
+        
+        /* Стилове за предложения (без промяна) */
+        #suggestions-list .suggestion-item { border-bottom: 1px solid #eee; padding: 15px 5px; display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+        #suggestions-list .suggestion-details { flex-grow: 1; }
+        #suggestions-list .suggester-name { font-weight: bold; color: #1d3557; }
+        #suggestions-list .suggestion-text { margin-top: 5px; white-space: pre-wrap; }
+        #suggestions-list .status-container { display: flex; flex-direction: column; align-items: flex-end; min-width: 170px; }
+        #suggestions-list .actions-container { display: flex; align-items: flex-start; }
+        #suggestions-list .status-toggle { border: none; background: none; font-size: 16px; padding: 5px 10px; border-radius: 5px; transition: background-color 0.3s; width: 100%; text-align: left; }
+        #suggestions-list .status-toggle.is-pending { background-color: #fce8e6; color: #a50e0e; }
+        #suggestions-list .status-toggle.is-done { background-color: #e6f4ea; color: #137333; }
+        #suggestions-list .status-toggle.admin-enabled { cursor: pointer; }
+        #suggestions-list .status-toggle:not(.admin-enabled) { cursor: not-allowed; opacity: 0.7; }
+        .new-command-section { margin-top: 12px; padding-top: 10px; border-top: 1px dashed #ddd; width: 100%; }
+        .new-command-section .label { color: #555; font-size: 14px; text-align: left; }
+        .new-command-section input[type="text"] { width: 95%; padding: 6px; border-radius: 4px; border: 1px solid #ccc; margin-top: 4px; }
+        .new-command-section .command-name { font-weight: bold; font-size: 1.1em; color: #1d3557; margin-top: 4px; text-align: left;}
+        .delete-suggestion-btn { background-color: transparent; border: none; color: #e63946; cursor: pointer; font-size: 18px; padding: 5px; margin-left: 10px; opacity: 0.6; transition: opacity 0.3s; }
+        .delete-suggestion-btn:hover { opacity: 1; }
+
+        /* Поле за търсене */
+        .search-container { margin-bottom: 30px; }
+        #search-bar { width: 100%; padding: 12px 15px; font-size: 16px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; transition: border-color 0.3s, box-shadow 0.3s; }
+        #search-bar:focus { outline: none; border-color: #457b9d; box-shadow: 0 0 0 3px rgba(69, 123, 157, 0.2); }
+
+        /* Филтри */
+        .filters-container { display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #e1e1e1; }
+        #category-filter, #alphabet-filter { display: flex; justify-content: center; flex-wrap: wrap; gap: 5px; }
+        .filter-button, .category-filter-button { background-color: #a8dadc; color: #1d3557; border: none; border-radius: 5px; padding: 8px 14px; font-size: 15px; font-weight: bold; cursor: pointer; transition: background-color 0.3s, transform 0.2s; }
+        .filter-button:hover, .category-filter-button:hover { background-color: #457b9d; color: white; transform: translateY(-2px); }
+        .filter-button.active, .category-filter-button.active { background-color: #1d3557; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        details.hidden, .command-entry.hidden { display: none; }
+        
+        /* Команди (вътрешни панели) */
+        .command-entry { margin-bottom: 8px; border-radius: 6px; overflow: hidden; border: 1px solid #e9ecef; transition: box-shadow 0.3s; margin-left: 15px; margin-right: 15px; }
+        .command-entry:last-child { margin-bottom: 15px; }
+        .command-entry:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .command-header { display: flex; align-items: center; background-color: #f8f9fa; padding: 8px 15px; cursor: pointer; }
+        .command-button { background-color: #457b9d; color: white; border: none; padding: 8px 12px; border-radius: 5px; font-size: 15px; transition: background-color 0.3s; text-align: center; font-weight: 500; min-width: 180px; text-transform: uppercase; }
+        .command-header:hover .command-button, .command-button.active { background-color: #1d3557; }
+        .short-description { margin-left: 20px; font-size: 15px; color: #555; flex-grow: 1; }
+        .full-description-panel { max-height: 0; opacity: 0; overflow: hidden; background-color: #f1faee; color: #1d3557; box-sizing: border-box; transition: max-height 0.4s ease-out, opacity 0.3s ease-out, padding 0.4s ease-out; padding: 0 15px; border-top: 1px solid #e1e1e1; }
+        .full-description-panel.show { max-height: 300px; opacity: 1; padding: 15px; transition: max-height 0.4s ease-in, opacity 0.3s ease-in, padding 0.4s ease-in; }
+
+        /* Падащи секции */
+        details.category { border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 10px; background-color: #fff; transition: box-shadow 0.3s; }
+        details.category[open] { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        summary { background-color: #f8f9fa; padding: 12px 20px; cursor: pointer; outline: none; transition: background-color 0.3s; border-radius: 8px; }
+        details[open] > summary { border-bottom: 1px solid #e9ecef; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+        summary:hover { background-color: #e9ecef; }
+        summary h2 { display: inline; color: #e63946; margin: 0; padding: 0; border: none; font-size: 1.6em; vertical-align: middle; }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-buttons">
+            <button id="add-suggestion-btn" class="header-btn">Предложение</button>
+            <button id="view-suggestions-btn" class="header-btn">
+                Виж предложенията
+                <span id="suggestion-count">0</span>
+            </button>
+        </div>
+
+        <h1>Интерактивен списък на AutoLISP команди</h1>
+        <h3 id="command-counter">Зареждане на командите...</h3>
+
+        <div class="search-container">
+            <input type="text" id="search-bar" placeholder="Търсене по име или описание...">
+        </div>
+
+        <div class="filters-container">
+            <div id="category-filter"></div>
+            <div id="alphabet-filter">
+                 <button class="filter-button active" data-filter="all">ВСИЧКИ БУКВИ</button>
+                <script>document.write(Array.from(Array(26)).map((e, i) => `<button class="filter-button" data-filter="${String.fromCharCode(i + 65)}">${String.fromCharCode(i + 65)}</button>`).join(''));</script>
+            </div>
+        </div>
+
+        <div id="commands-container"></div>
+    </div> 
+       
+    <!-- Модални прозорци и Firebase SDKs (без промяна) -->
+    <div id="suggestion-form-modal" class="modal">
+        <div class="modal-content"><span class="close-button">×</span><h2>Направи предложение</h2><form id="suggestion-form"><label for="suggester-name">Име:</label><input type="text" id="suggester-name" required><label for="suggestion-text">Предложение:</label><textarea id="suggestion-text" required></textarea><button type="submit">Изпрати</button></form></div>
+    </div>
+    <div id="suggestions-list-modal" class="modal">
+        <div class="modal-content"><span class="close-button">×</span><h2>Списък с предложения</h2><div id="suggestions-list"></div></div>
+    </div>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        const firebaseConfig = {
+          apiKey: "AIzaSyACB9shT_VTr3PGW_1nFjJCGAgwSI55Omw", authDomain: "clickcount-a6e46.firebaseapp.com", databaseURL: "https://clickcount-a6e46-default-rtdb.firebaseio.com", projectId: "clickcount-a6e46", storageBucket: "clickcount-a6e46.appspot.com", messagingSenderId: "53304151952", appId: "1:53304151952:web:ed0c365ace6b1232842d15", measurementId: "G-5S028177MG"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const suggestionsRef = db.ref("suggestions");
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            initializeFirebaseFunctionality();
+            const COMMANDS_FILE_URL = "https://raw.githubusercontent.com/PafApps/lisp/main/HELP_LISP.lsp";
+            const categoryConfig = {
+                "СИТУАЦИЯ": { id: "situation", title: "Команди за Ситуация", filterName: "Ситуация" }, "НАДЛЪЖНИ": { id: "longitudinal-profiles", title: "Команди за Надлъжни профили", filterName: "Надлъжни" }, "НАПРЕЧНИ": { id: "cross-sections", title: "Команди за Напречни профили", filterName: "Напречни" }, "БЛОКОВЕ": { id: "blocks", title: "Команди за Блокове", filterName: "Блокове" }, "ЛЕЙАУТИ": { id: "layouts", title: "Команди за Layouts", filterName: "Layouts" }, "СИВИЛ": { id: "civil", title: "Команди за Civil 3D", filterName: "Civil 3D" }, "РЕГИСТРИ": { id: "registers", title: "Команди за Регистри (Civil 3D)", filterName: "Регистри (Civil)" }, "ДРУГИ": { id: "other", title: "Други команди", filterName: "Други" },
+            };
+            const commandsContainer = document.getElementById('commands-container');
+            const categoryFilterContainer = document.getElementById('category-filter');
+            const commandCounter = document.getElementById('command-counter');
+
+            try {
+                const response = await fetch(COMMANDS_FILE_URL);
+                if (!response.ok) throw new Error(`HTTP грешка! Статус: ${response.status}`);
+                const lispContent = await response.text();
+                const parsedData = parseLispFileImproved(lispContent, categoryConfig);
+                renderAllCommands(parsedData, commandsContainer, categoryFilterContainer, commandCounter, categoryConfig);
+                initializeFiltersAndAccordions();
+            } catch (error) {
+                console.error("Грешка при зареждане:", error);
+                commandsContainer.innerHTML = `<p style="color: red; text-align: center;">Възникна грешка. Проверете конзолата.</p>`;
+                commandCounter.textContent = 'Грешка при зареждане';
+            }
+        });
+
+        function initializeFirebaseFunctionality() {
+            const isAdmin = () => new URLSearchParams(window.location.search).get('admin') === 'true'; const adminMode = isAdmin();
+            const addSuggestionBtn = document.getElementById('add-suggestion-btn'); const viewSuggestionsBtn = document.getElementById('view-suggestions-btn'); const suggestionFormModal = document.getElementById('suggestion-form-modal'); const suggestionsListModal = document.getElementById('suggestions-list-modal'); const suggestionForm = document.getElementById('suggestion-form'); const suggestionsListDiv = document.getElementById('suggestions-list'); const suggestionCountSpan = document.getElementById('suggestion-count'); const closeButtons = document.querySelectorAll('.close-button');
+            const renderSuggestions = (snapshot) => {
+                suggestionsListDiv.innerHTML = ''; suggestionCountSpan.textContent = snapshot.numChildren();
+                if (!snapshot.exists()) { suggestionsListDiv.innerHTML = '<p>Все още няма подадени предложения.</p>'; return; }
+                snapshot.forEach(childSnapshot => {
+                    const key = childSnapshot.key; const suggestion = childSnapshot.val(); const item = document.createElement('div'); item.className = 'suggestion-item';
+                    const detailsDiv = document.createElement('div'); detailsDiv.className = 'suggestion-details'; detailsDiv.innerHTML = `<p class="suggester-name">${suggestion.name || 'Анонимен'}:</p><p class="suggestion-text">${suggestion.text}</p>`; item.appendChild(detailsDiv);
+                    const rightColumn = document.createElement('div'); rightColumn.className = 'actions-container'; const statusContainer = document.createElement('div'); statusContainer.className = 'status-container'; const statusBtn = document.createElement('button'); statusBtn.className = 'status-toggle'; statusBtn.dataset.id = key;
+                    if (suggestion.status === 'done') {
+                        statusBtn.textContent = '✅ Направено'; statusBtn.classList.add('is-done'); const newCommandDiv = document.createElement('div'); newCommandDiv.className = 'new-command-section'; newCommandDiv.innerHTML = `<p class="label">Нова команда:</p>`;
+                        if (adminMode) { const commandInput = document.createElement('input'); commandInput.type = 'text'; commandInput.value = suggestion.newCommandName || ''; commandInput.placeholder = 'Въведете името'; commandInput.dataset.id = key; newCommandDiv.appendChild(commandInput); } else { const commandDisplay = document.createElement('p'); commandDisplay.className = 'command-name'; commandDisplay.textContent = suggestion.newCommandName || '(няма зададена)'; newCommandDiv.appendChild(commandDisplay); }
+                        statusContainer.appendChild(statusBtn); statusContainer.appendChild(newCommandDiv);
+                    } else { statusBtn.textContent = '❌ Не е направено'; statusBtn.classList.add('is-pending'); statusContainer.appendChild(statusBtn); }
+                    if (adminMode) statusBtn.classList.add('admin-enabled');
+                    rightColumn.appendChild(statusContainer);
+                    if(adminMode){ const deleteBtn = document.createElement('button'); deleteBtn.className = 'delete-suggestion-btn'; deleteBtn.innerHTML = ''; deleteBtn.title = 'Изтрий предложението'; deleteBtn.dataset.id = key; rightColumn.appendChild(deleteBtn); }
+                    item.appendChild(rightColumn); suggestionsListDiv.appendChild(item);
+                });
+            };
+            suggestionsRef.orderByChild("timestamp").on("value", renderSuggestions);
+            addSuggestionBtn.addEventListener('click', () => { suggestionFormModal.style.display = 'block'; }); viewSuggestionsBtn.addEventListener('click', () => { suggestionsListModal.style.display = 'block'; });
+            closeButtons.forEach(btn => btn.addEventListener('click', () => { suggestionFormModal.style.display = 'none'; suggestionsListModal.style.display = 'none'; }));
+            window.addEventListener('click', (event) => { if (event.target == suggestionFormModal || event.target == suggestionsListModal) { suggestionFormModal.style.display = 'none'; suggestionsListModal.style.display = 'none'; } });
+            suggestionForm.addEventListener('submit', (e) => {
+                e.preventDefault(); const name = document.getElementById('suggester-name').value; const text = document.getElementById('suggestion-text').value; if (!text.trim()) { alert('Моля, въведете текст.'); return; }
+                suggestionsRef.push({ name: name.trim() || 'Анонимен', text: text.trim(), status: 'pending', timestamp: firebase.database.ServerValue.TIMESTAMP }).then(() => { suggestionForm.reset(); suggestionFormModal.style.display = 'none'; alert('Благодарим за предложението!'); }).catch((error) => console.error("Грешка: ", error));
+            });
+            suggestionsListDiv.addEventListener('click', (e) => {
+                if (e.target.classList.contains('status-toggle') && adminMode) { const id = e.target.dataset.id; const docRef = suggestionsRef.child(id); docRef.get().then((snapshot) => { if (snapshot.exists()) { const newStatus = snapshot.val().status === 'pending' ? 'done' : 'pending'; docRef.update({ status: newStatus }); } }); }
+                if (e.target.classList.contains('delete-suggestion-btn') && adminMode) { const id = e.target.dataset.id; if(confirm('Наистина ли искате да изтриете това?')) { suggestionsRef.child(id).remove().catch(error => console.error("Грешка: ", error)); } }
+            });
+            suggestionsListDiv.addEventListener('blur', (e) => { if (e.target.tagName === 'INPUT' && e.target.closest('.new-command-section') && adminMode) { const id = e.target.dataset.id; const newName = e.target.value.trim(); suggestionsRef.child(id).update({ newCommandName: newName }).catch(error => console.error("Грешка:", error)); } }, true);
+        }
+
+        function parseLispFileImproved(content, config) {
+            const data = {}; Object.values(config).forEach(c => data[c.id] = []);
+            const lispNameToIdMap = {}; for (const key in config) { lispNameToIdMap[key] = config[key].id; }
+            const functionBlocks = content.split(/defun create_dclhelplisp/);
+            functionBlocks.forEach(block => {
+                const categoryMatch = block.match(/^([^\s(]+)/); if (!categoryMatch) return;
+                const lispCategoryName = categoryMatch[1]; const categoryId = lispNameToIdMap[lispCategoryName]; if (!categoryId) return;
+                const itemsMatch = block.match(/\(setq\s+(?:command_items|menu_items)\s+'\(([\s\S]+?)\)\)/); if (!itemsMatch) return;
+                const itemsContent = itemsMatch[1]; const commandRegex = /\(\s*"([^"]*)"\s+"([^"]*)"\s+"([\s\S]*?)"\s*\)/g;
+                let match;
+                while ((match = commandRegex.exec(itemsContent)) !== null) {
+                    const commandName = match[2].trim(); if (commandName.startsWith("---") || commandName === "") continue;
+                    let fullDescription = match[3].replace(/^- /, '').replace(/\\t/g, ' ').replace(/\s+/g, ' ').trim();
+                    data[categoryId].push({ name: commandName, description: fullDescription, });
+                }
+            });
+            return data;
+        }
+        
+        function createShortDescription(fullDesc) {
+            let shortDesc = fullDesc; const firstSentenceEnd = shortDesc.search(/[.!?]/);
+            if (firstSentenceEnd !== -1) { shortDesc = shortDesc.substring(0, firstSentenceEnd + 1); } 
+            else if (shortDesc.length > 80) { shortDesc = shortDesc.substring(0, 80) + '...'; }
+            return shortDesc.charAt(0).toUpperCase() + shortDesc.slice(1);
+        }
+
+        function renderAllCommands(data, container, filterContainer, counterEl, config) {
+            container.innerHTML = ''; filterContainer.innerHTML = '<button class="category-filter-button active" data-filter="all">ВСИЧКИ СЕКЦИИ</button>';
+            let totalCommands = 0;
+            for (const categoryId in data) {
+                 if (Object.hasOwnProperty.call(data, categoryId)) {
+                    const commands = data[categoryId]; if (commands.length === 0) continue;
+                    const categoryInfo = Object.values(config).find(c => c.id === categoryId); if (!categoryInfo) continue;
+                    const filterButton = document.createElement('button'); filterButton.className = 'category-filter-button'; filterButton.dataset.filter = categoryId; filterButton.textContent = categoryInfo.filterName; filterContainer.appendChild(filterButton);
+                    const detailsElement = document.createElement('details'); detailsElement.className = 'category'; detailsElement.dataset.category = categoryId;
+                    const summaryElement = document.createElement('summary'); summaryElement.innerHTML = `<h2>${categoryInfo.title}</h2>`; detailsElement.appendChild(summaryElement);
+                    commands.forEach(command => {
+                        totalCommands++; const commandEntry = document.createElement('div'); commandEntry.className = 'command-entry'; commandEntry.dataset.letter = command.name.charAt(0).toUpperCase(); const shortDesc = createShortDescription(command.description);
+                        commandEntry.innerHTML = `
+                            <div class="command-header"><button class="command-button">${command.name}</button><span class="short-description">${shortDesc}</span></div>
+                            <div class="full-description-panel"><p>${command.description}</p></div>`;
+                        detailsElement.appendChild(commandEntry);
+                    });
+                    container.appendChild(detailsElement);
+                }
+            }
+            counterEl.textContent = `Намерени общо ${totalCommands} уникални команди, разпределени в категории`;
+        }
+
+        function initializeFiltersAndAccordions() {
+            const searchBar = document.getElementById('search-bar');
+            const categoryFilter = document.getElementById('category-filter');
+            const alphabetFilter = document.getElementById('alphabet-filter');
+            const commandsContainer = document.getElementById('commands-container');
+            let activeCategory = 'all'; let activeLetter = 'all'; 
+
+            function resetFiltersToAll() {
+                activeCategory = 'all';
+                activeLetter = 'all';
+                if (categoryFilter.querySelector('.active')) { categoryFilter.querySelector('.active').classList.remove('active'); }
+                categoryFilter.querySelector('[data-filter="all"]').classList.add('active');
+                if (alphabetFilter.querySelector('.active')) { alphabetFilter.querySelector('.active').classList.remove('active'); }
+                alphabetFilter.querySelector('[data-filter="all"]').classList.add('active');
+            }
+
+            searchBar.addEventListener('input', () => {
+                const searchTerm = searchBar.value.toLowerCase();
+                // Нулираме филтрите, когато потребителят започне да търси
+                if (searchTerm.length > 0) {
+                    resetFiltersToAll();
+                }
+                
+                const allCategories = commandsContainer.querySelectorAll('details.category');
+
+                allCategories.forEach(category => {
+                    const allCommands = category.querySelectorAll('.command-entry');
+                    let hasVisibleChildren = false;
+                    allCommands.forEach(entry => {
+                        const commandName = entry.querySelector('.command-button').textContent.toLowerCase();
+                        const commandDesc = entry.querySelector('.full-description-panel p').textContent.toLowerCase();
+                        const isMatch = commandName.includes(searchTerm) || commandDesc.includes(searchTerm);
+                        entry.classList.toggle('hidden', !isMatch);
+                        if (isMatch) hasVisibleChildren = true;
+                    });
+                    
+                    category.classList.toggle('hidden', !hasVisibleChildren);
+                    if (hasVisibleChildren && searchTerm) {
+                        category.setAttribute('open', '');
+                    } else {
+                        category.removeAttribute('open');
+                    }
+                });
+            });
+
+            function applyFilters() {
+                const categories = commandsContainer.querySelectorAll('details.category');
+                
+                categories.forEach(category => {
+                    const commandEntries = category.querySelectorAll('.command-entry');
+                    let hasVisibleChildren = false;
+                    commandEntries.forEach(entry => {
+                        const catId = entry.closest('details.category').dataset.category;
+                        const letter = entry.dataset.letter.toUpperCase();
+                        const isCategoryVisible = (activeCategory === 'all' || activeCategory === catId);
+                        const isLetterVisible = (activeLetter.toUpperCase() === 'ALL' || activeLetter.toUpperCase() === letter);
+                        const isVisible = isCategoryVisible && isLetterVisible;
+                        entry.classList.toggle('hidden', !isVisible);
+                        if(isVisible) hasVisibleChildren = true;
+                    });
+                    category.classList.toggle('hidden', !hasVisibleChildren);
+                });
+
+                const visibleCategories = commandsContainer.querySelectorAll('details.category:not(.hidden)');
+                if (activeLetter.toUpperCase() !== 'ALL') {
+                    visibleCategories.forEach(cat => cat.setAttribute('open', ''));
+                } else {
+                    visibleCategories.forEach(cat => cat.removeAttribute('open'));
+                }
+            }
+
+            categoryFilter.addEventListener('click', function(e) {
+                const button = e.target.closest('.category-filter-button'); if (!button) return;
+                searchBar.value = ''; activeCategory = button.dataset.filter;
+                if (categoryFilter.querySelector('.active')) { categoryFilter.querySelector('.active').classList.remove('active'); }
+                button.classList.add('active'); applyFilters();
+            });
+
+            alphabetFilter.addEventListener('click', function(e) {
+                const button = e.target.closest('.filter-button'); if (!button) return;
+                searchBar.value = ''; activeLetter = button.dataset.filter;
+                if (alphabetFilter.querySelector('.active')) { alphabetFilter.querySelector('.active').classList.remove('active'); }
+                button.classList.add('active'); applyFilters();
+            });
+
+            commandsContainer.addEventListener('click', function(e) {
+                const header = e.target.closest('.command-header'); if (!header) return;
+                const button = header.querySelector('.command-button');
+                const currentPanel = header.nextElementSibling; const wasActive = currentPanel.classList.contains('show');
+                document.querySelectorAll('.full-description-panel.show').forEach(panel => {
+                    if (panel !== currentPanel) { panel.classList.remove('show'); panel.previousElementSibling.querySelector('.command-button').classList.remove('active');}
+                });
+                if (!wasActive) { currentPanel.classList.add('show'); button.classList.add('active'); } 
+                else { currentPanel.classList.remove('show'); button.classList.remove('active'); }
+            });
+        }
+    </script>
+</body>
+</html>
+
