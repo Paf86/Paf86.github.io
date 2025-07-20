@@ -62,23 +62,11 @@
         .command-button:hover { background-color: #1d3557; }
         .short-description { margin-left: 20px; font-size: 15px; color: #555; flex-grow: 1; }
         
-        .copy-feedback {
-            padding: 8px 20px;
-            margin: -8px 15px 10px 15px;
-            background-color: #e6f4ea;
-            color: #137333;
-            border-radius: 0 0 6px 6px;
-            text-align: left;
-            font-size: 14px;
-            font-weight: 500;
-            animation: fadeInOut 3.5s ease-in-out forwards;
-        }
+        .copy-feedback { padding: 8px 20px; margin: -8px 15px 10px 15px; background-color: #e6f4ea; color: #137333; border-radius: 0 0 6px 6px; text-align: left; font-size: 14px; font-weight: 500; animation: fadeInOut 3.5s ease-in-out forwards; }
 
         @keyframes fadeInOut {
-            0% { opacity: 0; transform: translateY(-10px); }
-            10% { opacity: 1; transform: translateY(0); }
-            90% { opacity: 1; transform: translateY(0); }
-            100% { opacity: 0; transform: translateY(-10px); }
+            0% { opacity: 0; transform: translateY(-10px); } 10% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-10px); }
         }
 
         details.category { border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 10px; background-color: #fff; transition: box-shadow 0.3s; }
@@ -87,6 +75,15 @@
         details[open] > summary { border-bottom: 1px solid #e9ecef; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
         summary:hover { background-color: #e9ecef; }
         summary h2 { display: inline; color: #e63946; margin: 0; padding: 0; border: none; font-size: 1.6em; vertical-align: middle; }
+        
+        /* Стил за маркиране на текст */
+        mark {
+            background-color: #fffb8f; /* Мек жълт цвят */
+            padding: 1px 0;
+            border-radius: 3px;
+            color: #333;
+        }
+
     </style>
 </head>
 <body>
@@ -234,12 +231,17 @@
                     const detailsElement = document.createElement('details'); detailsElement.className = 'category'; detailsElement.dataset.category = categoryId;
                     const summaryElement = document.createElement('summary'); summaryElement.innerHTML = `<h2>${categoryInfo.title}</h2>`; detailsElement.appendChild(summaryElement);
                     commands.forEach(command => {
-                        const commandEntry = document.createElement('div'); commandEntry.className = 'command-entry'; commandEntry.dataset.letter = command.name.charAt(0).toUpperCase(); const shortDesc = createShortDescription(command.description);
+                        const commandEntry = document.createElement('div'); commandEntry.className = 'command-entry'; commandEntry.dataset.letter = command.name.charAt(0).toUpperCase();
+                        const shortDesc = createShortDescription(command.description);
                         commandEntry.innerHTML = `
                             <div class="command-header">
                                 <button class="command-button">${command.name}</button>
                                 <span class="short-description">${shortDesc}</span>
                             </div>`;
+                        // Съхраняваме оригиналните текстове за по-лесно възстановяване
+                        commandEntry.querySelector('.command-button').dataset.originalText = command.name;
+                        commandEntry.querySelector('.short-description').dataset.originalText = shortDesc;
+
                         detailsElement.appendChild(commandEntry);
                     });
                     container.appendChild(detailsElement);
@@ -255,6 +257,15 @@
             const commandsContainer = document.getElementById('commands-container');
             let activeCategory = 'all'; let activeLetter = 'all'; 
 
+            function escapeRegex(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+            function highlightText(originalText, searchTerm) {
+                if (!searchTerm) { return originalText; }
+                const escapedSearchTerm = escapeRegex(searchTerm);
+                const regex = new RegExp(escapedSearchTerm, 'gi');
+                return originalText.replace(regex, (match) => `<mark>${match}</mark>`);
+            }
+
             function resetFiltersToAll() {
                 activeCategory = 'all'; activeLetter = 'all';
                 if (categoryFilter.querySelector('.active')) { categoryFilter.querySelector('.active').classList.remove('active'); }
@@ -264,18 +275,33 @@
             }
 
             searchBar.addEventListener('input', () => {
-                const searchTerm = searchBar.value.toLowerCase();
+                const searchTerm = searchBar.value;
+                const searchTermLower = searchTerm.toLowerCase();
                 if (searchTerm.length > 0) { resetFiltersToAll(); }
+                
                 const allCategories = commandsContainer.querySelectorAll('details.category');
                 allCategories.forEach(category => {
                     const allCommands = category.querySelectorAll('.command-entry');
                     let hasVisibleChildren = false;
                     allCommands.forEach(entry => {
-                        const commandName = entry.querySelector('.command-button').textContent.toLowerCase();
-                        const commandDesc = entry.querySelector('.short-description').textContent.toLowerCase();
-                        const isMatch = commandName.includes(searchTerm) || commandDesc.includes(searchTerm);
+                        const commandButton = entry.querySelector('.command-button');
+                        const descriptionSpan = entry.querySelector('.short-description');
+                        const originalCommandName = commandButton.dataset.originalText;
+                        const originalDescription = descriptionSpan.dataset.originalText;
+
+                        const isMatch = originalCommandName.toLowerCase().includes(searchTermLower) || originalDescription.toLowerCase().includes(searchTermLower);
                         entry.classList.toggle('hidden', !isMatch);
-                        if (isMatch) hasVisibleChildren = true;
+                        
+                        if (isMatch) {
+                            hasVisibleChildren = true;
+                            // Прилагаме или премахваме маркирането
+                            commandButton.innerHTML = highlightText(originalCommandName, searchTerm);
+                            descriptionSpan.innerHTML = highlightText(originalDescription, searchTerm);
+                        } else {
+                             // Възстановяваме оригиналния текст, ако няма съвпадение
+                            commandButton.innerHTML = originalCommandName;
+                            descriptionSpan.innerHTML = originalDescription;
+                        }
                     });
                     category.classList.toggle('hidden', !hasVisibleChildren);
                     if (hasVisibleChildren && searchTerm) { category.setAttribute('open', ''); } 
@@ -299,27 +325,24 @@
                     });
                     category.classList.toggle('hidden', !hasVisibleChildren);
                 });
-
                 const isAnyFilterActive = activeCategory !== 'all' || activeLetter.toUpperCase() !== 'ALL';
                 const visibleCategories = commandsContainer.querySelectorAll('details.category:not(.hidden)');
-                
-                if (isAnyFilterActive) {
-                    visibleCategories.forEach(cat => cat.setAttribute('open', ''));
-                } else {
-                    categories.forEach(cat => cat.removeAttribute('open'));
-                }
+                if (isAnyFilterActive) { visibleCategories.forEach(cat => cat.setAttribute('open', '')); } 
+                else { categories.forEach(cat => cat.removeAttribute('open')); }
             }
 
             categoryFilter.addEventListener('click', function(e) {
                 const button = e.target.closest('.category-filter-button'); if (!button) return;
-                searchBar.value = ''; activeCategory = button.dataset.filter;
+                searchBar.value = ''; searchBar.dispatchEvent(new Event('input')); // Изчистваме и маркирането
+                activeCategory = button.dataset.filter;
                 if (categoryFilter.querySelector('.active')) { categoryFilter.querySelector('.active').classList.remove('active'); }
                 button.classList.add('active'); applyFilters();
             });
 
             alphabetFilter.addEventListener('click', function(e) {
                 const button = e.target.closest('.filter-button'); if (!button) return;
-                searchBar.value = ''; activeLetter = button.dataset.filter;
+                searchBar.value = ''; searchBar.dispatchEvent(new Event('input')); // Изчистваме и маркирането
+                activeLetter = button.dataset.filter;
                 if (alphabetFilter.querySelector('.active')) { alphabetFilter.querySelector('.active').classList.remove('active'); }
                 button.classList.add('active'); applyFilters();
             });
@@ -327,26 +350,17 @@
             commandsContainer.addEventListener('click', function(e) {
                 const commandButton = e.target.closest('.command-button');
                 if (!commandButton) return;
-
                 const commandText = commandButton.textContent;
                 navigator.clipboard.writeText(commandText).then(() => {
                     const existingFeedback = document.querySelector('.copy-feedback');
                     if (existingFeedback) { existingFeedback.remove(); }
-
                     const feedbackElement = document.createElement('div');
                     feedbackElement.className = 'copy-feedback';
                     feedbackElement.textContent = `Командата "${commandText}" е копирана! Може да я пейстнете в AutoCAD.`;
-                    
                     const commandEntry = commandButton.closest('.command-entry');
                     commandEntry.insertAdjacentElement('afterend', feedbackElement);
-                    
-                    setTimeout(() => {
-                        feedbackElement.remove();
-                    }, 3500);
-
-                }).catch(err => {
-                    console.error('Грешка при копиране: ', err);
-                });
+                    setTimeout(() => { feedbackElement.remove(); }, 3500);
+                }).catch(err => { console.error('Грешка при копиране: ', err); });
             });
         }
     </script>
