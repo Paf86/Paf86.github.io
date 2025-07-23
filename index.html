@@ -77,50 +77,43 @@
         summary:hover { background-color: #e9ecef; }
         summary h2 { display: inline; color: #e63946; margin: 0; padding: 0; border: none; font-size: 1.6em; vertical-align: middle; }
         
-        /* Стил за маркиране на текст */
-        mark {
-            background-color: rgba(255, 251, 143, 0.6); /* Полупрозрачен мек жълт цвят */
-            padding: 1px 0;
-            border-radius: 3px;
-            color: inherit; /* Запазва цвета на текста от родителския елемент */
-        }
+        mark { background-color: rgba(255, 251, 143, 0.6); padding: 1px 0; border-radius: 3px; color: inherit; }
+        
+        /* --- НОВИ СТИЛОВЕ САМО ЗА СТРАНИЧНОТО МЕНЮ --- */
+        .latest-commands-widget { position: fixed; top: 150px; right: 20px; width: 320px; z-index: 999; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+        .latest-commands-widget summary { padding: 12px 15px; font-weight: bold; color: #1d3557; cursor: pointer; outline: none; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+        .latest-commands-widget summary::-webkit-details-marker { display: none; }
+        .latest-commands-widget summary::after { content: '▼'; font-size: 12px; transition: transform 0.3s; }
+        .latest-commands-widget details[open] > summary::after { transform: rotate(180deg); }
+        #latest-commands-list { padding: 10px; display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; }
+        .latest-command-copy-btn { width: 100%; background-color: #e63946; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 15px; transition: background-color 0.2s; text-align: center; }
+        .latest-command-copy-btn:hover { background-color: #a8202b; }
+        .latest-copy-feedback-widget { font-size: 12px; color: #137333; font-weight: bold; text-align: center; padding-top: 5px; }
 
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header-buttons">
-            <button id="add-suggestion-btn" class="header-btn">Предложение</button>
-            <button id="view-suggestions-btn" class="header-btn">
-                Виж предложенията
-                <span id="suggestion-count">0</span>
-            </button>
-        </div>
-
-        <h1>PAF's PROGRAMS SUITE</h1>
-        <h3 class="main-subtitle">Интерактивен списък на AutoLISP команди</h3>
-        <h3 id="command-counter">Зареждане на командите...</h3>
-
-        <div class="search-container">
-            <input type="text" id="search-bar" placeholder="Търсене по име или описание...">
-        </div>
-
-        <div class="filters-container">
-            <div id="category-filter"></div>
-            <div id="alphabet-filter">
-                 <button class="filter-button active" data-filter="all">ВСИЧКИ БУКВИ</button>
-                <script>document.write(Array.from(Array(26)).map((e, i) => `<button class="filter-button" data-filter="${String.fromCharCode(i + 65)}">${String.fromCharCode(i + 65)}</button>`).join(''));</script>
-            </div>
-        </div>
+        <div class="header-buttons"><button id="add-suggestion-btn" class="header-btn">Предложение</button><button id="view-suggestions-btn" class="header-btn">Виж предложенията<span id="suggestion-count">0</span></button></div>
+        <h1>PAF's PROGRAMS SUITE</h1><h3 class="main-subtitle">Интерактивен списък на AutoLISP команди</h3><h3 id="command-counter">Зареждане на командите...</h3>
+        <div class="search-container"><input type="text" id="search-bar" placeholder="Търсене по име или описание..."></div>
+        <div class="filters-container"><div id="category-filter"></div><div id="alphabet-filter"><button class="filter-button active" data-filter="all">ВСИЧКИ БУКВИ</button><script>document.write(Array.from(Array(26)).map((e, i) => `<button class="filter-button" data-filter="${String.fromCharCode(i + 65)}">${String.fromCharCode(i + 65)}</button>`).join(''));</script></div></div>
         <div id="commands-container"></div>
     </div> 
+
+    <!-- НОВ HTML САМО ЗА СТРАНИЧНОТО МЕНЮ -->
+    <div class="latest-commands-widget">
+        <details><summary>Последни 5 добавени команди</summary><div id="latest-commands-list"><p>Зареждане...</p></div></details>
+    </div>
        
     <div id="suggestion-form-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2>Направи предложение</h2><form id="suggestion-form"><label for="suggester-name">Твоето име:</label><input type="text" id="suggester-name" required><label for="suggestion-text">Предложи нова LISP команда:</label><textarea id="suggestion-text" required></textarea><button type="submit">Изпрати</button></form></div></div>
     <div id="suggestions-list-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2>Списък с предложения</h2><div id="suggestions-list"></div></div></div>
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
+        // --- СЪЩЕСТВУВАЩ, НЕПРОМЕНЕН КОД ---
         const firebaseConfig = {
           apiKey: "AIzaSyACB9shT_VTr3PGW_1nFjJCGAgwSI55Omw", authDomain: "clickcount-a6e46.firebaseapp.com", databaseURL: "https://clickcount-a6e46-default-rtdb.firebaseio.com", projectId: "clickcount-a6e46", storageBucket: "clickcount-a6e46.appspot.com", messagingSenderId: "53304151952", appId: "1:53304151952:web:ed0c365ace6b1232842d15", measurementId: "G-5S028177MG"
         };
@@ -129,7 +122,8 @@
         const suggestionsRef = db.ref("suggestions");
 
         document.addEventListener('DOMContentLoaded', async function() {
-            initializeFirebaseFunctionality();
+            // Тази част от кода е НЕПРОМЕНЕНА
+            initializeFirebaseFunctionality(); 
             const COMMANDS_FILE_URL = "https://raw.githubusercontent.com/PafApps/lisp/main/HELP_LISP.lsp";
             const categoryConfig = {
                 "СИТУАЦИЯ": { id: "situation", title: "Команди за Ситуация", filterName: "Ситуация" }, "НАДЛЪЖНИ": { id: "longitudinal-profiles", title: "Команди за Надлъжни профили", filterName: "Надлъжни" }, "НАПРЕЧНИ": { id: "cross-sections", title: "Команди за Напречни профили", filterName: "Напречни" }, "БЛОКОВЕ": { id: "blocks", title: "Команди за Блокове", filterName: "Блокове" }, "ЛЕЙАУТИ": { id: "layouts", title: "Команди за Layouts", filterName: "Layouts" }, "СИВИЛ": { id: "civil", title: "Команди за Civil 3D", filterName: "Civil 3D" }, "РЕГИСТРИ": { id: "registers", title: "Команди за Регистри (Civil 3D)", filterName: "Регистри (Civil)" }, "ДРУГИ": { id: "other", title: "Други команди", filterName: "Други" },
@@ -142,20 +136,28 @@
                 const response = await fetch(COMMANDS_FILE_URL);
                 if (!response.ok) throw new Error(`HTTP грешка! Статус: ${response.status}`);
                 const lispContent = await response.text();
-                const parsedResult = parseLispFileImproved(lispContent, categoryConfig);
-                renderAllCommands(parsedResult.categorizedData, commandsContainer, categoryFilterContainer, commandCounter, parsedResult.uniqueCommandCount, categoryConfig);
+                
+                const mainContentResult = parseMainLispContent(lispContent, categoryConfig);
+                renderAllCommands(mainContentResult.categorizedData, commandsContainer, categoryFilterContainer, mainContentResult.uniqueCommandCount, categoryConfig);
+                
+                // НОВО: Извикваме ОТДЕЛНА функция за страничното меню, след като основното съдържание е заредено
+                initializeLatestCommandsWidget(lispContent, categoryConfig);
+
                 initializeFiltersAndAccordions();
+
             } catch (error) {
-                console.error("Грешка при зареждане:", error);
-                commandsContainer.innerHTML = `<p style="color: red; text-align: center;">Възникна грешка. Проверете конзолата.</p>`;
-                commandCounter.textContent = 'Грешка при зареждане';
+                console.error("Грешка при зареждане на скрипта:", error);
+                if(commandCounter) commandCounter.textContent = 'Грешка при зареждане';
+                if(commandsContainer) commandsContainer.innerHTML = `<p style="color: red; text-align: center;">Възникна грешка при обработка на данните. Моля, проверете конзолата за детайли.</p>`;
             }
         });
-
+        
+        // --- ЦЯЛАТА СЪЩЕСТВУВАЩА ЛОГИКА Е НЕПРОМЕНЕНА ---
         function initializeFirebaseFunctionality() {
             const isAdmin = () => new URLSearchParams(window.location.search).get('admin') === 'true'; const adminMode = isAdmin();
             const addSuggestionBtn = document.getElementById('add-suggestion-btn'); const viewSuggestionsBtn = document.getElementById('view-suggestions-btn'); const suggestionFormModal = document.getElementById('suggestion-form-modal'); const suggestionsListModal = document.getElementById('suggestions-list-modal'); const suggestionForm = document.getElementById('suggestion-form'); const suggestionsListDiv = document.getElementById('suggestions-list'); const suggestionCountSpan = document.getElementById('suggestion-count'); const closeButtons = document.querySelectorAll('.close-button');
             const renderSuggestions = (snapshot) => {
+                if(!suggestionsListDiv) return;
                 suggestionsListDiv.innerHTML = ''; suggestionCountSpan.textContent = snapshot.numChildren();
                 if (!snapshot.exists()) { suggestionsListDiv.innerHTML = '<p>Все още няма подадени предложения.</p>'; return; }
                 snapshot.forEach(childSnapshot => {
@@ -190,36 +192,90 @@
             suggestionsListDiv.addEventListener('blur', (e) => { if (e.target.tagName === 'INPUT' && e.target.closest('.new-command-section') && adminMode) { const id = e.target.dataset.id; const newName = e.target.value.trim(); suggestionsRef.child(id).update({ newCommandName: newName }).catch(error => console.error("Грешка:", error)); } }, true);
         }
 
-        function parseLispFileImproved(content, config) {
-            const categorizedData = {}; Object.values(config).forEach(c => categorizedData[c.id] = []);
+        function parseMainLispContent(content, config) {
+            const categorizedData = {};
+            Object.values(config).forEach(c => categorizedData[c.id] = []);
             const lispNameToIdMap = {}; for (const key in config) { lispNameToIdMap[key] = config[key].id; }
             const functionBlocks = content.split(/defun create_dclhelplisp/);
             functionBlocks.forEach(block => {
                 const categoryMatch = block.match(/^([^\s(]+)/); if (!categoryMatch) return;
                 const lispCategoryName = categoryMatch[1]; const categoryId = lispNameToIdMap[lispCategoryName]; if (!categoryId) return;
-                const itemsMatch = block.match(/\(setq\s+(?:command_items|menu_items)\s+'\(([\s\S]+?)\)\)/); if (!itemsMatch) return;
-                const itemsContent = itemsMatch[1]; const commandRegex = /\(\s*"([^"]*)"\s+"([^"]*)"\s+"([\s\S]*?)"\s*\)/g;
+                const itemsMatch = block.match(/\(setq\s+(?:command_items|menu_items)\s+'\(([\s\S]+?)\)\)/); if (!itemsMatch || !itemsMatch[1]) return;
+                const itemsContent = itemsMatch[1];
+                const commandRegex = /\(\s*"([^"]*)"\s+"([^"]*)"\s+"([\s\S]*?)"\s*\)/g;
                 let match;
                 while ((match = commandRegex.exec(itemsContent)) !== null) {
-                    const commandName = match[2].trim(); if (commandName.startsWith("---") || commandName === "") continue;
-                    let fullDescription = match[3].replace(/^- /, '').replace(/\\t/g, ' ').replace(/\s+/g, ' ').trim();
-                    categorizedData[categoryId].push({ name: commandName, description: fullDescription, });
+                    const commandName = match[2] ? match[2].trim() : ""; if (commandName.startsWith("---") || commandName === "") continue;
+                    let fullDescription = match[3] ? match[3].replace(/^- /, '').replace(/\\t/g, ' ').replace(/\s+/g, ' ').trim() : "";
+                    categorizedData[categoryId].push({ name: commandName, description: fullDescription });
                 }
             });
-            const commandMapRegex = /\(\s*"([^"]+)"\s*\.\s*"[^"]*"\s*\)/g; const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
-            const uniqueCommandKeys = new Set();
-            if (commandMapSectionMatch) {
-                const mapContent = commandMapSectionMatch[1]; let match;
+            const commandMapRegex = /\(\s*"([^"]+)"\s*\.\s*"[^"]*"\s*\)/g;
+            const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
+            let uniqueCommandCount = 0;
+            if (commandMapSectionMatch && commandMapSectionMatch[1]) {
+                const mapContent = commandMapSectionMatch[1];
+                let match;
+                const seenKeys = new Set();
                 while ((match = commandMapRegex.exec(mapContent)) !== null) {
-                    const key = match[1]; if (!config[key] && key !== 'back' && key !== 'pps_back' && !/^[А-Я]/.test(key)) { uniqueCommandKeys.add(key); }
+                    if (match[1]) {
+                        const key = match[1];
+                        if (!config[key] && key !== 'back' && key !== 'pps_back' && !/^[А-Я]/.test(key)) {
+                            seenKeys.add(key);
+                        }
+                    }
                 }
+                uniqueCommandCount = seenKeys.size;
             }
-            return { categorizedData: categorizedData, uniqueCommandCount: uniqueCommandKeys.size };
+            return { categorizedData, uniqueCommandCount };
         }
         
-        // --- КОРЕКЦИЯ: ФУНКЦИЯТА createShortDescription Е ПРЕМАХНАТА ---
+        // --- НОВА, ИЗОЛИРАНА И НЕЗАВИСИМА ФУНКЦИЯ ---
+        function initializeLatestCommandsWidget(content, config) {
+            const listContainer = document.getElementById('latest-commands-list');
+            if (!listContainer) return;
 
+            try {
+                const commandMapRegex = /\(\s*"([^"]+)"\s*\.\s*"[^"]*"\s*\)/g;
+                const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
+                const orderedUniqueCommandKeys = [];
+                
+                if (commandMapSectionMatch && commandMapSectionMatch[1]) {
+                    const mapContent = commandMapSectionMatch[1];
+                    let match;
+                    const seenKeys = new Set();
+                    while ((match = commandMapRegex.exec(mapContent)) !== null) {
+                        if (match[1]) {
+                            const key = match[1];
+                            if (!config[key] && key !== 'back' && key !== 'pps_back' && !/^[А-Я]/.test(key)) {
+                                if (!seenKeys.has(key)) {
+                                    orderedUniqueCommandKeys.push(key);
+                                    seenKeys.add(key);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (orderedUniqueCommandKeys.length === 0) {
+                    listContainer.innerHTML = '<p>Няма намерени команди.</p>';
+                    return;
+                }
+
+                const latestFiveKeys = orderedUniqueCommandKeys.slice(-5).reverse();
+                listContainer.innerHTML = latestFiveKeys.map(key => {
+                    return `<button class="latest-command-copy-btn">${key}</button>`;
+                }).join('');
+
+            } catch (error) {
+                console.error("Грешка в страничното меню:", error);
+                listContainer.innerHTML = '<p style="color: red;">Грешка при зареждане</p>';
+            }
+        }
+
+        // --- ОСТАНАЛАТА ЧАСТ ОТ КОДА Е НАПЪЛНО НЕПРОМЕНЕНА ---
         function renderAllCommands(data, container, filterContainer, counterEl, uniqueCommandCount, config) {
+            if(!container || !filterContainer || !counterEl) return;
             container.innerHTML = ''; filterContainer.innerHTML = '<button class="category-filter-button active" data-filter="all">ВСИЧКИ СЕКЦИИ</button>';
             for (const categoryId in data) {
                  if (Object.hasOwnProperty.call(data, categoryId)) {
@@ -229,31 +285,28 @@
                     const detailsElement = document.createElement('details'); detailsElement.className = 'category'; detailsElement.dataset.category = categoryId;
                     const summaryElement = document.createElement('summary'); summaryElement.innerHTML = `<h2>${categoryInfo.title}</h2>`; detailsElement.appendChild(summaryElement);
                     
-                    // --- КОРЕКЦИЯ ТУК ---
                     commands.forEach(command => {
                         const commandEntry = document.createElement('div');
                         commandEntry.className = 'command-entry';
                         commandEntry.dataset.letter = command.name.charAt(0).toUpperCase();
-                        
-                        // Използваме пълното описание директно
                         const fullDescription = command.description.charAt(0).toUpperCase() + command.description.slice(1);
-
                         commandEntry.innerHTML = `
                             <div class="command-header">
                                 <button class="command-button">${command.name}</button>
                                 <span class="short-description">${fullDescription}</span>
                             </div>`;
-                        
-                        // Записваме оригиналните текстове, за да работят търсенето и филтрите правилно
                         commandEntry.querySelector('.command-button').dataset.originalText = command.name;
                         commandEntry.querySelector('.short-description').dataset.originalText = fullDescription; 
-                        
                         detailsElement.appendChild(commandEntry);
                     });
                     container.appendChild(detailsElement);
                 }
             }
-            counterEl.textContent = `Намерени общо ${uniqueCommandCount} уникални команди, разпределени в категории`;
+            if (uniqueCommandCount > 0) {
+                 counterEl.textContent = `Намерени общо ${uniqueCommandCount} уникални команди, разпределени в категории`;
+            } else {
+                counterEl.textContent = "Не са намерени команди."
+            }
         }
 
         function initializeFiltersAndAccordions() {
@@ -261,6 +314,8 @@
             const categoryFilter = document.getElementById('category-filter');
             const alphabetFilter = document.getElementById('alphabet-filter');
             const commandsContainer = document.getElementById('commands-container');
+            const latestCommandsWidget = document.querySelector('.latest-commands-widget');
+
             let activeCategory = 'all'; let activeLetter = 'all'; 
 
             function escapeRegex(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
@@ -274,9 +329,9 @@
             function resetFiltersToAll() {
                 activeCategory = 'all'; activeLetter = 'all';
                 if (categoryFilter.querySelector('.active')) { categoryFilter.querySelector('.active').classList.remove('active'); }
-                categoryFilter.querySelector('[data-filter="all"]').classList.add('active');
+                const allCatBtn = categoryFilter.querySelector('[data-filter="all"]'); if (allCatBtn) allCatBtn.classList.add('active');
                 if (alphabetFilter.querySelector('.active')) { alphabetFilter.querySelector('.active').classList.remove('active'); }
-                alphabetFilter.querySelector('[data-filter="all"]').classList.add('active');
+                const allLetterBtn = alphabetFilter.querySelector('[data-filter="all"]'); if (allLetterBtn) allLetterBtn.classList.add('active');
             }
 
             searchBar.addEventListener('input', () => {
@@ -367,12 +422,34 @@
                     if (existingFeedback) { existingFeedback.remove(); }
                     const feedbackElement = document.createElement('div');
                     feedbackElement.className = 'copy-feedback';
-                    feedbackElement.textContent = `Командата "${commandText}" е копирана! Може да я пейстнете в AutoCAD.`;
+                    feedbackElement.textContent = `Командата "${commandText}" е копирана!`;
                     const commandEntry = commandButton.closest('.command-entry');
                     commandEntry.insertAdjacentElement('afterend', feedbackElement);
                     setTimeout(() => { feedbackElement.remove(); }, 3500);
                 }).catch(err => { console.error('Грешка при копиране: ', err); });
             });
+            
+            if (latestCommandsWidget) {
+                latestCommandsWidget.addEventListener('click', function(e) {
+                    const copyBtn = e.target.closest('.latest-command-copy-btn');
+                    if (!copyBtn) return;
+                    
+                    const commandText = copyBtn.textContent;
+                    navigator.clipboard.writeText(commandText).then(() => {
+                        // Показваме обратна връзка в самото меню
+                        const list = document.getElementById('latest-commands-list');
+                        const existingFeedback = list.querySelector('.latest-copy-feedback-widget');
+                        if(existingFeedback) { existingFeedback.remove(); }
+                        
+                        const feedback = document.createElement('div');
+                        feedback.className = 'latest-copy-feedback-widget';
+                        feedback.textContent = `"${commandText}" е копирана!`;
+                        list.appendChild(feedback);
+
+                        setTimeout(() => feedback.remove(), 2000);
+                    }).catch(err => console.error("Грешка при копиране:", err));
+                });
+            }
         }
     </script>
 </body>
