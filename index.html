@@ -78,17 +78,17 @@
         summary h2 { display: inline; color: #e63946; margin: 0; padding: 0; border: none; font-size: 1.6em; vertical-align: middle; }
         
         mark { background-color: rgba(255, 251, 143, 0.6); padding: 1px 0; border-radius: 3px; color: inherit; }
-
-        /* --- СТИЛОВЕ ЗА ПАДАЩОТО МЕНЮ --- */
-        .latest-commands-widget { position: fixed; top: 150px; right: 20px; width: 320px; z-index: 999; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); transition: all 0.3s ease; }
+        
+        /* --- СТИЛОВЕ ЗА СТРАНИЧНОТО МЕНЮ --- */
+        .latest-commands-widget { position: fixed; top: 150px; right: 20px; width: 320px; z-index: 999; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
         .latest-commands-widget summary { padding: 12px 15px; font-weight: bold; color: #1d3557; cursor: pointer; outline: none; list-style: none; display: flex; justify-content: space-between; align-items: center; }
         .latest-commands-widget summary::-webkit-details-marker { display: none; }
         .latest-commands-widget summary::after { content: '▼'; font-size: 12px; transition: transform 0.3s; }
         .latest-commands-widget details[open] > summary::after { transform: rotate(180deg); }
-        #latest-commands-list { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+        #latest-commands-list { padding: 10px; display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; }
         .latest-command-copy-btn { width: 100%; background-color: #e63946; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 15px; transition: background-color 0.2s; text-align: center; }
         .latest-command-copy-btn:hover { background-color: #a8202b; }
-        .latest-copy-feedback-widget { font-size: 12px; color: #137333; font-weight: bold; margin-top: 5px; text-align: center; display: block; animation: fadeInOutShort 2s forwards; }
+        .latest-copy-feedback-widget { font-size: 12px; color: #137333; font-weight: bold; text-align: center; padding-top: 5px; }
         @keyframes fadeInOutShort { 0% { opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
 
     </style>
@@ -114,6 +114,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
+        // --- СТАБИЛЕН КОД ЗА ОСНОВНАТА ЧАСТ ---
         const firebaseConfig = {
           apiKey: "AIzaSyACB9shT_VTr3PGW_1nFjJCGAgwSI55Omw", authDomain: "clickcount-a6e46.firebaseapp.com", databaseURL: "https://clickcount-a6e46-default-rtdb.firebaseio.com", projectId: "clickcount-a6e46", storageBucket: "clickcount-a6e46.appspot.com", messagingSenderId: "53304151952", appId: "1:53304151952:web:ed0c365ace6b1232842d15", measurementId: "G-5S028177MG"
         };
@@ -122,7 +123,8 @@
         const suggestionsRef = db.ref("suggestions");
 
         document.addEventListener('DOMContentLoaded', async function() {
-            initializeFirebaseFunctionality();
+            // Тази функция остава непроменена и работи както преди
+            initializeFirebaseFunctionality(); 
             const COMMANDS_FILE_URL = "https://raw.githubusercontent.com/PafApps/lisp/main/HELP_LISP.lsp";
             const categoryConfig = {
                 "СИТУАЦИЯ": { id: "situation", title: "Команди за Ситуация", filterName: "Ситуация" }, "НАДЛЪЖНИ": { id: "longitudinal-profiles", title: "Команди за Надлъжни профили", filterName: "Надлъжни" }, "НАПРЕЧНИ": { id: "cross-sections", title: "Команди за Напречни профили", filterName: "Напречни" }, "БЛОКОВЕ": { id: "blocks", title: "Команди за Блокове", filterName: "Блокове" }, "ЛЕЙАУТИ": { id: "layouts", title: "Команди за Layouts", filterName: "Layouts" }, "СИВИЛ": { id: "civil", title: "Команди за Civil 3D", filterName: "Civil 3D" }, "РЕГИСТРИ": { id: "registers", title: "Команди за Регистри (Civil 3D)", filterName: "Регистри (Civil)" }, "ДРУГИ": { id: "other", title: "Други команди", filterName: "Други" },
@@ -136,11 +138,16 @@
                 if (!response.ok) throw new Error(`HTTP грешка! Статус: ${response.status}`);
                 const lispContent = await response.text();
                 
-                const parsedResult = parseLispFileImproved(lispContent, categoryConfig);
+                // 1. Извикваме старата, работеща функция за основното съдържание
+                const mainContentResult = parseMainLispContent(lispContent, categoryConfig);
+                renderAllCommands(mainContentResult.categorizedData, commandsContainer, categoryFilterContainer, mainContentResult.uniqueCommandCount, categoryConfig);
+                
+                // 2. ИЗВИКВАМЕ НОВАТА, ОТДЕЛНА функция за страничното меню
+                initializeLatestCommandsWidget(lispContent, categoryConfig);
 
-                renderAllCommands(parsedResult.categorizedData, commandsContainer, categoryFilterContainer, parsedResult.uniqueCommandCount, categoryConfig);
-                renderLatestCommands(parsedResult.orderedUniqueCommandKeys); // ОБНОВЕНО
+                // 3. Инициализираме филтрите и другите функционалности
                 initializeFiltersAndAccordions();
+
             } catch (error) {
                 console.error("Грешка при зареждане на скрипта:", error);
                 if(commandCounter) commandCounter.textContent = 'Грешка при зареждане';
@@ -148,6 +155,7 @@
             }
         });
         
+        // --- СТАБИЛЕН КОД (НЕ СЕ ПИПА) ---
         function initializeFirebaseFunctionality() {
             const isAdmin = () => new URLSearchParams(window.location.search).get('admin') === 'true'; const adminMode = isAdmin();
             const addSuggestionBtn = document.getElementById('add-suggestion-btn'); const viewSuggestionsBtn = document.getElementById('view-suggestions-btn'); const suggestionFormModal = document.getElementById('suggestion-form-modal'); const suggestionsListModal = document.getElementById('suggestions-list-modal'); const suggestionForm = document.getElementById('suggestion-form'); const suggestionsListDiv = document.getElementById('suggestions-list'); const suggestionCountSpan = document.getElementById('suggestion-count'); const closeButtons = document.querySelectorAll('.close-button');
@@ -187,11 +195,11 @@
             suggestionsListDiv.addEventListener('blur', (e) => { if (e.target.tagName === 'INPUT' && e.target.closest('.new-command-section') && adminMode) { const id = e.target.dataset.id; const newName = e.target.value.trim(); suggestionsRef.child(id).update({ newCommandName: newName }).catch(error => console.error("Грешка:", error)); } }, true);
         }
 
-        function parseLispFileImproved(content, config) {
+        // Оригиналната, работеща функция за парсване на ОСНОВНОТО съдържание
+        function parseMainLispContent(content, config) {
             const categorizedData = {};
             Object.values(config).forEach(c => categorizedData[c.id] = []);
             const lispNameToIdMap = {}; for (const key in config) { lispNameToIdMap[key] = config[key].id; }
-
             const functionBlocks = content.split(/defun create_dclhelplisp/);
             functionBlocks.forEach(block => {
                 const categoryMatch = block.match(/^([^\s(]+)/); if (!categoryMatch) return;
@@ -206,9 +214,6 @@
                     categorizedData[categoryId].push({ name: commandName, description: fullDescription });
                 }
             });
-
-            // ОБНОВЕНА СЕКЦИЯ: Извличаме подредения списък с команди
-            const orderedUniqueCommandKeys = [];
             const commandMapRegex = /\(\s*"([^"]+)"\s*\.\s*"[^"]*"\s*\)/g;
             const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
             let uniqueCommandCount = 0;
@@ -220,37 +225,61 @@
                     if (match[1]) {
                         const key = match[1];
                         if (!config[key] && key !== 'back' && key !== 'pps_back' && !/^[А-Я]/.test(key)) {
-                            if (!seenKeys.has(key)) {
-                                orderedUniqueCommandKeys.push(key);
-                                seenKeys.add(key);
+                            seenKeys.add(key);
+                        }
+                    }
+                }
+                uniqueCommandCount = seenKeys.size;
+            }
+            return { categorizedData, uniqueCommandCount };
+        }
+        
+        // --- НОВА, ИЗОЛИРАНА ФУНКЦИЯ САМО ЗА СТРАНИЧНОТО МЕНЮ ---
+        function initializeLatestCommandsWidget(content, config) {
+            const listContainer = document.getElementById('latest-commands-list');
+            if (!listContainer) return;
+
+            try {
+                const commandMapRegex = /\(\s*"([^"]+)"\s*\.\s*"[^"]*"\s*\)/g;
+                const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
+                const orderedUniqueCommandKeys = [];
+                
+                if (commandMapSectionMatch && commandMapSectionMatch[1]) {
+                    const mapContent = commandMapSectionMatch[1];
+                    let match;
+                    const seenKeys = new Set();
+                    while ((match = commandMapRegex.exec(mapContent)) !== null) {
+                        if (match[1]) {
+                            const key = match[1];
+                            if (!config[key] && key !== 'back' && key !== 'pps_back' && !/^[А-Я]/.test(key)) {
+                                if (!seenKeys.has(key)) {
+                                    orderedUniqueCommandKeys.push(key);
+                                    seenKeys.add(key);
+                                }
                             }
                         }
                     }
                 }
-                uniqueCommandCount = orderedUniqueCommandKeys.length;
+
+                if (orderedUniqueCommandKeys.length === 0) {
+                    listContainer.innerHTML = '<p>Няма намерени команди.</p>';
+                    return;
+                }
+
+                const latestFiveKeys = orderedUniqueCommandKeys.slice(-5).reverse();
+                listContainer.innerHTML = latestFiveKeys.map(key => {
+                    return `<button class="latest-command-copy-btn">${key}</button>`;
+                }).join('');
+
+            } catch (error) {
+                console.error("Грешка в страничното меню:", error);
+                listContainer.innerHTML = '<p style="color: red;">Грешка при зареждане</p>';
             }
-
-            return { categorizedData, orderedUniqueCommandKeys, uniqueCommandCount };
-        }
-        
-        // НОВА ФУНКЦИЯ за показване на последните 5 команди
-        function renderLatestCommands(orderedKeys) {
-            const listContainer = document.getElementById('latest-commands-list');
-            if (!listContainer) return;
-            if (!orderedKeys || orderedKeys.length === 0) {
-                listContainer.innerHTML = '<p>Няма намерени команди.</p>';
-                return;
-            }
-
-            const latestFiveKeys = orderedKeys.slice(-5).reverse();
-
-            listContainer.innerHTML = latestFiveKeys.map(key => {
-                // Създаваме бутон за всяка команда
-                return `<button class="latest-command-copy-btn">${key}</button>`;
-            }).join('');
         }
 
+        // --- СТАБИЛЕН КОД (НЕ СЕ ПИПА) ---
         function renderAllCommands(data, container, filterContainer, counterEl, uniqueCommandCount, config) {
+            if(!container || !filterContainer || !counterEl) return;
             container.innerHTML = ''; filterContainer.innerHTML = '<button class="category-filter-button active" data-filter="all">ВСИЧКИ СЕКЦИИ</button>';
             for (const categoryId in data) {
                  if (Object.hasOwnProperty.call(data, categoryId)) {
@@ -277,7 +306,11 @@
                     container.appendChild(detailsElement);
                 }
             }
-            counterEl.textContent = `Намерени общо ${uniqueCommandCount} уникални команди, разпределени в категории`;
+            if (uniqueCommandCount > 0) {
+                 counterEl.textContent = `Намерени общо ${uniqueCommandCount} уникални команди, разпределени в категории`;
+            } else {
+                counterEl.textContent = "Не са намерени команди."
+            }
         }
 
         function initializeFiltersAndAccordions() {
@@ -285,7 +318,7 @@
             const categoryFilter = document.getElementById('category-filter');
             const alphabetFilter = document.getElementById('alphabet-filter');
             const commandsContainer = document.getElementById('commands-container');
-            const latestCommandsWidget = document.querySelector('.latest-commands-widget'); // НОВО
+            const latestCommandsWidget = document.querySelector('.latest-commands-widget');
 
             let activeCategory = 'all'; let activeLetter = 'all'; 
 
@@ -399,27 +432,27 @@
                     setTimeout(() => { feedbackElement.remove(); }, 3500);
                 }).catch(err => { console.error('Грешка при копиране: ', err); });
             });
-
-            // НОВО: Добавяме слушател за клик върху бутоните в новото меню
-            latestCommandsWidget.addEventListener('click', function(e) {
-                const copyBtn = e.target.closest('.latest-command-copy-btn');
-                if (!copyBtn) return;
-                
-                const commandText = copyBtn.textContent;
-                navigator.clipboard.writeText(commandText).then(() => {
-                    // Премахваме стара обратна връзка, ако има такава
-                    const existingFeedback = copyBtn.parentNode.querySelector('.latest-copy-feedback-widget');
-                    if(existingFeedback) { existingFeedback.remove(); }
+            
+            // НОВО: Добавяме слушател за клик САМО за бутоните в страничното меню
+            if (latestCommandsWidget) {
+                latestCommandsWidget.addEventListener('click', function(e) {
+                    const copyBtn = e.target.closest('.latest-command-copy-btn');
+                    if (!copyBtn) return;
                     
-                    // Създаваме нова
-                    const feedback = document.createElement('span');
-                    feedback.className = 'latest-copy-feedback-widget';
-                    feedback.textContent = 'Копирано!';
-                    copyBtn.after(feedback); // Показваме я под бутона
+                    const commandText = copyBtn.textContent;
+                    navigator.clipboard.writeText(commandText).then(() => {
+                        const existingFeedback = copyBtn.parentNode.querySelector('.latest-copy-feedback-widget');
+                        if(existingFeedback) { existingFeedback.remove(); }
+                        
+                        const feedback = document.createElement('span');
+                        feedback.className = 'latest-copy-feedback-widget';
+                        feedback.textContent = 'Копирано!';
+                        copyBtn.after(feedback);
 
-                    setTimeout(() => feedback.remove(), 2000); // Премахваме след 2 секунди
-                }).catch(err => console.error("Грешка при копиране:", err));
-            });
+                        setTimeout(() => feedback.remove(), 2000);
+                    }).catch(err => console.error("Грешка при копиране:", err));
+                });
+            }
         }
     </script>
 </body>
