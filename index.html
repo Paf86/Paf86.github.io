@@ -84,17 +84,17 @@
         .latest-commands-widget summary::-webkit-details-marker { display: none; }
         .latest-commands-widget summary::after { content: '▼'; font-size: 12px; transition: transform 0.3s; }
         .latest-commands-widget details[open] > summary::after { transform: rotate(180deg); }
-        #latest-commands-list { padding: 0 15px 15px 15px; max-height: 400px; overflow-y: auto; }
-        .latest-command-item { padding: 12px 5px; border-bottom: 1px solid rgba(0, 0, 0, 0.08); }
-        .latest-command-item:last-child { border-bottom: none; }
-        
-        .latest-command-item .name-line { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-        .latest-command-item .latest-command-copy-btn { background-color: #e63946; color: white; border: none; padding: 6px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 15px; transition: background-color 0.2s; }
-        .latest-command-item .latest-command-copy-btn:hover { background-color: #a8202b; }
-        .latest-command-item .category-tag { font-size: 0.8em; font-weight: bold; background-color: #a8dadc; color: #1d3557; padding: 3px 8px; border-radius: 10px; }
-        .latest-command-item .desc { font-size: 0.9em; color: #333; line-height: 1.4; }
-        .latest-copy-feedback { font-size: 12px; color: #137333; font-weight: bold; margin-top: 5px; display: block; animation: fadeInOutShort 2s forwards; }
-        @keyframes fadeInOutShort { 0% { opacity: 0; } 20% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+        #latest-commands-list { padding: 5px 15px 15px 15px; max-height: 400px; overflow-y: auto; }
+        /* Опростен стил само за имената на командите */
+        .latest-command-name {
+            padding: 8px 5px;
+            font-size: 1em;
+            color: #333;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        .latest-command-name:last-child {
+            border-bottom: none;
+        }
 
     </style>
 </head>
@@ -143,7 +143,7 @@
                 const parsedResult = parseLispFileImproved(lispContent, categoryConfig);
 
                 renderAllCommands(parsedResult.categorizedData, commandsContainer, categoryFilterContainer, parsedResult.uniqueCommandCount, categoryConfig);
-                renderLatestCommands(parsedResult.orderedUniqueCommandKeys, parsedResult.commandDetailsMap, categoryConfig);
+                renderLatestCommandNames(parsedResult.orderedUniqueCommandKeys);
                 initializeFiltersAndAccordions();
             } catch (error) {
                 console.error("Грешка при зареждане на скрипта:", error);
@@ -194,7 +194,7 @@
         }
 
         function parseLispFileImproved(content, config) {
-            const categorizedData = {}; const commandDetailsMap = {};
+            const categorizedData = {};
             Object.values(config).forEach(c => categorizedData[c.id] = []);
             const lispNameToIdMap = {}; for (const key in config) { lispNameToIdMap[key] = config[key].id; }
 
@@ -210,15 +210,17 @@
                     const commandName = match[2] ? match[2].trim() : ""; if (commandName.startsWith("---") || commandName === "") continue;
                     let fullDescription = match[3] ? match[3].replace(/^- /, '').replace(/\\t/g, ' ').replace(/\s+/g, ' ').trim() : "";
                     categorizedData[categoryId].push({ name: commandName, description: fullDescription });
-                    commandDetailsMap[commandName] = { description: fullDescription, categoryId: categoryId };
                 }
             });
 
-            const orderedUniqueCommandKeys = []; const commandMapRegex = /\(\s*"([^"]+)"\s*\.\s*"[^"]*"\s*\)/g;
+            const orderedUniqueCommandKeys = [];
+            const commandMapRegex = /\(\s*"([^"]+)"\s*\.\s*"[^"]*"\s*\)/g;
             const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
             let uniqueCommandCount = 0;
             if (commandMapSectionMatch && commandMapSectionMatch[1]) {
-                const mapContent = commandMapSectionMatch[1]; let match; const seenKeys = new Set();
+                const mapContent = commandMapSectionMatch[1];
+                let match;
+                const seenKeys = new Set();
                 while ((match = commandMapRegex.exec(mapContent)) !== null) {
                     if (match[1]) {
                         const key = match[1];
@@ -230,34 +232,23 @@
                 uniqueCommandCount = orderedUniqueCommandKeys.length;
             }
 
-            return { categorizedData, commandDetailsMap, orderedUniqueCommandKeys, uniqueCommandCount };
+            return { categorizedData, orderedUniqueCommandKeys, uniqueCommandCount };
         }
         
-        function renderLatestCommands(orderedKeys, detailsMap, config) {
+        // Опростена и стабилна функция само за имената
+        function renderLatestCommandNames(orderedKeys) {
             const listContainer = document.getElementById('latest-commands-list');
             if (!listContainer) return;
-            if (orderedKeys.length === 0) { listContainer.innerHTML = '<p>Няма намерени команди.</p>'; return; }
+            if (!orderedKeys || orderedKeys.length === 0) {
+                listContainer.innerHTML = '<p>Няма намерени команди в картата.</p>';
+                return;
+            }
 
             const latestFiveKeys = orderedKeys.slice(-5).reverse();
-            const content = latestFiveKeys.map(key => {
-                const details = detailsMap[key];
-                if (!details) {
-                    console.warn(`Детайли за команда '${key}' не бяха намерени в основните секции. Пропускам я от списъка с последни.`);
-                    return ''; 
-                }
-                const categoryInfo = Object.values(config).find(c => c.id === details.categoryId);
-                const categoryName = categoryInfo ? categoryInfo.filterName : 'Други';
-                return `
-                    <div class="latest-command-item">
-                        <div class="name-line">
-                            <button class="latest-command-copy-btn">${key}</button>
-                            <span class="category-tag">${categoryName}</span>
-                        </div>
-                        <div class="desc">${details.description}</div>
-                    </div>`;
-            }).join('');
             
-            listContainer.innerHTML = content || '<p>Няма скоро добавени команди с описание.</p>';
+            listContainer.innerHTML = latestFiveKeys.map(key => {
+                return `<div class="latest-command-name">${key}</div>`;
+            }).join('');
         }
 
         function renderAllCommands(data, container, filterContainer, counterEl, uniqueCommandCount, config) {
@@ -300,7 +291,6 @@
             const categoryFilter = document.getElementById('category-filter');
             const alphabetFilter = document.getElementById('alphabet-filter');
             const commandsContainer = document.getElementById('commands-container');
-            const latestCommandsWidget = document.querySelector('.latest-commands-widget');
 
             let activeCategory = 'all'; let activeLetter = 'all'; 
 
@@ -415,23 +405,6 @@
                 }).catch(err => { console.error('Грешка при копиране: ', err); });
             });
             
-            latestCommandsWidget.addEventListener('click', function(e) {
-                const copyBtn = e.target.closest('.latest-command-copy-btn');
-                if (!copyBtn) return;
-                
-                const commandText = copyBtn.textContent;
-                navigator.clipboard.writeText(commandText).then(() => {
-                    const existingFeedback = copyBtn.parentNode.querySelector('.latest-copy-feedback');
-                    if(existingFeedback) { existingFeedback.remove(); }
-                    
-                    const feedback = document.createElement('span');
-                    feedback.className = 'latest-copy-feedback';
-                    feedback.textContent = 'Копирано!';
-                    copyBtn.parentNode.appendChild(feedback);
-
-                    setTimeout(() => feedback.remove(), 2000);
-                }).catch(err => console.error("Грешка при копиране:", err));
-            });
         }
     </script>
 </body>
