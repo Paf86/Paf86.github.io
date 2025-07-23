@@ -77,50 +77,45 @@
         summary:hover { background-color: #e9ecef; }
         summary h2 { display: inline; color: #e63946; margin: 0; padding: 0; border: none; font-size: 1.6em; vertical-align: middle; }
         
-        /* Стил за маркиране на текст */
-        mark {
-            background-color: rgba(255, 251, 143, 0.6); /* Полупрозрачен мек жълт цвят */
-            padding: 1px 0;
-            border-radius: 3px;
-            color: inherit; /* Запазва цвета на текста от родителския елемент */
-        }
+        mark { background-color: rgba(255, 251, 143, 0.6); padding: 1px 0; border-radius: 3px; color: inherit; }
+        
+        /* --- НОВИ СТИЛОВЕ САМО ЗА СТРАНИЧНОТО МЕНЮ --- */
+        .latest-commands-widget { position: fixed; top: 150px; right: 20px; width: 320px; z-index: 999; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+        .latest-commands-widget summary { padding: 12px 15px; font-weight: bold; color: #1d3557; cursor: pointer; outline: none; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+        .latest-commands-widget summary::-webkit-details-marker { display: none; }
+        .latest-commands-widget summary::after { content: '▼'; font-size: 12px; transition: transform 0.3s; }
+        .latest-commands-widget details[open] > summary::after { transform: rotate(180deg); }
+        #latest-commands-list { padding: 15px; }
 
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header-buttons">
-            <button id="add-suggestion-btn" class="header-btn">Предложение</button>
-            <button id="view-suggestions-btn" class="header-btn">
-                Виж предложенията
-                <span id="suggestion-count">0</span>
-            </button>
-        </div>
-
-        <h1>PAF's PROGRAMS SUITE</h1>
-        <h3 class="main-subtitle">Интерактивен списък на AutoLISP команди</h3>
-        <h3 id="command-counter">Зареждане на командите...</h3>
-
-        <div class="search-container">
-            <input type="text" id="search-bar" placeholder="Търсене по име или описание...">
-        </div>
-
-        <div class="filters-container">
-            <div id="category-filter"></div>
-            <div id="alphabet-filter">
-                 <button class="filter-button active" data-filter="all">ВСИЧКИ БУКВИ</button>
-                <script>document.write(Array.from(Array(26)).map((e, i) => `<button class="filter-button" data-filter="${String.fromCharCode(i + 65)}">${String.fromCharCode(i + 65)}</button>`).join(''));</script>
-            </div>
-        </div>
+        <div class="header-buttons"><button id="add-suggestion-btn" class="header-btn">Предложение</button><button id="view-suggestions-btn" class="header-btn">Виж предложенията<span id="suggestion-count">0</span></button></div>
+        <h1>PAF's PROGRAMS SUITE</h1><h3 class="main-subtitle">Интерактивен списък на AutoLISP команди</h3><h3 id="command-counter">Зареждане на командите...</h3>
+        <div class="search-container"><input type="text" id="search-bar" placeholder="Търсене по име или описание..."></div>
+        <div class="filters-container"><div id="category-filter"></div><div id="alphabet-filter"><button class="filter-button active" data-filter="all">ВСИЧКИ БУКВИ</button><script>document.write(Array.from(Array(26)).map((e, i) => `<button class="filter-button" data-filter="${String.fromCharCode(i + 65)}">${String.fromCharCode(i + 65)}</button>`).join(''));</script></div></div>
         <div id="commands-container"></div>
     </div> 
+
+    <!-- НОВ HTML САМО ЗА СТРАНИЧНОТО МЕНЮ -->
+    <div class="latest-commands-widget">
+        <details>
+            <summary>Странично меню</summary>
+            <div id="latest-commands-list">
+                <p>1, 2, 3</p>
+            </div>
+        </details>
+    </div>
        
     <div id="suggestion-form-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2>Направи предложение</h2><form id="suggestion-form"><label for="suggester-name">Твоето име:</label><input type="text" id="suggester-name" required><label for="suggestion-text">Предложи нова LISP команда:</label><textarea id="suggestion-text" required></textarea><button type="submit">Изпрати</button></form></div></div>
     <div id="suggestions-list-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2>Списък с предложения</h2><div id="suggestions-list"></div></div></div>
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
+        // --- ЦЕЛИЯТ JAVASCRIPT Е АБСОЛЮТНО НЕПРОМЕНЕН ---
         const firebaseConfig = {
           apiKey: "AIzaSyACB9shT_VTr3PGW_1nFjJCGAgwSI55Omw", authDomain: "clickcount-a6e46.firebaseapp.com", databaseURL: "https://clickcount-a6e46-default-rtdb.firebaseio.com", projectId: "clickcount-a6e46", storageBucket: "clickcount-a6e46.appspot.com", messagingSenderId: "53304151952", appId: "1:53304151952:web:ed0c365ace6b1232842d15", measurementId: "G-5S028177MG"
         };
@@ -217,8 +212,6 @@
             return { categorizedData: categorizedData, uniqueCommandCount: uniqueCommandKeys.size };
         }
         
-        // --- КОРЕКЦИЯ: ФУНКЦИЯТА createShortDescription Е ПРЕМАХНАТА ---
-
         function renderAllCommands(data, container, filterContainer, counterEl, uniqueCommandCount, config) {
             container.innerHTML = ''; filterContainer.innerHTML = '<button class="category-filter-button active" data-filter="all">ВСИЧКИ СЕКЦИИ</button>';
             for (const categoryId in data) {
@@ -229,25 +222,18 @@
                     const detailsElement = document.createElement('details'); detailsElement.className = 'category'; detailsElement.dataset.category = categoryId;
                     const summaryElement = document.createElement('summary'); summaryElement.innerHTML = `<h2>${categoryInfo.title}</h2>`; detailsElement.appendChild(summaryElement);
                     
-                    // --- КОРЕКЦИЯ ТУК ---
                     commands.forEach(command => {
                         const commandEntry = document.createElement('div');
                         commandEntry.className = 'command-entry';
                         commandEntry.dataset.letter = command.name.charAt(0).toUpperCase();
-                        
-                        // Използваме пълното описание директно
                         const fullDescription = command.description.charAt(0).toUpperCase() + command.description.slice(1);
-
                         commandEntry.innerHTML = `
                             <div class="command-header">
                                 <button class="command-button">${command.name}</button>
                                 <span class="short-description">${fullDescription}</span>
                             </div>`;
-                        
-                        // Записваме оригиналните текстове, за да работят търсенето и филтрите правилно
                         commandEntry.querySelector('.command-button').dataset.originalText = command.name;
                         commandEntry.querySelector('.short-description').dataset.originalText = fullDescription; 
-                        
                         detailsElement.appendChild(commandEntry);
                     });
                     container.appendChild(detailsElement);
