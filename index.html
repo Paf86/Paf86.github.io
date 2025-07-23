@@ -188,7 +188,6 @@
                 }
             });
 
-            const orderedUniqueCommandKeys = [];
             const commandMapRegex = /\(\s*"([^"]+)"\s*\.\s*"[^"]*"\s*\)/g;
             const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
             let uniqueCommandCount = 0;
@@ -200,14 +199,14 @@
                     if (match[1]) {
                         const key = match[1];
                         if (!config[key] && key !== 'back' && key !== 'pps_back' && !/^[А-Я]/.test(key)) {
-                            if (!seenKeys.has(key)) { orderedUniqueCommandKeys.push(key); seenKeys.add(key); }
+                            seenKeys.add(key);
                         }
                     }
                 }
-                uniqueCommandCount = orderedUniqueCommandKeys.length;
+                uniqueCommandCount = seenKeys.size;
             }
 
-            return { categorizedData, orderedUniqueCommandKeys, uniqueCommandCount };
+            return { categorizedData, uniqueCommandCount };
         }
         
         function renderAllCommands(data, container, filterContainer, counterEl, uniqueCommandCount, config) {
