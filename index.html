@@ -202,13 +202,13 @@
             functionBlocks.forEach(block => {
                 const categoryMatch = block.match(/^([^\s(]+)/); if (!categoryMatch) return;
                 const lispCategoryName = categoryMatch[1]; const categoryId = lispNameToIdMap[lispCategoryName]; if (!categoryId) return;
-                const itemsMatch = block.match(/\(setq\s+(?:command_items|menu_items)\s+'\(([\s\S]+?)\)\)/); if (!itemsMatch) return;
+                const itemsMatch = block.match(/\(setq\s+(?:command_items|menu_items)\s+'\(([\s\S]+?)\)\)/); if (!itemsMatch || !itemsMatch[1]) return;
                 const itemsContent = itemsMatch[1];
                 const commandRegex = /\(\s*"([^"]*)"\s+"([^"]*)"\s+"([\s\S]*?)"\s*\)/g;
                 let match;
                 while ((match = commandRegex.exec(itemsContent)) !== null) {
-                    const commandName = match[2].trim(); if (commandName.startsWith("---") || commandName === "") continue;
-                    let fullDescription = match[3].replace(/^- /, '').replace(/\\t/g, ' ').replace(/\s+/g, ' ').trim();
+                    const commandName = match[2] ? match[2].trim() : ""; if (commandName.startsWith("---") || commandName === "") continue;
+                    let fullDescription = match[3] ? match[3].replace(/^- /, '').replace(/\\t/g, ' ').replace(/\s+/g, ' ').trim() : "";
                     categorizedData[categoryId].push({ name: commandName, description: fullDescription });
                     commandDetailsMap[commandName] = { description: fullDescription, categoryId: categoryId };
                 }
@@ -217,12 +217,14 @@
             const orderedUniqueCommandKeys = []; const commandMapRegex = /\(\s*"([^"]+)"\s*\.\s*"[^"]*"\s*\)/g;
             const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
             let uniqueCommandCount = 0;
-            if (commandMapSectionMatch) {
+            if (commandMapSectionMatch && commandMapSectionMatch[1]) {
                 const mapContent = commandMapSectionMatch[1]; let match; const seenKeys = new Set();
                 while ((match = commandMapRegex.exec(mapContent)) !== null) {
-                    const key = match[1];
-                    if (!config[key] && key !== 'back' && key !== 'pps_back' && !/^[А-Я]/.test(key)) {
-                        if (!seenKeys.has(key)) { orderedUniqueCommandKeys.push(key); seenKeys.add(key); }
+                    if (match[1]) {
+                        const key = match[1];
+                        if (!config[key] && key !== 'back' && key !== 'pps_back' && !/^[А-Я]/.test(key)) {
+                            if (!seenKeys.has(key)) { orderedUniqueCommandKeys.push(key); seenKeys.add(key); }
+                        }
                     }
                 }
                 uniqueCommandCount = orderedUniqueCommandKeys.length;
@@ -233,21 +235,18 @@
         
         function renderLatestCommands(orderedKeys, detailsMap, config) {
             const listContainer = document.getElementById('latest-commands-list');
-            if (!listContainer || orderedKeys.length === 0) { listContainer.innerHTML = '<p>Няма намерени команди.</p>'; return; }
+            if (!listContainer) return;
+            if (orderedKeys.length === 0) { listContainer.innerHTML = '<p>Няма намерени команди.</p>'; return; }
 
             const latestFiveKeys = orderedKeys.slice(-5).reverse();
-
-            listContainer.innerHTML = latestFiveKeys.map(key => {
+            const content = latestFiveKeys.map(key => {
                 const details = detailsMap[key];
-                // КЛЮЧОВА КОРЕКЦИЯ: Проверяваме дали има детайли, преди да ги използваме
                 if (!details) {
                     console.warn(`Детайли за команда '${key}' не бяха намерени в основните секции. Пропускам я от списъка с последни.`);
-                    return ''; // Връщаме празен низ, за да пропуснем тази команда
+                    return ''; 
                 }
-
                 const categoryInfo = Object.values(config).find(c => c.id === details.categoryId);
                 const categoryName = categoryInfo ? categoryInfo.filterName : 'Други';
-                
                 return `
                     <div class="latest-command-item">
                         <div class="name-line">
@@ -257,6 +256,8 @@
                         <div class="desc">${details.description}</div>
                     </div>`;
             }).join('');
+            
+            listContainer.innerHTML = content || '<p>Няма скоро добавени команди с описание.</p>';
         }
 
         function renderAllCommands(data, container, filterContainer, counterEl, uniqueCommandCount, config) {
@@ -287,7 +288,11 @@
                     container.appendChild(detailsElement);
                 }
             }
-            counterEl.textContent = `Намерени общо ${uniqueCommandCount} уникални команди, разпределени в категории`;
+            if (uniqueCommandCount > 0) {
+                 counterEl.textContent = `Намерени общо ${uniqueCommandCount} уникални команди, разпределени в категории`;
+            } else {
+                counterEl.textContent = "Не са намерени команди."
+            }
         }
 
         function initializeFiltersAndAccordions() {
@@ -310,9 +315,9 @@
             function resetFiltersToAll() {
                 activeCategory = 'all'; activeLetter = 'all';
                 if (categoryFilter.querySelector('.active')) { categoryFilter.querySelector('.active').classList.remove('active'); }
-                categoryFilter.querySelector('[data-filter="all"]').classList.add('active');
+                const allCatBtn = categoryFilter.querySelector('[data-filter="all"]'); if (allCatBtn) allCatBtn.classList.add('active');
                 if (alphabetFilter.querySelector('.active')) { alphabetFilter.querySelector('.active').classList.remove('active'); }
-                alphabetFilter.querySelector('[data-filter="all"]').classList.add('active');
+                const allLetterBtn = alphabetFilter.querySelector('[data-filter="all"]'); if (allLetterBtn) allLetterBtn.classList.add('active');
             }
 
             searchBar.addEventListener('input', () => {
