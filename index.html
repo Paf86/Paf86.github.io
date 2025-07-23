@@ -77,14 +77,67 @@
         summary:hover { background-color: #e9ecef; }
         summary h2 { display: inline; color: #e63946; margin: 0; padding: 0; border: none; font-size: 1.6em; vertical-align: middle; }
         
-        /* Стил за маркиране на текст */
-        mark {
-            background-color: rgba(255, 251, 143, 0.6); /* Полупрозрачен мек жълт цвят */
-            padding: 1px 0;
-            border-radius: 3px;
-            color: inherit; /* Запазва цвета на текста от родителския елемент */
-        }
+        mark { background-color: rgba(255, 251, 143, 0.6); padding: 1px 0; border-radius: 3px; color: inherit; }
 
+        /* --- НОВИ СТИЛОВЕ ЗА ПАДАЩОТО МЕНЮ --- */
+        .latest-commands-widget {
+            position: fixed;
+            top: 150px;
+            right: 20px;
+            width: 320px; /* Малко по-широко за по-добра четимост */
+            z-index: 999;
+            background: rgba(255, 255, 255, 0.85); /* Полупрозрачен фон */
+            backdrop-filter: blur(8px); /* "Матирано стъкло" ефект */
+            -webkit-backdrop-filter: blur(8px); /* Поддръжка за Safari */
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+        }
+        .latest-commands-widget summary {
+            padding: 12px 15px;
+            font-weight: bold;
+            color: #1d3557;
+            cursor: pointer;
+            outline: none;
+            list-style: none; /* Премахва стандартната стрелка */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .latest-commands-widget summary::-webkit-details-marker {
+            display: none; /* Премахва стрелката в Chrome/Safari */
+        }
+        .latest-commands-widget summary::after {
+            content: '▼'; /* Добавяме наша собствена стрелка */
+            font-size: 12px;
+            transition: transform 0.3s;
+        }
+        .latest-commands-widget details[open] > summary::after {
+            transform: rotate(180deg); /* Завъртане на стрелката при отваряне */
+        }
+        #latest-commands-list {
+            padding: 0 15px 15px 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .latest-command-item {
+            padding: 10px 5px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        .latest-command-item:last-child {
+            border-bottom: none;
+        }
+        .latest-command-item .name {
+            font-weight: bold;
+            color: #e63946;
+            margin-bottom: 4px;
+        }
+        .latest-command-item .desc {
+            font-size: 0.9em;
+            color: #333;
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body>
@@ -114,6 +167,16 @@
         </div>
         <div id="commands-container"></div>
     </div> 
+
+    <!-- НОВО: Падащо меню за последни команди -->
+    <div class="latest-commands-widget">
+        <details>
+            <summary>Последни 5 добавени команди</summary>
+            <div id="latest-commands-list">
+                <p>Зареждане...</p>
+            </div>
+        </details>
+    </div>
        
     <div id="suggestion-form-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2>Направи предложение</h2><form id="suggestion-form"><label for="suggester-name">Твоето име:</label><input type="text" id="suggester-name" required><label for="suggestion-text">Предложи нова LISP команда:</label><textarea id="suggestion-text" required></textarea><button type="submit">Изпрати</button></form></div></div>
     <div id="suggestions-list-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2>Списък с предложения</h2><div id="suggestions-list"></div></div></div>
@@ -142,8 +205,11 @@
                 const response = await fetch(COMMANDS_FILE_URL);
                 if (!response.ok) throw new Error(`HTTP грешка! Статус: ${response.status}`);
                 const lispContent = await response.text();
+                // Промяна: parseLispFileImproved вече връща и allCommandsFlat
                 const parsedResult = parseLispFileImproved(lispContent, categoryConfig);
+
                 renderAllCommands(parsedResult.categorizedData, commandsContainer, categoryFilterContainer, commandCounter, parsedResult.uniqueCommandCount, categoryConfig);
+                renderLatestCommands(parsedResult.allCommandsFlat); // НОВО: Извикваме функцията за последните команди
                 initializeFiltersAndAccordions();
             } catch (error) {
                 console.error("Грешка при зареждане:", error);
@@ -151,7 +217,8 @@
                 commandCounter.textContent = 'Грешка при зареждане';
             }
         });
-
+        
+        // ... (съществуващият код за Firebase остава непроменен) ...
         function initializeFirebaseFunctionality() {
             const isAdmin = () => new URLSearchParams(window.location.search).get('admin') === 'true'; const adminMode = isAdmin();
             const addSuggestionBtn = document.getElementById('add-suggestion-btn'); const viewSuggestionsBtn = document.getElementById('view-suggestions-btn'); const suggestionFormModal = document.getElementById('suggestion-form-modal'); const suggestionsListModal = document.getElementById('suggestions-list-modal'); const suggestionForm = document.getElementById('suggestion-form'); const suggestionsListDiv = document.getElementById('suggestions-list'); const suggestionCountSpan = document.getElementById('suggestion-count'); const closeButtons = document.querySelectorAll('.close-button');
@@ -190,8 +257,10 @@
             suggestionsListDiv.addEventListener('blur', (e) => { if (e.target.tagName === 'INPUT' && e.target.closest('.new-command-section') && adminMode) { const id = e.target.dataset.id; const newName = e.target.value.trim(); suggestionsRef.child(id).update({ newCommandName: newName }).catch(error => console.error("Грешка:", error)); } }, true);
         }
 
+        // Промяна: Функцията вече връща и allCommandsFlat
         function parseLispFileImproved(content, config) {
             const categorizedData = {}; Object.values(config).forEach(c => categorizedData[c.id] = []);
+            const allCommandsFlat = []; // НОВО: Масив за всички команди в реда им
             const lispNameToIdMap = {}; for (const key in config) { lispNameToIdMap[key] = config[key].id; }
             const functionBlocks = content.split(/defun create_dclhelplisp/);
             functionBlocks.forEach(block => {
@@ -203,7 +272,9 @@
                 while ((match = commandRegex.exec(itemsContent)) !== null) {
                     const commandName = match[2].trim(); if (commandName.startsWith("---") || commandName === "") continue;
                     let fullDescription = match[3].replace(/^- /, '').replace(/\\t/g, ' ').replace(/\s+/g, ' ').trim();
-                    categorizedData[categoryId].push({ name: commandName, description: fullDescription, });
+                    const commandData = { name: commandName, description: fullDescription };
+                    categorizedData[categoryId].push(commandData);
+                    allCommandsFlat.push(commandData); // НОВО: Добавяме командата в общия списък
                 }
             });
             const commandMapRegex = /\(\s*"([^"]+)"\s*\.\s*"[^"]*"\s*\)/g; const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
@@ -214,10 +285,28 @@
                     const key = match[1]; if (!config[key] && key !== 'back' && key !== 'pps_back' && !/^[А-Я]/.test(key)) { uniqueCommandKeys.add(key); }
                 }
             }
-            return { categorizedData: categorizedData, uniqueCommandCount: uniqueCommandKeys.size };
+            // Промяна: Връщаме и новия масив
+            return { categorizedData: categorizedData, uniqueCommandCount: uniqueCommandKeys.size, allCommandsFlat: allCommandsFlat };
         }
         
-        // --- КОРЕКЦИЯ: ФУНКЦИЯТА createShortDescription Е ПРЕМАХНАТА ---
+        // НОВА ФУНКЦИЯ за показване на последните 5 команди
+        function renderLatestCommands(allCommands) {
+            const listContainer = document.getElementById('latest-commands-list');
+            if (!listContainer || allCommands.length === 0) {
+                listContainer.innerHTML = '<p>Няма намерени команди.</p>';
+                return;
+            }
+
+            // Взимаме последните 5 команди и ги обръщаме, за да е най-новата най-отгоре
+            const latestFive = allCommands.slice(-5).reverse(); 
+
+            listContainer.innerHTML = latestFive.map(cmd => `
+                <div class="latest-command-item">
+                    <div class="name">${cmd.name}</div>
+                    <div class="desc">${cmd.description}</div>
+                </div>
+            `).join('');
+        }
 
         function renderAllCommands(data, container, filterContainer, counterEl, uniqueCommandCount, config) {
             container.innerHTML = ''; filterContainer.innerHTML = '<button class="category-filter-button active" data-filter="all">ВСИЧКИ СЕКЦИИ</button>';
@@ -229,25 +318,18 @@
                     const detailsElement = document.createElement('details'); detailsElement.className = 'category'; detailsElement.dataset.category = categoryId;
                     const summaryElement = document.createElement('summary'); summaryElement.innerHTML = `<h2>${categoryInfo.title}</h2>`; detailsElement.appendChild(summaryElement);
                     
-                    // --- КОРЕКЦИЯ ТУК ---
                     commands.forEach(command => {
                         const commandEntry = document.createElement('div');
                         commandEntry.className = 'command-entry';
                         commandEntry.dataset.letter = command.name.charAt(0).toUpperCase();
-                        
-                        // Използваме пълното описание директно
                         const fullDescription = command.description.charAt(0).toUpperCase() + command.description.slice(1);
-
                         commandEntry.innerHTML = `
                             <div class="command-header">
                                 <button class="command-button">${command.name}</button>
                                 <span class="short-description">${fullDescription}</span>
                             </div>`;
-                        
-                        // Записваме оригиналните текстове, за да работят търсенето и филтрите правилно
                         commandEntry.querySelector('.command-button').dataset.originalText = command.name;
                         commandEntry.querySelector('.short-description').dataset.originalText = fullDescription; 
-                        
                         detailsElement.appendChild(commandEntry);
                     });
                     container.appendChild(detailsElement);
@@ -256,6 +338,7 @@
             counterEl.textContent = `Намерени общо ${uniqueCommandCount} уникални команди, разпределени в категории`;
         }
 
+        // ... (останалият JS код за филтри и акордеони остава непроменен) ...
         function initializeFiltersAndAccordions() {
             const searchBar = document.getElementById('search-bar');
             const categoryFilter = document.getElementById('category-filter');
