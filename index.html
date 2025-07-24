@@ -171,7 +171,7 @@
             }
         });
 
-        // --- ПРОМЯНА: Всички промени по курсора и частиците са тук ---
+        // --- ПРОМЯНА: Финална версия на функцията ---
         function initializeCometAndParticlesCursor() {
             const canvas = document.getElementById('cursor-canvas');
             const ctx = canvas.getContext('2d');
@@ -188,8 +188,8 @@
 
             const PARTICLE_COUNT = 50;
             const GRAVITY = 0.08;
-            // ПРОМЯНА: Върнат е 'set_square' (триъгълник)
-            const PARTICLE_TYPES = ['ruler', 'set_square', 'compass', 'pencil', 'protractor', 'train'];
+            // ПРОМЯНА: Премахнати са транспортир и влакче
+            const PARTICLE_TYPES = ['ruler', 'set_square', 'compass', 'pencil'];
 
 
             function resizeCanvas() {
@@ -261,7 +261,6 @@
                 }
             }
             
-            // --- ПРОМЯНА: Функцията за рисуване на форми е обновена с реалистични инструменти ---
             function drawShape(p) {
                 ctx.save();
                 ctx.translate(p.x, p.y);
@@ -272,80 +271,52 @@
 
                 switch (p.type) {
                     case 'ruler':
-                        ctx.fillStyle = `rgba(220, 220, 220, ${alpha * 0.7})`;
-                        ctx.strokeStyle = `rgba(30, 30, 30, ${alpha})`;
+                        ctx.fillStyle = `rgba(240, 230, 210, ${alpha * 0.8})`;
+                        ctx.strokeStyle = `rgba(50, 30, 20, ${alpha})`;
                         ctx.lineWidth = 1;
                         ctx.fillRect(-25, -5, 50, 10);
                         ctx.strokeRect(-25, -5, 50, 10);
-                        for(let i = -25; i <= 25; i += 5) {
+                        for(let i = -25; i <= 25; i += 2.5) {
                             ctx.beginPath();
                             ctx.moveTo(i, -5);
-                            ctx.lineTo(i, (i % 10 === 0) ? 0 : -2);
+                            ctx.lineTo(i, (i % 5 === 0) ? 0 : -2.5);
                             ctx.stroke();
                         }
                         break;
                     case 'set_square':
-                        ctx.fillStyle = `rgba(135, 206, 235, ${alpha * 0.5})`;
+                        ctx.fillStyle = `rgba(135, 206, 235, ${alpha * 0.6})`;
                         ctx.strokeStyle = `rgba(30, 30, 30, ${alpha})`;
                         ctx.lineWidth = 1;
                         ctx.beginPath();
                         ctx.moveTo(-20, 20); ctx.lineTo(20, 20); ctx.lineTo(-20, -20); ctx.closePath();
-                        // Cutout
                         ctx.moveTo(-10, 10); ctx.lineTo(10, 10); ctx.lineTo(-10, -10); ctx.closePath();
                         ctx.fill("evenodd");
                         ctx.stroke();
-                         for(let i = -20; i <= 20; i += 4) {
+                         for(let i = -20; i <= 20; i += 2) {
                             ctx.beginPath();
                             ctx.moveTo(i, 20); ctx.lineTo(i, 18); ctx.stroke();
                         }
                         break;
                     case 'compass':
-                        ctx.strokeStyle = `rgba(128, 128, 128, ${alpha})`;
+                        ctx.strokeStyle = `rgba(150, 150, 150, ${alpha})`;
                         ctx.lineWidth = 3;
-                        // Legs
-                        ctx.beginPath();
-                        ctx.moveTo(0, -15); ctx.lineTo(-10, 15); ctx.stroke();
-                        ctx.beginPath();
-                        ctx.moveTo(0, -15); ctx.lineTo(15, 15); ctx.stroke();
-                        // Hinge
+                        ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(-10, 15); ctx.stroke(); // Left leg
+                        ctx.beginPath(); ctx.moveTo(-10, 15); ctx.lineTo(-12, 13); ctx.stroke(); // Left leg tip
+                        ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(10, 15); ctx.stroke(); // Right leg
                         ctx.fillStyle = `rgba(0, 128, 255, ${alpha})`;
                         ctx.beginPath(); ctx.arc(0, -15, 5, 0, Math.PI * 2); ctx.fill();
-                        // Pencil on right leg
-                        ctx.fillStyle = `rgba(255, 221, 89, ${alpha})`;
-                        ctx.fillRect(12, 0, 6, 15);
+                        ctx.fillStyle = `rgba(50, 50, 50, ${alpha})`;
+                        ctx.fillRect(8, 10, 4, 8); // Pencil holder on right leg
                         break;
                     case 'pencil':
                         ctx.globalAlpha = alpha;
-                        ctx.fillStyle = `rgb(255, 180, 180)`; ctx.fillRect(-5, 18, 10, 6);
+                        ctx.fillStyle = `rgb(255, 105, 180)`; ctx.fillRect(-5, 18, 10, 6);
                         ctx.fillStyle = `rgb(192, 192, 192)`; ctx.fillRect(-5, 14, 10, 4);
                         ctx.fillStyle = `rgb(255, 221, 89)`; ctx.fillRect(-5, -12, 10, 26);
                         ctx.beginPath(); ctx.moveTo(-5, -12); ctx.lineTo(0, -22); ctx.lineTo(5, -12); ctx.closePath();
                         ctx.fillStyle = `rgb(242, 219, 194)`; ctx.fill();
                         ctx.beginPath(); ctx.moveTo(0,-22); ctx.lineTo(0,-19); ctx.closePath();
                         ctx.strokeStyle = 'black'; ctx.lineWidth = 2; ctx.stroke();
-                        break;
-                    case 'protractor':
-                        ctx.fillStyle = `rgba(200, 200, 200, ${alpha * 0.4})`;
-                        ctx.strokeStyle = `rgba(30, 30, 30, ${alpha})`;
-                        ctx.lineWidth = 1;
-                        ctx.beginPath();
-                        ctx.arc(0, 10, 20, Math.PI, 0); ctx.closePath();
-                        ctx.fill(); ctx.stroke();
-                        for(let i = 0; i <= 180; i += 15) {
-                           const angle = Math.PI * i / 180;
-                           ctx.beginPath();
-                           ctx.moveTo(0,10);
-                           ctx.lineTo(Math.cos(angle) * -20, 10 - Math.sin(angle) * 20);
-                           ctx.stroke();
-                        }
-                        break;
-                    case 'train':
-                         const grayAlpha = `rgba(100, 100, 100, ${alpha})`
-                         ctx.strokeStyle = grayAlpha;
-                         ctx.fillStyle = grayAlpha;
-                         ctx.strokeRect(-12, -5, 10, 8); ctx.strokeRect(0, -8, 8, 11);
-                         ctx.beginPath(); ctx.arc(2, 4.5, 2.5, 0, Math.PI*2); ctx.fill();
-                         ctx.beginPath(); ctx.arc(-8, 4.5, 2.5, 0, Math.PI*2); ctx.fill();
                         break;
                 }
                 
@@ -664,7 +635,7 @@
                     const commandButton = entry.querySelector('.command-button');
                     const descriptionSpan = entry.querySelector('.short-description');
                     commandButton.innerHTML = commandButton.dataset.originalText;
-                    descriptionSpan.innerHTML = descriptionSpan.dataset.originalText;
+                    descriptionSpan.innerHTML = originalDescription;
                 });
             }
 
