@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PAF's PROGRAMS SUITE</title>
+    <style>
+        /* --- НОВА ПРОМЯНА: Стил за курсор "Комета" от предоставения код --- */
+        html, body {
+            cursor: none !important;
+        }
+        #cursor-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 9999;
+            pointer-events: none;
+        }
+        /* --- Край на новите стилове --- */
+
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; color: #333; line-height: 1.6; margin: 0; padding: 20px; }
+
+        .container { max-width: 950px; margin: 0 auto; background-color: #fff; padding: 25px 35px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; }
+        
+        h1 { text-align: center; color: #1d3557; border-bottom: 2px solid #457b9d; padding-bottom: 10px; margin-bottom: 10px; }
+        .main-subtitle { text-align: center; font-size: 1.3em; font-weight: 500; color: #e63946; margin: 0 0 5px 0; padding: 0; }
+        #command-counter { text-align: center; border-bottom: none; color: #555; font-weight: normal; margin-top: 0; margin-bottom: 30px; }
+
+        .header-buttons { position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; }
+        .header-btn { background-color: #e63946; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; transition: background-color 0.3s; }
+        .header-btn:hover { background-color: #a8202b; }
+        #suggestion-count { background-color: white; color: #e63946; border-radius: 50%; padding: 0px 6px; font-size: 12px; margin-left: 5px; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 8px; position: relative; }
+        .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
+        #suggestion-form label { display: block; margin-top: 10px; font-weight: bold; }
+        #suggestion-form input[type="text"], #suggestion-form textarea { width: 95%; padding: 10px; margin-top: 5px; border-radius: 4px; border: 1px solid #ccc; }
+        #suggestion-form textarea { height: 100px; resize: vertical; }
+        #suggestion-form button { background-color: #457b9d; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin-top: 15px; font-size: 16px; }
+        
+        #suggestions-list .suggestion-item { border-bottom: 1px solid #eee; padding: 15px 5px; display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+        #suggestions-list .suggestion-details { flex-grow: 1; }
+        .suggested-by-label { font-size: 0.9em; color: #555; margin-bottom: 2px; }
+        #suggestions-list .suggester-name { font-weight: bold; color: #1d3557; margin-top: 0; }
+        #suggestions-list .suggestion-text { margin-top: 5px; white-space: pre-wrap; }
+        #suggestions-list .status-container { display: flex; flex-direction: column; align-items: flex-end; min-width: 170px; }
+        #suggestions-list .actions-container { display: flex; align-items: flex-start; }
+        #suggestions-list .status-toggle { border: none; background: none; font-size: 16px; padding: 5px 10px; border-radius: 5px; transition: background-color 0.3s; width: 100%; text-align: left; }
+        #suggestions-list .status-toggle.is-pending { background-color: #fce8e6; color: #a50e0e; }
+        #suggestions-list .status-toggle.is-done { background-color: #e6f4ea; color: #137333; }
+        .new-command-section { margin-top: 12px; padding-top: 10px; border-top: 1px dashed #ddd; width: 100%; }
+        .new-command-section .label { color: #555; font-size: 14px; text-align: left; }
+        .new-command-section input[type="text"] { width: 95%; padding: 6px; border-radius: 4px; border: 1px solid #ccc; margin-top: 4px; }
+        .new-command-section .command-name { font-weight: bold; font-size: 1.1em; color: #1d3557; margin-top: 4px; text-align: left;}
+        .delete-suggestion-btn { background-color: transparent; border: none; color: #e63946; font-size: 18px; padding: 5px; margin-left: 10px; opacity: 0.6; transition: opacity 0.3s; }
+        .delete-suggestion-btn:hover { opacity: 1; }
+
+        .search-container { margin-bottom: 30px; }
+        #search-bar { width: 100%; padding: 12px 15px; font-size: 16px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; transition: border-color 0.3s, box-shadow 0.3s; }
+        #search-bar:focus { outline: none; border-color: #457b9d; box-shadow: 0 0 0 3px rgba(69, 123, 157, 0.2); }
+
+        .filters-container { display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #e1e1e1; }
+        #category-filter, #alphabet-filter { display: flex; justify-content: center; flex-wrap: wrap; gap: 5px; }
+        .filter-button, .category-filter-button { background-color: #a8dadc; color: #1d3557; border: none; border-radius: 5px; padding: 8px 14px; font-size: 15px; font-weight: bold; transition: background-color 0.3s, transform 0.2s; }
+        .filter-button:hover, .category-filter-button:hover { background-color: #457b9d; color: white; transform: translateY(-2px); }
+        .filter-button.active, .category-filter-button.active { background-color: #1d3557; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        details.hidden, .command-entry.hidden { display: none; }
+        
+        .command-entry { margin-bottom: 8px; border-radius: 6px; overflow: hidden; border: 1px solid #e9ecef; transition: box-shadow 0.3s; margin-left: 15px; margin-right: 15px; }
+        .command-entry:last-child { margin-bottom: 15px; }
+        .command-entry:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .command-header { display: flex; align-items: center; background-color: #f8f9fa; padding: 8px 15px; }
+        .command-button { background-color: #457b9d; color: white; border: none; padding: 8px 12px; border-radius: 5px; font-size: 15px; transition: background-color 0.3s; text-align: center; font-weight: 500; min-width: 180px; text-transform: uppercase; }
+        .command-button:hover { background-color: #1d3557; }
+        .short-description { margin-left: 20px; font-size: 15px; color: #555; flex-grow: 1; }
+        
+        .copy-feedback { padding: 8px 20px; margin: -8px 15px 10px 15px; background-color: #e6f4ea; color: #137333; border-radius: 0 0 6px 6px; text-align: left; font-size: 14px; font-weight: 500; animation: fadeInOut 3.5s ease-in-out forwards; }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-10px); } 10% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-10px); }
+        }
+
+        details.category { border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 10px; background-color: #fff; transition: box-shadow 0.3s; }
+        details.category[open] { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        summary { background-color: #f8f9fa; padding: 12px 20px; outline: none; transition: background-color 0.3s; border-radius: 8px; }
+        details[open] > summary { border-bottom: 1px solid #e9ecef; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+        summary:hover { background-color: #e9ecef; }
+        summary h2 { display: inline; color: #e63946; margin: 0; padding: 0; border: none; font-size: 1.6em; vertical-align: middle; }
+        
+        mark { background-color: rgba(255, 251, 143, 0.6); padding: 1px 0; border-radius: 3px; color: inherit; }
+        
+        .latest-commands-widget { position: fixed; top: 150px; right: 80px; width: 320px; z-index: 999; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+        .latest-commands-widget summary { padding: 12px 15px; font-weight: bold; color: #1d3557; outline: none; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+        .latest-commands-widget summary::-webkit-details-marker { display: none; }
+        .latest-commands-widget summary::after { content: '▼'; font-size: 12px; transition: transform 0.3s; }
+        .latest-commands-widget details[open] > summary::after { transform: rotate(180deg); }
+        #latest-commands-list { padding: 0 15px 15px 15px; }
+        #latest-commands-list ul { list-style: none; padding: 0; margin: 0; }
+        .latest-command-item { padding: 10px 0; border-bottom: 1px solid #eee; }
+        .latest-command-item:last-child { border-bottom: none; }
+        .latest-command-button { width: 100%; background-color: #457b9d; color: white; border: none; padding: 6px 10px; border-radius: 5px; font-size: 15px; transition: background-color 0.3s; text-align: center; font-weight: 500; text-transform: uppercase; margin-bottom: 5px; }
+        .latest-command-button:hover { background-color: #1d3557; }
+        .latest-command-item-desc { font-size: 0.9em; color: #555; display: block; margin-bottom: 6px; }
+        .latest-command-category-btn { display: inline-block; background: rgba(230, 57, 70, 0.1); border: 1px solid rgba(230, 57, 70, 0.2); padding: 2px 8px; font-size: 12px; font-weight: 500; color: #b12732; border-radius: 12px; text-align: left; transition: all 0.2s ease; }
+        .latest-command-category-btn:hover { background: rgba(230, 57, 70, 0.2); border-color: rgba(230, 57, 70, 0.4); color: #a8202b; }
+        .copy-feedback-latest { padding: 6px 10px; margin-top: 8px; background-color: #e6f4ea; color: #137333; border-radius: 4px; text-align: center; font-size: 13px; font-weight: 500; animation: fadeInOut 3.5s ease-in-out forwards; }
+    
+    </style>
+</head>
+<body>
+    <!-- НОВА ПРОМЯНА: Добавен е canvas елементът за новия курсор -->
+    <canvas id="cursor-canvas"></canvas>
+
+    <div class="container">
+        <div class="header-buttons"><button id="add-suggestion-btn" class="header-btn">Предложение</button><button id="view-suggestions-btn" class="header-btn">Виж предложенията<span id="suggestion-count">0</span></button></div>
+        <h1>PAF's PROGRAMS SUITE</h1><h3 class="main-subtitle">Интерактивен списък на AutoLISP команди</h3><h3 id="command-counter">Зареждане на командите...</h3>
+        <div class="search-container"><input type="text" id="search-bar" placeholder="Търсене по име или описание..."></div>
+        <div class="filters-container"><div id="category-filter"></div><div id="alphabet-filter"><button class="filter-button active" data-filter="all">ВСИЧКИ БУКВИ</button><script>document.write(Array.from(Array(26)).map((e, i) => `<button class="filter-button" data-filter="${String.fromCharCode(i + 65)}">${String.fromCharCode(i + 65)}</button>`).join(''));</script></div></div>
+        <div id="commands-container"></div>
+    </div> 
+
+    <div class="latest-commands-widget">
+        <details open>
+            <summary>Последни 5 добавени команди</summary>
+            <div id="latest-commands-list">
+                <!-- Съдържанието ще се генерира от JavaScript -->
+            </div>
+        </details>
+    </div>
+       
+    <div id="suggestion-form-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2>Направи предложение</h2><form id="suggestion-form"><label for="suggester-name">Твоето име:</label><input type="text" id="suggester-name" required><label for="suggestion-text">Предложи нова LISP команда:</label><textarea id="suggestion-text" required></textarea><button type="submit">Изпрати</button></form></div></div>
+    <div id="suggestions-list-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2>Списък с предложения</h2><div id="suggestions-list"></div></div></div>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        const firebaseConfig = {
+          apiKey: "AIzaSyACB9shT_VTr3PGW_1nFjJCGAgwSI55Omw", authDomain: "clickcount-a6e46.firebaseapp.com", databaseURL: "https://clickcount-a6e46-default-rtdb.firebaseio.com", projectId: "clickcount-a6e46", storageBucket: "clickcount-a6e46.appspot.com", messagingSenderId: "53304151952", appId: "1:53304151952:web:ed0c365ace6b1232842d15", measurementId: "G-5S028177MG"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const suggestionsRef = db.ref("suggestions");
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            initializeFirebaseFunctionality();
+            
+            // НОВА ПРОМЯНА: Извикваме новата функция за курсор "Дъга"
+            initializeRainbowCometCursor();
+
+            const COMMANDS_FILE_URL = "https://raw.githubusercontent.com/PafApps/lisp/main/HELP_LISP.lsp";
+            const categoryConfig = {
+                "СИТУАЦИЯ": { id: "situation", title: "Команди за Ситуация", filterName: "Ситуация" }, "НАДЛЪЖНИ": { id: "longitudinal-profiles", title: "Команди за Надлъжни профили", filterName: "Надлъжни" }, "НАПРЕЧНИ": { id: "cross-sections", title: "Команди за Напречни профили", filterName: "Напречни" }, "БЛОКОВЕ": { id: "blocks", title: "Команди за Блокове", filterName: "Блокове" }, "ЛЕЙАУТИ": { id: "layouts", title: "Команди за Layouts", filterName: "Layouts" }, "СИВИЛ": { id: "civil", title: "Команди за Civil 3D", filterName: "Civil 3D" }, "РЕГИСТРИ": { id: "registers", title: "Команди за Регистри (Civil 3D)", filterName: "Регистри (Civil)" }, "ДРУГИ": { id: "other", title: "Други команди", filterName: "Други" },
+            };
+            const commandsContainer = document.getElementById('commands-container');
+            const categoryFilterContainer = document.getElementById('category-filter');
+            const commandCounter = document.getElementById('command-counter');
+
+            try {
+                const response = await fetch(COMMANDS_FILE_URL);
+                if (!response.ok) throw new Error(`HTTP грешка! Статус: ${response.status}`);
+                const lispContent = await response.text();
+                
+                const parsedResult = parseLispFileImproved(lispContent, categoryConfig);
+
+                renderAllCommands(parsedResult.categorizedData, commandsContainer, categoryFilterContainer, commandCounter, parsedResult.commandCount, categoryConfig);
+                renderLatestCommands(parsedResult.orderedCommandKeys, parsedResult.commandDetailsMap);
+                initializeFiltersAndAccordions();
+                initializeLatestCommandsInteraction();
+
+            } catch (error) {
+                console.error("Грешка при зареждане:", error);
+                commandsContainer.innerHTML = `<p style="color: red; text-align: center;">Възникна грешка. Проверете конзолата.</p>`;
+                commandCounter.textContent = 'Грешка при зареждане';
+            }
+        });
+
+        // НОВА ПРОМЯНА: Изцяло нова функция за курсор "Дъга"
+        function initializeRainbowCometCursor() {
+            const canvas = document.getElementById('cursor-canvas');
+            const ctx = canvas.getContext('2d');
+
+            // --- 1. НАСТРОЙКИ НА ЕФЕКТА ---
+            const LINE_THICKNESS = 8;
+            const MAX_TRAIL_LENGTH = 20;
+            const RETRACTION_SPEED = 2;
+            const PARTICLE_COUNT = 60;
+            const GRAVITY = 0.15;
+
+            // --- 2. ПРОМЕНЛИВИ ---
+            let path = [];
+            let particles = [];
+            let mouse = { x: 0, y: 0, moved: false };
+            let animationFrameId = null;
+            let retractionCounter = 0;
+            let hue = 0; // Променлива за цвета на дъгата
+
+            // --- 3. ФУНКЦИИ ---
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+
+            function handleMouseMove(e) {
+                mouse.x = e.clientX;
+                mouse.y = e.clientY;
+                mouse.moved = true;
+                
+                if (!animationFrameId) {
+                    for (let i = 0; i < MAX_TRAIL_LENGTH; i++) {
+                        path.push({ ...mouse });
+                    }
+                    animate();
+                }
+            }
+            
+            function handleClick(e) {
+                for (let i = 0; i < PARTICLE_COUNT; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = Math.random() * 8 + 2;
+                    particles.push({
+                        x: e.clientX, y: e.clientY,
+                        vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+                        // Всяка частица получава случаен цвят от дъгата
+                        hue: Math.random() * 360,
+                        size: Math.random() * 4 + 2
+                    });
+                }
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Рисуване на частиците
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.vy += GRAVITY;
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.y - p.size > canvas.height) {
+                        particles.splice(i, 1);
+                    } else {
+                        ctx.beginPath();
+                        // Използваме hue на частицата за цвят
+                        ctx.fillStyle = `hsl(${p.hue}, 90%, 65%)`;
+                        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+                
+                // Рисуване на линията/точката
+                if (path.length > 0) {
+                    if (path.length === 1) {
+                        const point = path[0];
+                        ctx.beginPath();
+                        ctx.fillStyle = `hsl(${hue}, 90%, 60%)`;
+                        ctx.arc(point.x, point.y, LINE_THICKNESS / 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else {
+                        ctx.beginPath();
+                        ctx.moveTo(path[0].x, path[0].y);
+
+                        for (let i = 1; i < path.length; i++) {
+                            ctx.lineTo(path[i].x, path[i].y);
+                        }
+                        
+                        const gradient = ctx.createLinearGradient(path[0].x, path[0].y, path[path.length - 1].x, path[path.length - 1].y);
+                        // Създаваме градиент от дъгата
+                        gradient.addColorStop(0, `hsl(${hue}, 90%, 60%)`);
+                        gradient.addColorStop(0.5, `hsl(${(hue + 30) % 360}, 90%, 60%)`);
+                        gradient.addColorStop(1, `hsl(${(hue + 60) % 360}, 90%, 60%)`);
+
+                        ctx.strokeStyle = gradient;
+                        ctx.lineWidth = LINE_THICKNESS;
+                        ctx.lineCap = 'round';
+                        ctx.lineJoin = 'round';
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            function update() {
+                if (mouse.moved) {
+                    path.unshift({ x: mouse.x, y: mouse.y });
+                    mouse.moved = false; 
+                    retractionCounter = 0;
+                }
+                
+                if (!mouse.moved && path.length > 1) {
+                    retractionCounter++;
+                    if (retractionCounter >= RETRACTION_SPEED) {
+                        path.pop();
+                        retractionCounter = 0;
+                    }
+                }
+
+                if (path.length > MAX_TRAIL_LENGTH) {
+                    path.pop();
+                }
+            }
+
+            function animate() {
+                // Променяме цвета на дъгата с всеки кадър
+                hue = (hue + 1) % 360; 
+                update();
+                draw();
+                animationFrameId = requestAnimationFrame(animate);
+            }
+
+            // --- 4. СВЪРЗВАНЕ НА СЪБИТИЯТА ---
+            window.addEventListener('resize', resizeCanvas);
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('click', handleClick);
+            resizeCanvas();
+        }
+
+
+        // --- Останалата част от JavaScript кода е непроменена ---
+
+        function renderLatestCommands(orderedCommandKeys, commandDetailsMap) {
+            const listContainer = document.getElementById('latest-commands-list');
+            if (!listContainer) return;
+
+            const latestCommandKeys = orderedCommandKeys.slice(-5).reverse();
+            if (latestCommandKeys.length === 0) {
+                listContainer.innerHTML = '<p style="padding: 10px 0;">Няма намерени команди.</p>';
+                return;
+            }
+
+            const ul = document.createElement('ul');
+            latestCommandKeys.forEach(commandName => {
+                const li = document.createElement('li');
+                li.className = 'latest-command-item';
+                
+                const details = commandDetailsMap[commandName] || { description: '(Няма описание)', categoryName: 'Неизвестна', categoryId: null };
+                
+                li.innerHTML = `
+                    <button class="latest-command-button" data-command="${commandName}">${commandName}</button>
+                    <span class="latest-command-item-desc">${details.description}</span>
+                    <button class="latest-command-category-btn" data-category-id="${details.categoryId}">Категория: ${details.categoryName}</button>
+                `;
+                ul.appendChild(li);
+            });
+
+            listContainer.innerHTML = '';
+            listContainer.appendChild(ul);
+        }
+        
+        function initializeLatestCommandsInteraction() {
+            const latestCommandsList = document.getElementById('latest-commands-list');
+            if (!latestCommandsList) return;
+
+            latestCommandsList.addEventListener('click', function(e) {
+                const commandButton = e.target.closest('.latest-command-button');
+                const categoryButton = e.target.closest('.latest-command-category-btn');
+
+                if (commandButton) {
+                    const commandText = commandButton.dataset.command;
+                    navigator.clipboard.writeText(commandText).then(() => {
+                        const existingFeedback = latestCommandsList.querySelector('.copy-feedback-latest');
+                        if (existingFeedback) { existingFeedback.remove(); }
+
+                        const feedbackElement = document.createElement('div');
+                        feedbackElement.className = 'copy-feedback-latest';
+                        feedbackElement.textContent = `Командата "${commandText}" е копирана!`;
+                        
+                        const commandItem = commandButton.closest('.latest-command-item');
+                        commandItem.appendChild(feedbackElement);
+
+                        setTimeout(() => { feedbackElement.remove(); }, 3500);
+                    }).catch(err => { console.error('Грешка при копиране: ', err); });
+                } else if (categoryButton) {
+                    const categoryId = categoryButton.dataset.categoryId;
+                    if (!categoryId || categoryId === 'null') return;
+
+                    const mainFilterButton = document.querySelector(`.category-filter-button[data-filter="${categoryId}"]`);
+                    
+                    if (mainFilterButton) {
+                        mainFilterButton.click();
+                        mainFilterButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+            });
+        }
+
+        function initializeFirebaseFunctionality() {
+            const isAdmin = () => new URLSearchParams(window.location.search).get('admin') === 'true'; const adminMode = isAdmin();
+            const addSuggestionBtn = document.getElementById('add-suggestion-btn'); const viewSuggestionsBtn = document.getElementById('view-suggestions-btn'); const suggestionFormModal = document.getElementById('suggestion-form-modal'); const suggestionsListModal = document.getElementById('suggestions-list-modal'); const suggestionForm = document.getElementById('suggestion-form'); const suggestionsListDiv = document.getElementById('suggestions-list'); const suggestionCountSpan = document.getElementById('suggestion-count'); const closeButtons = document.querySelectorAll('.close-button');
+            const renderSuggestions = (snapshot) => {
+                suggestionsListDiv.innerHTML = ''; suggestionCountSpan.textContent = snapshot.numChildren();
+                if (!snapshot.exists()) { suggestionsListDiv.innerHTML = '<p>Все още няма подадени предложения.</p>'; return; }
+                snapshot.forEach(childSnapshot => {
+                    const key = childSnapshot.key; const suggestion = childSnapshot.val(); const item = document.createElement('div'); item.className = 'suggestion-item';
+                    const detailsDiv = document.createElement('div'); detailsDiv.className = 'suggestion-details';
+                    detailsDiv.innerHTML = `<p class="suggested-by-label">Предложил:</p><p class="suggester-name">${suggestion.name || 'Анонимен'}</p><p class="suggestion-text">${suggestion.text}</p>`;
+                    item.appendChild(detailsDiv);
+                    const rightColumn = document.createElement('div'); rightColumn.className = 'actions-container'; const statusContainer = document.createElement('div'); statusContainer.className = 'status-container'; const statusBtn = document.createElement('button'); statusBtn.className = 'status-toggle'; statusBtn.dataset.id = key;
+                    if (suggestion.status === 'done') {
+                        statusBtn.textContent = '✅ Направено'; statusBtn.classList.add('is-done'); const newCommandDiv = document.createElement('div'); newCommandDiv.className = 'new-command-section'; newCommandDiv.innerHTML = `<p class="label">Нова команда:</p>`;
+                        if (adminMode) { const commandInput = document.createElement('input'); commandInput.type = 'text'; commandInput.value = suggestion.newCommandName || ''; commandInput.placeholder = 'Въведете името'; commandInput.dataset.id = key; newCommandDiv.appendChild(commandInput); } else { const commandDisplay = document.createElement('p'); commandDisplay.className = 'command-name'; commandDisplay.textContent = suggestion.newCommandName || '(няма зададена)'; newCommandDiv.appendChild(commandDisplay); }
+                        statusContainer.appendChild(statusBtn); statusContainer.appendChild(newCommandDiv);
+                    } else { statusBtn.textContent = '❌ Не е направено'; statusBtn.classList.add('is-pending'); statusContainer.appendChild(statusBtn); }
+                    if (adminMode) statusBtn.classList.add('admin-enabled');
+                    rightColumn.appendChild(statusContainer);
+                    if(adminMode){ const deleteBtn = document.createElement('button'); deleteBtn.className = 'delete-suggestion-btn'; deleteBtn.innerHTML = ''; deleteBtn.title = 'Изтрий предложението'; deleteBtn.dataset.id = key; rightColumn.appendChild(deleteBtn); }
+                    item.appendChild(rightColumn); suggestionsListDiv.appendChild(item);
+                });
+            };
+            suggestionsRef.orderByChild("timestamp").on("value", renderSuggestions);
+            addSuggestionBtn.addEventListener('click', (e) => { e.stopPropagation(); suggestionFormModal.style.display = 'block'; }); viewSuggestionsBtn.addEventListener('click', (e) => { e.stopPropagation(); suggestionsListModal.style.display = 'block'; });
+            closeButtons.forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); suggestionFormModal.style.display = 'none'; suggestionsListModal.style.display = 'none'; }));
+            window.addEventListener('click', (event) => { if (event.target == suggestionFormModal || event.target == suggestionsListModal) { suggestionFormModal.style.display = 'none'; suggestionsListModal.style.display = 'none'; } });
+            suggestionForm.addEventListener('submit', (e) => {
+                e.preventDefault(); const name = document.getElementById('suggester-name').value; const text = document.getElementById('suggestion-text').value; if (!text.trim()) { alert('Моля, въведете текст.'); return; }
+                suggestionsRef.push({ name: name.trim() || 'Анонимен', text: text.trim(), status: 'pending', timestamp: firebase.database.ServerValue.TIMESTAMP }).then(() => { suggestionForm.reset(); suggestionFormModal.style.display = 'none'; alert('Благодарим за предложението!'); }).catch((error) => console.error("Грешка: ", error));
+            });
+            suggestionsListDiv.addEventListener('click', (e) => {
+                if (e.target.classList.contains('status-toggle') && adminMode) { const id = e.target.dataset.id; const docRef = suggestionsRef.child(id); docRef.get().then((snapshot) => { if (snapshot.exists()) { const newStatus = snapshot.val().status === 'pending' ? 'done' : 'pending'; docRef.update({ status: newStatus }); } }); }
+                if (e.target.classList.contains('delete-suggestion-btn') && adminMode) { const id = e.target.dataset.id; if(confirm('Наистина ли искате да изтриете това?')) { suggestionsRef.child(id).remove().catch(error => console.error("Грешка: ", error)); } }
+            });
+            suggestionsListDiv.addEventListener('blur', (e) => { if (e.target.tagName === 'INPUT' && e.target.closest('.new-command-section') && adminMode) { const id = e.target.dataset.id; const newName = e.target.value.trim(); suggestionsRef.child(id).update({ newCommandName: newName }).catch(error => console.error("Грешка:", error)); } }, true);
+        }
+        
+        function parseLispFileImproved(content, config) {
+            const categorizedData = {};
+            const commandDetailsMap = {}; 
+            Object.values(config).forEach(c => categorizedData[c.id] = []);
+            
+            const lispNameToIdMap = {};
+            for (const key in config) { lispNameToIdMap[key] = config[key].id; }
+            
+            const functionBlocks = content.split(/defun create_dclhelplisp/);
+            functionBlocks.forEach(block => {
+                const categoryMatch = block.match(/^([^\s(]+)/); if (!categoryMatch) return;
+                const lispCategoryName = categoryMatch[1];
+                const categoryId = lispNameToIdMap[lispCategoryName]; if (!categoryId) return;
+                
+                const categoryInfo = Object.values(config).find(c => c.id === categoryId);
+                if (!categoryInfo) return;
+                
+                const itemsMatch = block.match(/\(setq\s+(?:command_items|menu_items)\s+'\(([\s\S]+?)\)\)/); if (!itemsMatch) return;
+                
+                const itemsContent = itemsMatch[1];
+                const commandRegex = /\(\s*"([^"]*)"\s+"([^"]*)"\s+"([\s\S]*?)"\s*\)/g;
+                let match;
+                while ((match = commandRegex.exec(itemsContent)) !== null) {
+                    const commandName = match[2].trim();
+                    if (commandName.startsWith("---") || commandName === "") continue;
+                    
+                    let fullDescription = match[3].replace(/^- /, '').replace(/\\t/g, ' ').replace(/\s+/g, ' ').trim();
+                    const commandObject = { name: commandName, description: fullDescription };
+                    
+                    categorizedData[categoryId].push(commandObject);
+                    commandDetailsMap[commandName] = { 
+                        description: fullDescription, 
+                        categoryName: categoryInfo.filterName,
+                        categoryId: categoryInfo.id
+                    };
+                }
+            });
+
+            const orderedCommandKeys = [];
+            const commandMapRegex = /\(\s*"([^"]+)"\s*\.\s*"[^"]*"\s*\)/g;
+            const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
+            
+            if (commandMapSectionMatch) {
+                const mapContent = commandMapSectionMatch[1];
+                let match;
+                while ((match = commandMapRegex.exec(mapContent)) !== null) {
+                    const key = match[1];
+                    if (!config[key] && key !== 'back' && key !== 'pps_back' && !/^[А-Я]/.test(key)) {
+                        orderedCommandKeys.push(key);
+                    }
+                }
+            }
+
+            return {
+                categorizedData: categorizedData,
+                commandCount: orderedCommandKeys.length,
+                orderedCommandKeys: orderedCommandKeys,
+                commandDetailsMap: commandDetailsMap
+            };
+        }
+        
+        function renderAllCommands(data, container, filterContainer, counterEl, commandCount, config) {
+            container.innerHTML = ''; filterContainer.innerHTML = '<button class="category-filter-button active" data-filter="all">ВСИЧКИ СЕКЦИИ</button>';
+            for (const categoryId in data) {
+                 if (Object.hasOwnProperty.call(data, categoryId)) {
+                    const commands = data[categoryId]; if (commands.length === 0) continue;
+                    const categoryInfo = Object.values(config).find(c => c.id === categoryId); if (!categoryInfo) continue;
+                    const filterButton = document.createElement('button'); filterButton.className = 'category-filter-button'; filterButton.dataset.filter = categoryId; filterButton.textContent = categoryInfo.filterName; filterContainer.appendChild(filterButton);
+                    const detailsElement = document.createElement('details'); detailsElement.className = 'category'; detailsElement.dataset.category = categoryId;
+                    const summaryElement = document.createElement('summary'); summaryElement.innerHTML = `<h2>${categoryInfo.title}</h2>`; detailsElement.appendChild(summaryElement);
+                    
+                    commands.forEach(command => {
+                        const commandEntry = document.createElement('div');
+                        commandEntry.className = 'command-entry';
+                        commandEntry.dataset.letter = command.name.charAt(0).toUpperCase();
+                        const fullDescription = command.description.charAt(0).toUpperCase() + command.description.slice(1);
+                        commandEntry.innerHTML = `
+                            <div class="command-header">
+                                <button class="command-button">${command.name}</button>
+                                <span class="short-description">${fullDescription}</span>
+                            </div>`;
+                        commandEntry.querySelector('.command-button').dataset.originalText = command.name;
+                        commandEntry.querySelector('.short-description').dataset.originalText = fullDescription; 
+                        detailsElement.appendChild(commandEntry);
+                    });
+                    container.appendChild(detailsElement);
+                }
+            }
+            counterEl.textContent = `Намерени общо ${commandCount} уникални команди, разпределени в категории`;
+        }
+
+        function initializeFiltersAndAccordions() {
+            const searchBar = document.getElementById('search-bar');
+            const categoryFilter = document.getElementById('category-filter');
+            const alphabetFilter = document.getElementById('alphabet-filter');
+            const commandsContainer = document.getElementById('commands-container');
+            let activeCategory = 'all'; let activeLetter = 'all'; 
+
+            function escapeRegex(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+            function highlightText(originalText, searchTerm) {
+                if (!searchTerm) { return originalText; }
+                const escapedSearchTerm = escapeRegex(searchTerm);
+                const regex = new RegExp(escapedSearchTerm, 'gi');
+                return originalText.replace(regex, (match) => `<mark>${match}</mark>`);
+            }
+
+            function resetFiltersToAll() {
+                activeCategory = 'all'; activeLetter = 'all';
+                if (categoryFilter.querySelector('.active')) { categoryFilter.querySelector('.active').classList.remove('active'); }
+                categoryFilter.querySelector('[data-filter="all"]').classList.add('active');
+                if (alphabetFilter.querySelector('.active')) { alphabetFilter.querySelector('.active').classList.remove('active'); }
+                alphabetFilter.querySelector('[data-filter="all"]').classList.add('active');
+            }
+
+            searchBar.addEventListener('input', () => {
+                const searchTerm = searchBar.value;
+                const searchTermLower = searchTerm.toLowerCase();
+                if (searchTerm.length > 0) { resetFiltersToAll(); }
+                
+                const allCategories = commandsContainer.querySelectorAll('details.category');
+                allCategories.forEach(category => {
+                    const allCommands = category.querySelectorAll('.command-entry');
+                    let hasVisibleChildren = false;
+                    allCommands.forEach(entry => {
+                        const commandButton = entry.querySelector('.command-button');
+                        const descriptionSpan = entry.querySelector('.short-description');
+                        const originalCommandName = commandButton.dataset.originalText;
+                        const originalDescription = descriptionSpan.dataset.originalText;
+                        const isMatch = originalCommandName.toLowerCase().includes(searchTermLower) || originalDescription.toLowerCase().includes(searchTermLower);
+                        entry.classList.toggle('hidden', !isMatch);
+                        if (isMatch) {
+                            hasVisibleChildren = true;
+                            commandButton.innerHTML = highlightText(originalCommandName, searchTerm);
+                            descriptionSpan.innerHTML = highlightText(originalDescription, searchTerm);
+                        } else {
+                            commandButton.innerHTML = originalCommandName;
+                            descriptionSpan.innerHTML = originalDescription;
+                        }
+                    });
+                    category.classList.toggle('hidden', !hasVisibleChildren);
+                    if (hasVisibleChildren && searchTerm) { category.setAttribute('open', ''); } 
+                    else { category.removeAttribute('open'); }
+                });
+            });
+
+            function applyFilters() {
+                const categories = commandsContainer.querySelectorAll('details.category');
+                categories.forEach(category => {
+                    const commandEntries = category.querySelectorAll('.command-entry');
+                    let hasVisibleChildren = false;
+                    commandEntries.forEach(entry => {
+                        const catId = entry.closest('details.category').dataset.category;
+                        const letter = entry.dataset.letter.toUpperCase();
+                        const isCategoryVisible = (activeCategory === 'all' || activeCategory === catId);
+                        const isLetterVisible = (activeLetter.toUpperCase() === 'ALL' || activeLetter.toUpperCase() === letter);
+                        const isVisible = isCategoryVisible && isLetterVisible;
+                        entry.classList.toggle('hidden', !isVisible);
+                        if(isVisible) hasVisibleChildren = true;
+                    });
+                    category.classList.toggle('hidden', !hasVisibleChildren);
+                });
+                const isAnyFilterActive = activeCategory !== 'all' || activeLetter.toUpperCase() !== 'ALL';
+                const visibleCategories = commandsContainer.querySelectorAll('details.category:not(.hidden)');
+                if (isAnyFilterActive) { visibleCategories.forEach(cat => cat.setAttribute('open', '')); } 
+                else { categories.forEach(cat => cat.removeAttribute('open')); }
+            }
+
+            function clearHighlights() {
+                const allCommands = commandsContainer.querySelectorAll('.command-entry');
+                allCommands.forEach(entry => {
+                    const commandButton = entry.querySelector('.command-button');
+                    const descriptionSpan = entry.querySelector('.short-description');
+                    commandButton.innerHTML = commandButton.dataset.originalText;
+                    descriptionSpan.innerHTML = descriptionSpan.dataset.originalText;
+                });
+            }
+
+            categoryFilter.addEventListener('click', function(e) {
+                const button = e.target.closest('.category-filter-button'); if (!button) return;
+                searchBar.value = ''; clearHighlights();
+                activeCategory = button.dataset.filter;
+                if (categoryFilter.querySelector('.active')) { categoryFilter.querySelector('.active').classList.remove('active'); }
+                button.classList.add('active'); applyFilters();
+            });
+
+            alphabetFilter.addEventListener('click', function(e) {
+                const button = e.target.closest('.filter-button'); if (!button) return;
+                searchBar.value = ''; clearHighlights();
+                activeLetter = button.dataset.filter;
+                if (alphabetFilter.querySelector('.active')) { alphabetFilter.querySelector('.active').classList.remove('active'); }
+                button.classList.add('active'); applyFilters();
+            });
+
+            commandsContainer.addEventListener('click', function(e) {
+                const commandButton = e.target.closest('.command-button');
+                if (!commandButton) return;
+                const commandText = commandButton.textContent;
+                navigator.clipboard.writeText(commandText).then(() => {
+                    const existingFeedback = document.querySelector('.copy-feedback');
+                    if (existingFeedback) { existingFeedback.remove(); }
+                    const feedbackElement = document.createElement('div');
+                    feedbackElement.className = 'copy-feedback';
+                    feedbackElement.textContent = `Командата "${commandText}" е копирана! Може да я пейстнете в AutoCAD.`;
+                    const commandEntry = commandButton.closest('.command-entry');
+                    commandEntry.insertAdjacentElement('afterend', feedbackElement);
+                    setTimeout(() => { feedbackElement.remove(); }, 3500);
+                }).catch(err => { console.error('Грешка при копиране: ', err); });
+            });
+        }
+    </script>
+</body>
+</html>
