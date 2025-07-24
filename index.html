@@ -80,7 +80,7 @@
         mark { background-color: rgba(255, 251, 143, 0.6); padding: 1px 0; border-radius: 3px; color: inherit; }
         
         /* ПРОМЯНА: ДОБАВЕНИ/МОДИФИЦИРАНИ СТИЛОВЕ ЗА СТРАНИЧНАТА ЛЕНТА */
-        .latest-commands-widget { position: fixed; top: 150px; right: 40px; /* Преместено наляво */ width: 320px; z-index: 999; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+        .latest-commands-widget { position: fixed; top: 150px; right: 80px; /* Преместено още по-наляво */ width: 320px; z-index: 999; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
         .latest-commands-widget summary { padding: 12px 15px; font-weight: bold; color: #1d3557; cursor: pointer; outline: none; list-style: none; display: flex; justify-content: space-between; align-items: center; }
         .latest-commands-widget summary::-webkit-details-marker { display: none; }
         .latest-commands-widget summary::after { content: '▼'; font-size: 12px; transition: transform 0.3s; }
@@ -98,15 +98,28 @@
         }
         .latest-command-button:hover { background-color: #1d3557; }
 
-        .latest-command-item-desc { font-size: 0.9em; color: #555; display: block; margin-bottom: 4px; }
+        .latest-command-item-desc { font-size: 0.9em; color: #555; display: block; margin-bottom: 6px; }
         
-        .latest-command-category-btn { /* Нов стил за кликаема категория */
-            background: none; border: none; padding: 0; font: inherit; color: #e63946;
-            font-size: 0.8em; font-style: italic; text-decoration: underline; cursor: pointer;
+        /* ПРОМЯНА: Напълно нов стил за бутона за категория */
+        .latest-command-category-btn {
+            display: inline-block;
+            background: rgba(230, 57, 70, 0.1); /* Прозрачен червен фон */
+            border: 1px solid rgba(230, 57, 70, 0.2); /* Лека рамка */
+            padding: 2px 8px; 
+            font-size: 12px; 
+            font-weight: 500;
+            color: #b12732; /* По-тъмен червен текст */
+            border-radius: 12px; /* По-заоблени краища за вид на "таг" */
+            cursor: pointer;
             text-align: left;
+            transition: all 0.2s ease;
         }
-        .latest-command-category-btn:hover { color: #a8202b; }
-
+        .latest-command-category-btn:hover {
+            background: rgba(230, 57, 70, 0.2);
+            border-color: rgba(230, 57, 70, 0.4);
+            color: #a8202b; /* Още по-тъмен при hover */
+        }
+        
         .copy-feedback-latest {
             padding: 6px 10px; margin-top: 8px; background-color: #e6f4ea; color: #137333; 
             border-radius: 4px; text-align: center; font-size: 13px; font-weight: 500; 
@@ -139,6 +152,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
+        // Няма никакви промени в JavaScript кода, той си остава същият
         const firebaseConfig = {
           apiKey: "AIzaSyACB9shT_VTr3PGW_1nFjJCGAgwSI55Omw", authDomain: "clickcount-a6e46.firebaseapp.com", databaseURL: "https://clickcount-a6e46-default-rtdb.firebaseio.com", projectId: "clickcount-a6e46", storageBucket: "clickcount-a6e46.appspot.com", messagingSenderId: "53304151952", appId: "1:53304151952:web:ed0c365ace6b1232842d15", measurementId: "G-5S028177MG"
         };
@@ -192,7 +206,6 @@
                 
                 const details = commandDetailsMap[commandName] || { description: '(Няма описание)', categoryName: 'Неизвестна', categoryId: null };
                 
-                // ПРОМЯНА: Генерираме HTML с <button> и за категорията, като добавяме и data-category-id
                 li.innerHTML = `
                     <button class="latest-command-button" data-command="${commandName}">${commandName}</button>
                     <span class="latest-command-item-desc">${details.description}</span>
@@ -205,7 +218,6 @@
             listContainer.appendChild(ul);
         }
         
-        // ПРОМЯНА: Функцията вече обработва и клик върху категория
         function initializeLatestCommandsInteraction() {
             const latestCommandsList = document.getElementById('latest-commands-list');
             if (!latestCommandsList) return;
@@ -231,15 +243,12 @@
                     }).catch(err => { console.error('Грешка при копиране: ', err); });
                 } else if (categoryButton) {
                     const categoryId = categoryButton.dataset.categoryId;
-                    if (!categoryId || categoryId === 'null') return; // Предпазна проверка
+                    if (!categoryId || categoryId === 'null') return;
 
-                    // Намираме главния филтър бутон по data атрибута
                     const mainFilterButton = document.querySelector(`.category-filter-button[data-filter="${categoryId}"]`);
                     
                     if (mainFilterButton) {
-                        // Симулираме клик върху него, за да използваме съществуващата логика
                         mainFilterButton.click();
-                        // Плавно превъртаме до филтрите, за да види потребителят промяната
                         mainFilterButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
                 }
@@ -247,7 +256,6 @@
         }
 
         function initializeFirebaseFunctionality() {
-            // ... (Тази функция остава напълно непроменена)
             const isAdmin = () => new URLSearchParams(window.location.search).get('admin') === 'true'; const adminMode = isAdmin();
             const addSuggestionBtn = document.getElementById('add-suggestion-btn'); const viewSuggestionsBtn = document.getElementById('view-suggestions-btn'); const suggestionFormModal = document.getElementById('suggestion-form-modal'); const suggestionsListModal = document.getElementById('suggestions-list-modal'); const suggestionForm = document.getElementById('suggestion-form'); const suggestionsListDiv = document.getElementById('suggestions-list'); const suggestionCountSpan = document.getElementById('suggestion-count'); const closeButtons = document.querySelectorAll('.close-button');
             const renderSuggestions = (snapshot) => {
@@ -285,7 +293,6 @@
             suggestionsListDiv.addEventListener('blur', (e) => { if (e.target.tagName === 'INPUT' && e.target.closest('.new-command-section') && adminMode) { const id = e.target.dataset.id; const newName = e.target.value.trim(); suggestionsRef.child(id).update({ newCommandName: newName }).catch(error => console.error("Грешка:", error)); } }, true);
         }
         
-        // ПРОМЯНА: Функцията сега събира и ID на категорията
         function parseLispFileImproved(content, config) {
             const categorizedData = {};
             const commandDetailsMap = {}; 
@@ -319,7 +326,7 @@
                     commandDetailsMap[commandName] = { 
                         description: fullDescription, 
                         categoryName: categoryInfo.filterName,
-                        categoryId: categoryInfo.id // Запазваме и ID-то
+                        categoryId: categoryInfo.id
                     };
                 }
             });
@@ -348,7 +355,6 @@
         }
         
         function renderAllCommands(data, container, filterContainer, counterEl, commandCount, config) {
-            // ... (Тази функция остава непроменена)
             container.innerHTML = ''; filterContainer.innerHTML = '<button class="category-filter-button active" data-filter="all">ВСИЧКИ СЕКЦИИ</button>';
             for (const categoryId in data) {
                  if (Object.hasOwnProperty.call(data, categoryId)) {
@@ -379,7 +385,6 @@
         }
 
         function initializeFiltersAndAccordions() {
-            // ... (Тази функция остава непроменена)
             const searchBar = document.getElementById('search-bar');
             const categoryFilter = document.getElementById('category-filter');
             const alphabetFilter = document.getElementById('alphabet-filter');
