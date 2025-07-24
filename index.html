@@ -36,7 +36,39 @@
         #suggestion-form textarea { height: 100px; resize: vertical; }
         #suggestion-form button { background-color: #457b9d; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin-top: 15px; font-size: 16px; }
         
-        #suggestions-list .suggestion-item { border-bottom: 1px solid #eee; padding: 15px 5px; display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+        /* START OF CORRECTION / НАЧАЛО НА КОРЕКЦИЯТА */
+        #suggestions-list-modal .modal-content {
+            height: 85vh;
+            display: flex;
+            flex-direction: column;
+            max-width: 800px;
+        }
+
+        #suggestions-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-right: 15px;
+            margin-top: 10px;
+        }
+
+        #suggestions-list .suggestion-item {
+            border-bottom: 1px solid #eee;
+            padding: 15px 5px;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+        }
+        
+        .suggestion-number {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #e63946;
+            padding-top: 15px;
+            min-width: 25px;
+            text-align: right;
+        }
+        /* END OF CORRECTION / КРАЙ НА КОРЕКЦИЯТА */
+        
         #suggestions-list .suggestion-details { flex-grow: 1; }
         .suggested-by-label { font-size: 0.9em; color: #555; margin-bottom: 2px; }
         #suggestions-list .suggester-name { font-weight: bold; color: #1d3557; margin-top: 0; }
@@ -427,27 +459,92 @@
         function initializeFirebaseFunctionality() {
             const isAdmin = () => new URLSearchParams(window.location.search).get('admin') === 'true'; const adminMode = isAdmin();
             const addSuggestionBtn = document.getElementById('add-suggestion-btn'); const viewSuggestionsBtn = document.getElementById('view-suggestions-btn'); const suggestionFormModal = document.getElementById('suggestion-form-modal'); const suggestionsListModal = document.getElementById('suggestions-list-modal'); const suggestionForm = document.getElementById('suggestion-form'); const suggestionsListDiv = document.getElementById('suggestions-list'); const suggestionCountSpan = document.getElementById('suggestion-count'); const closeButtons = document.querySelectorAll('.close-button');
+            
+            // START OF CORRECTION / НАЧАЛО НА КОРЕКЦИЯТА
             const renderSuggestions = (snapshot) => {
-                suggestionsListDiv.innerHTML = ''; suggestionCountSpan.textContent = snapshot.numChildren();
-                if (!snapshot.exists()) { suggestionsListDiv.innerHTML = '<p>Все още няма подадени предложения.</p>'; return; }
+                suggestionsListDiv.innerHTML = ''; 
+                const suggestionsArray = [];
                 snapshot.forEach(childSnapshot => {
-                    const key = childSnapshot.key; const suggestion = childSnapshot.val(); const item = document.createElement('div'); item.className = 'suggestion-item';
-                    const detailsDiv = document.createElement('div'); detailsDiv.className = 'suggestion-details';
+                    suggestionsArray.push({ key: childSnapshot.key, ...childSnapshot.val() });
+                });
+                
+                // Reverse array so newest are first, but keep index for numbering
+                suggestionsArray.reverse();
+                suggestionCountSpan.textContent = suggestionsArray.length;
+
+                if (suggestionsArray.length === 0) { 
+                    suggestionsListDiv.innerHTML = '<p>Все още няма подадени предложения.</p>'; 
+                    return; 
+                }
+
+                suggestionsArray.forEach((suggestion, index) => {
+                    const key = suggestion.key;
+                    const item = document.createElement('div');
+                    item.className = 'suggestion-item';
+
+                    const numberDiv = document.createElement('div');
+                    numberDiv.className = 'suggestion-number';
+                    numberDiv.textContent = `${index + 1}.`;
+                    item.appendChild(numberDiv);
+
+                    const detailsDiv = document.createElement('div');
+                    detailsDiv.className = 'suggestion-details';
                     detailsDiv.innerHTML = `<p class="suggested-by-label">Предложил:</p><p class="suggester-name">${suggestion.name || 'Анонимен'}</p><p class="suggestion-text">${suggestion.text}</p>`;
                     item.appendChild(detailsDiv);
-                    const rightColumn = document.createElement('div'); rightColumn.className = 'actions-container'; const statusContainer = document.createElement('div'); statusContainer.className = 'status-container'; const statusBtn = document.createElement('button'); statusBtn.className = 'status-toggle'; statusBtn.dataset.id = key;
+
+                    const rightColumn = document.createElement('div');
+                    rightColumn.className = 'actions-container';
+                    const statusContainer = document.createElement('div');
+                    statusContainer.className = 'status-container';
+                    const statusBtn = document.createElement('button');
+                    statusBtn.className = 'status-toggle';
+                    statusBtn.dataset.id = key;
+
                     if (suggestion.status === 'done') {
-                        statusBtn.textContent = '✅ Направено'; statusBtn.classList.add('is-done'); const newCommandDiv = document.createElement('div'); newCommandDiv.className = 'new-command-section'; newCommandDiv.innerHTML = `<p class="label">Нова команда:</p>`;
-                        if (adminMode) { const commandInput = document.createElement('input'); commandInput.type = 'text'; commandInput.value = suggestion.newCommandName || ''; commandInput.placeholder = 'Въведете името'; commandInput.dataset.id = key; newCommandDiv.appendChild(commandInput); } else { const commandDisplay = document.createElement('p'); commandDisplay.className = 'command-name'; commandDisplay.textContent = suggestion.newCommandName || '(няма зададена)'; newCommandDiv.appendChild(commandDisplay); }
-                        statusContainer.appendChild(statusBtn); statusContainer.appendChild(newCommandDiv);
-                    } else { statusBtn.textContent = '❌ Не е направено'; statusBtn.classList.add('is-pending'); statusContainer.appendChild(statusBtn); }
+                        statusBtn.textContent = '✅ Направено';
+                        statusBtn.classList.add('is-done');
+                        const newCommandDiv = document.createElement('div');
+                        newCommandDiv.className = 'new-command-section';
+                        newCommandDiv.innerHTML = `<p class="label">Нова команда:</p>`;
+                        if (adminMode) {
+                            const commandInput = document.createElement('input');
+                            commandInput.type = 'text';
+                            commandInput.value = suggestion.newCommandName || '';
+                            commandInput.placeholder = 'Въведете името';
+                            commandInput.dataset.id = key;
+                            newCommandDiv.appendChild(commandInput);
+                        } else {
+                            const commandDisplay = document.createElement('p');
+                            commandDisplay.className = 'command-name';
+                            commandDisplay.textContent = suggestion.newCommandName || '(няма зададена)';
+                            newCommandDiv.appendChild(commandDisplay);
+                        }
+                        statusContainer.appendChild(statusBtn);
+                        statusContainer.appendChild(newCommandDiv);
+                    } else {
+                        statusBtn.textContent = '❌ Не е направено';
+                        statusBtn.classList.add('is-pending');
+                        statusContainer.appendChild(statusBtn);
+                    }
                     if (adminMode) statusBtn.classList.add('admin-enabled');
+                    
                     rightColumn.appendChild(statusContainer);
-                    if(adminMode){ const deleteBtn = document.createElement('button'); deleteBtn.className = 'delete-suggestion-btn'; deleteBtn.innerHTML = ''; deleteBtn.title = 'Изтрий предложението'; deleteBtn.dataset.id = key; rightColumn.appendChild(deleteBtn); }
-                    item.appendChild(rightColumn); suggestionsListDiv.appendChild(item);
+
+                    if(adminMode){
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'delete-suggestion-btn';
+                        deleteBtn.innerHTML = '';
+                        deleteBtn.title = 'Изтрий предложението';
+                        deleteBtn.dataset.id = key;
+                        rightColumn.appendChild(deleteBtn);
+                    }
+                    item.appendChild(rightColumn);
+                    suggestionsListDiv.appendChild(item);
                 });
             };
-            suggestionsRef.orderByChild("timestamp").on("value", renderSuggestions);
+            // END OF CORRECTION / КРАЙ НА КОРЕКЦИЯТА
+            
+            suggestionsRef.on("value", renderSuggestions);
             addSuggestionBtn.addEventListener('click', (e) => { e.stopPropagation(); suggestionFormModal.style.display = 'block'; }); viewSuggestionsBtn.addEventListener('click', (e) => { e.stopPropagation(); suggestionsListModal.style.display = 'block'; });
             closeButtons.forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); suggestionFormModal.style.display = 'none'; suggestionsListModal.style.display = 'none'; }));
             window.addEventListener('click', (event) => { if (event.target == suggestionFormModal || event.target == suggestionsListModal) { suggestionFormModal.style.display = 'none'; suggestionsListModal.style.display = 'none'; } });
@@ -635,9 +732,7 @@
                     const commandButton = entry.querySelector('.command-button');
                     const descriptionSpan = entry.querySelector('.short-description');
                     commandButton.innerHTML = commandButton.dataset.originalText;
-                    //  START OF CORRECTION / НАЧАЛО НА КОРЕКЦИЯТА
-                    descriptionSpan.innerHTML = descriptionSpan.dataset.originalText; // BUG FIX: Was using an undefined variable 'originalDescription'
-                    //  END OF CORRECTION / КРАЙ НА КОРЕКЦИЯТА
+                    descriptionSpan.innerHTML = descriptionSpan.dataset.originalText;
                 });
             }
 
