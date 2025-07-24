@@ -79,7 +79,7 @@
         
         mark { background-color: rgba(255, 251, 143, 0.6); padding: 1px 0; border-radius: 3px; color: inherit; }
         
-        /* СТИЛОВЕ ЗА СТРАНИЧНОТО МЕНЮ */
+        /* ПРОМЯНА: ДОБАВЕНИ/МОДИФИЦИРАНИ СТИЛОВЕ ЗА СТРАНИЧНАТА ЛЕНТА */
         .latest-commands-widget { position: fixed; top: 150px; right: 20px; width: 320px; z-index: 999; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
         .latest-commands-widget summary { padding: 12px 15px; font-weight: bold; color: #1d3557; cursor: pointer; outline: none; list-style: none; display: flex; justify-content: space-between; align-items: center; }
         .latest-commands-widget summary::-webkit-details-marker { display: none; }
@@ -89,9 +89,25 @@
         #latest-commands-list ul { list-style: none; padding: 0; margin: 0; }
         .latest-command-item { padding: 10px 0; border-bottom: 1px solid #eee; }
         .latest-command-item:last-child { border-bottom: none; }
-        .latest-command-item-name { font-weight: bold; color: #1d3557; display: block; margin-bottom: 3px; font-size: 1.05em; text-transform: uppercase; }
-        .latest-command-item-desc { font-size: 0.9em; color: #555; }
+        
+        .latest-command-button { /* Нов стил за бутона */
+            width: 100%;
+            background-color: #457b9d; color: white; border: none; padding: 6px 10px;
+            border-radius: 5px; font-size: 15px; transition: background-color 0.3s;
+            text-align: center; font-weight: 500; text-transform: uppercase; cursor: pointer;
+            margin-bottom: 5px;
+        }
+        .latest-command-button:hover { background-color: #1d3557; }
 
+        .latest-command-item-desc { font-size: 0.9em; color: #555; display: block; margin-bottom: 4px; }
+        .latest-command-item-category { /* Нов стил за категорията */
+            font-size: 0.8em; color: #e63946; font-style: italic;
+        }
+        .copy-feedback-latest { /* Нов стил за обратна връзка */
+            padding: 6px 10px; margin-top: 8px; background-color: #e6f4ea; color: #137333; 
+            border-radius: 4px; text-align: center; font-size: 13px; font-weight: 500; 
+            animation: fadeInOut 3.5s ease-in-out forwards;
+        }
     </style>
 </head>
 <body>
@@ -141,15 +157,15 @@
                 if (!response.ok) throw new Error(`HTTP грешка! Статус: ${response.status}`);
                 const lispContent = await response.text();
                 
-                // ПРОМЯНА: parseLispFileImproved сега връща повече данни
                 const parsedResult = parseLispFileImproved(lispContent, categoryConfig);
 
                 renderAllCommands(parsedResult.categorizedData, commandsContainer, categoryFilterContainer, commandCounter, parsedResult.commandCount, categoryConfig);
                 
-                // ПРОМЯНА: Извикваме новата функция с правилните данни
-                renderLatestCommands(parsedResult.orderedCommandKeys, parsedResult.commandDescriptionMap);
+                // ПРОМЯНА: Подаваме и новата карта с категориите
+                renderLatestCommands(parsedResult.orderedCommandKeys, parsedResult.commandDetailsMap);
 
                 initializeFiltersAndAccordions();
+                initializeLatestCommandsInteraction(); // ПРОМЯНА: Инициализираме клик-функционалността
 
             } catch (error) {
                 console.error("Грешка при зареждане:", error);
@@ -158,12 +174,11 @@
             }
         });
 
-        // ПРОМЯНА В ЛОГИКАТА: Функцията сега работи с подреден списък от COMMAND MAP
-        function renderLatestCommands(orderedCommandKeys, descriptionMap) {
+        // ПРОМЯНА: Функцията вече приема карта с детайли (описание и категория)
+        function renderLatestCommands(orderedCommandKeys, commandDetailsMap) {
             const listContainer = document.getElementById('latest-commands-list');
             if (!listContainer) return;
 
-            // Взимаме последните 5 ключа (имена на команди) и ги обръщаме
             const latestCommandKeys = orderedCommandKeys.slice(-5).reverse();
 
             if (latestCommandKeys.length === 0) {
@@ -176,12 +191,13 @@
                 const li = document.createElement('li');
                 li.className = 'latest-command-item';
                 
-                // Намираме описанието на командата от картата с описания
-                const description = descriptionMap[commandName] || '(Няма налично описание)';
+                const details = commandDetailsMap[commandName] || { description: '(Няма описание)', category: 'Неизвестна' };
                 
+                // ПРОМЯНА: Генерираме HTML с <button> и <span> за категорията
                 li.innerHTML = `
-                    <span class="latest-command-item-name">${commandName}</span>
-                    <span class="latest-command-item-desc">${description}</span>
+                    <button class="latest-command-button" data-command="${commandName}">${commandName}</button>
+                    <span class="latest-command-item-desc">${details.description}</span>
+                    <span class="latest-command-item-category">Категория: ${details.category}</span>
                 `;
                 ul.appendChild(li);
             });
@@ -189,8 +205,37 @@
             listContainer.innerHTML = '';
             listContainer.appendChild(ul);
         }
+        
+        // ПРОМЯНА: Тази нова функция се грижи за копирането в страничната лента
+        function initializeLatestCommandsInteraction() {
+            const latestCommandsList = document.getElementById('latest-commands-list');
+            if (!latestCommandsList) return;
+
+            latestCommandsList.addEventListener('click', function(e) {
+                const commandButton = e.target.closest('.latest-command-button');
+                if (!commandButton) return;
+
+                const commandText = commandButton.dataset.command;
+                navigator.clipboard.writeText(commandText).then(() => {
+                    // Премахваме предишна обратна връзка, ако съществува
+                    const existingFeedback = latestCommandsList.querySelector('.copy-feedback-latest');
+                    if (existingFeedback) { existingFeedback.remove(); }
+
+                    const feedbackElement = document.createElement('div');
+                    feedbackElement.className = 'copy-feedback-latest'; // Използваме нов клас
+                    feedbackElement.textContent = `Командата "${commandText}" е копирана!`;
+                    
+                    // Добавяме елемента след родителския 'li' елемент
+                    const commandItem = commandButton.closest('.latest-command-item');
+                    commandItem.appendChild(feedbackElement);
+
+                    setTimeout(() => { feedbackElement.remove(); }, 3500);
+                }).catch(err => { console.error('Грешка при копиране: ', err); });
+            });
+        }
 
         function initializeFirebaseFunctionality() {
+            // ... (Тази функция остава напълно непроменена)
             const isAdmin = () => new URLSearchParams(window.location.search).get('admin') === 'true'; const adminMode = isAdmin();
             const addSuggestionBtn = document.getElementById('add-suggestion-btn'); const viewSuggestionsBtn = document.getElementById('view-suggestions-btn'); const suggestionFormModal = document.getElementById('suggestion-form-modal'); const suggestionsListModal = document.getElementById('suggestions-list-modal'); const suggestionForm = document.getElementById('suggestion-form'); const suggestionsListDiv = document.getElementById('suggestions-list'); const suggestionCountSpan = document.getElementById('suggestion-count'); const closeButtons = document.querySelectorAll('.close-button');
             const renderSuggestions = (snapshot) => {
@@ -227,12 +272,12 @@
             });
             suggestionsListDiv.addEventListener('blur', (e) => { if (e.target.tagName === 'INPUT' && e.target.closest('.new-command-section') && adminMode) { const id = e.target.dataset.id; const newName = e.target.value.trim(); suggestionsRef.child(id).update({ newCommandName: newName }).catch(error => console.error("Грешка:", error)); } }, true);
         }
-
-        // ПРОМЯНА В ЛОГИКАТА: Функцията е изцяло преработена
+        
+        // ПРОМЯНА: Функцията сега събира и категорията
         function parseLispFileImproved(content, config) {
-            // 1. Парсване на категориите и описанията от defun блоковете (както преди)
             const categorizedData = {};
-            const commandDescriptionMap = {}; // Карта за лесен достъп до описанията
+            // ПРОМЯНА: commandDetailsMap ще съдържа обект с описание и категория
+            const commandDetailsMap = {}; 
             Object.values(config).forEach(c => categorizedData[c.id] = []);
             
             const lispNameToIdMap = {};
@@ -243,6 +288,10 @@
                 const categoryMatch = block.match(/^([^\s(]+)/); if (!categoryMatch) return;
                 const lispCategoryName = categoryMatch[1];
                 const categoryId = lispNameToIdMap[lispCategoryName]; if (!categoryId) return;
+                
+                // Намираме информацията за категорията от конфигурацията
+                const categoryInfo = Object.values(config).find(c => c.id === categoryId);
+                if (!categoryInfo) return;
                 
                 const itemsMatch = block.match(/\(setq\s+(?:command_items|menu_items)\s+'\(([\s\S]+?)\)\)/); if (!itemsMatch) return;
                 
@@ -257,11 +306,14 @@
                     const commandObject = { name: commandName, description: fullDescription };
                     
                     categorizedData[categoryId].push(commandObject);
-                    commandDescriptionMap[commandName] = fullDescription; // Пълним картата с описания
+                    // ПРОМЯНА: Пълним картата с обект, съдържащ описание и името на категорията
+                    commandDetailsMap[commandName] = { 
+                        description: fullDescription, 
+                        category: categoryInfo.filterName 
+                    };
                 }
             });
 
-            // 2. Парсване на COMMAND MAP, за да вземем точния ред на командите
             const orderedCommandKeys = [];
             const commandMapRegex = /\(\s*"([^"]+)"\s*\.\s*"[^"]*"\s*\)/g;
             const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
@@ -271,24 +323,22 @@
                 let match;
                 while ((match = commandMapRegex.exec(mapContent)) !== null) {
                     const key = match[1];
-                    // Филтрираме системни ключове и имена на категории, за да останат само командите
                     if (!config[key] && key !== 'back' && key !== 'pps_back' && !/^[А-Я]/.test(key)) {
                         orderedCommandKeys.push(key);
                     }
                 }
             }
 
-            // 3. Връщаме всички необходими данни
             return {
                 categorizedData: categorizedData,
                 commandCount: orderedCommandKeys.length,
-                orderedCommandKeys: orderedCommandKeys, // Подреден списък с имената на командите
-                commandDescriptionMap: commandDescriptionMap // Карта с име -> описание
+                orderedCommandKeys: orderedCommandKeys,
+                commandDetailsMap: commandDetailsMap // ПРОМЯНА: Връщаме новата карта
             };
         }
         
-        // Малка промяна тук да ползва commandCount
         function renderAllCommands(data, container, filterContainer, counterEl, commandCount, config) {
+            // ... (Тази функция остава непроменена)
             container.innerHTML = ''; filterContainer.innerHTML = '<button class="category-filter-button active" data-filter="all">ВСИЧКИ СЕКЦИИ</button>';
             for (const categoryId in data) {
                  if (Object.hasOwnProperty.call(data, categoryId)) {
@@ -319,6 +369,7 @@
         }
 
         function initializeFiltersAndAccordions() {
+            // ... (Тази функция остава непроменена)
             const searchBar = document.getElementById('search-bar');
             const categoryFilter = document.getElementById('category-filter');
             const alphabetFilter = document.getElementById('alphabet-filter');
