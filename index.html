@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PAF's PROGRAMS SUITE </title>
+    <title>PAF's PROGRAMS SUITE</title>
     <style>
-        /* --- НОВА ПРОМЯНА: Стил за курсор "Флумастер" от предоставения код --- */
+        /* --- НОВА ПРОМЯНА: Стил за курсор "Комета" от предоставения код --- */
         html, body {
             cursor: none !important;
         }
@@ -146,8 +146,8 @@
         document.addEventListener('DOMContentLoaded', async function() {
             initializeFirebaseFunctionality();
             
-            // НОВА ПРОМЯНА: Извикваме новата функция за курсор "Флумастер"
-            initializeFeltPenCursor();
+            // НОВА ПРОМЯНА: Извикваме новата функция за курсор "Дъга"
+            initializeRainbowCometCursor();
 
             const COMMANDS_FILE_URL = "https://raw.githubusercontent.com/PafApps/lisp/main/HELP_LISP.lsp";
             const categoryConfig = {
@@ -176,19 +176,16 @@
             }
         });
 
-        // НОВА ПРОМЯНА: Изцяло нова функция за курсор "Флумастер"
-        function initializeFeltPenCursor() {
+        // НОВА ПРОМЯНА: Изцяло нова функция за курсор "Дъга"
+        function initializeRainbowCometCursor() {
             const canvas = document.getElementById('cursor-canvas');
             const ctx = canvas.getContext('2d');
 
-            // --- 1. НАСТРОЙКИ НА ЕФЕКТА (С АДАПТИРАНИ ЦВЕТОВЕ) ---
-            const LINE_COLORS = ['#e63946', '#457b9d', '#a8dadc'];
+            // --- 1. НАСТРОЙКИ НА ЕФЕКТА ---
             const LINE_THICKNESS = 8;
             const MAX_TRAIL_LENGTH = 20;
-            const RETRACTION_SPEED = 2; // Колко бързо се прибира опашката
-
+            const RETRACTION_SPEED = 2;
             const PARTICLE_COUNT = 60;
-            const PARTICLE_COLORS = ['#e63946', '#f1faee', '#a8dadc', '#457b9d', '#1d3557'];
             const GRAVITY = 0.15;
 
             // --- 2. ПРОМЕНЛИВИ ---
@@ -197,6 +194,7 @@
             let mouse = { x: 0, y: 0, moved: false };
             let animationFrameId = null;
             let retractionCounter = 0;
+            let hue = 0; // Променлива за цвета на дъгата
 
             // --- 3. ФУНКЦИИ ---
             function resizeCanvas() {
@@ -224,7 +222,8 @@
                     particles.push({
                         x: e.clientX, y: e.clientY,
                         vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
-                        color: PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)],
+                        // Всяка частица получава случаен цвят от дъгата
+                        hue: Math.random() * 360,
                         size: Math.random() * 4 + 2
                     });
                 }
@@ -243,7 +242,8 @@
                         particles.splice(i, 1);
                     } else {
                         ctx.beginPath();
-                        ctx.fillStyle = p.color;
+                        // Използваме hue на частицата за цвят
+                        ctx.fillStyle = `hsl(${p.hue}, 90%, 65%)`;
                         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
                         ctx.fill();
                     }
@@ -251,13 +251,13 @@
                 
                 // Рисуване на линията/точката
                 if (path.length > 0) {
-                    if (path.length === 1) { // Ако има само една точка, рисуваме кръг
+                    if (path.length === 1) {
                         const point = path[0];
                         ctx.beginPath();
-                        ctx.fillStyle = LINE_COLORS[0];
+                        ctx.fillStyle = `hsl(${hue}, 90%, 60%)`;
                         ctx.arc(point.x, point.y, LINE_THICKNESS / 2, 0, Math.PI * 2);
                         ctx.fill();
-                    } else { // Иначе рисуваме линия
+                    } else {
                         ctx.beginPath();
                         ctx.moveTo(path[0].x, path[0].y);
 
@@ -266,9 +266,11 @@
                         }
                         
                         const gradient = ctx.createLinearGradient(path[0].x, path[0].y, path[path.length - 1].x, path[path.length - 1].y);
-                        for (let j = 0; j < LINE_COLORS.length; j++) {
-                            gradient.addColorStop(j / (LINE_COLORS.length - 1), LINE_COLORS[j]);
-                        }
+                        // Създаваме градиент от дъгата
+                        gradient.addColorStop(0, `hsl(${hue}, 90%, 60%)`);
+                        gradient.addColorStop(0.5, `hsl(${(hue + 30) % 360}, 90%, 60%)`);
+                        gradient.addColorStop(1, `hsl(${(hue + 60) % 360}, 90%, 60%)`);
+
                         ctx.strokeStyle = gradient;
                         ctx.lineWidth = LINE_THICKNESS;
                         ctx.lineCap = 'round';
@@ -279,14 +281,12 @@
             }
 
             function update() {
-                // Ако мишката се е движила, добавяме нова точка в началото на пътеката
                 if (mouse.moved) {
                     path.unshift({ x: mouse.x, y: mouse.y });
                     mouse.moved = false; 
                     retractionCounter = 0;
                 }
                 
-                // Ако мишката НЕ се е движила и има повече от 1 точка, започваме да прибираме опашката
                 if (!mouse.moved && path.length > 1) {
                     retractionCounter++;
                     if (retractionCounter >= RETRACTION_SPEED) {
@@ -295,13 +295,14 @@
                     }
                 }
 
-                // Уверяваме се, че пътеката не е по-дълга от максимума
                 if (path.length > MAX_TRAIL_LENGTH) {
                     path.pop();
                 }
             }
 
             function animate() {
+                // Променяме цвета на дъгата с всеки кадър
+                hue = (hue + 1) % 360; 
                 update();
                 draw();
                 animationFrameId = requestAnimationFrame(animate);
