@@ -6,6 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PAF's PROGRAMS SUITE</title>
     <style>
+        /* --- НОВА ПРОМЯНА: Скриване на системния курсор --- */
+        body, a, button, summary, .close-button {
+            cursor: none;
+        }
+
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; color: #333; line-height: 1.6; margin: 0; padding: 20px; }
         .container { max-width: 950px; margin: 0 auto; background-color: #fff; padding: 25px 35px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; }
         
@@ -79,8 +84,7 @@
         
         mark { background-color: rgba(255, 251, 143, 0.6); padding: 1px 0; border-radius: 3px; color: inherit; }
         
-        /* ПРОМЯНА: ДОБАВЕНИ/МОДИФИЦИРАНИ СТИЛОВЕ ЗА СТРАНИЧНАТА ЛЕНТА */
-        .latest-commands-widget { position: fixed; top: 150px; right: 80px; /* Преместено още по-наляво */ width: 320px; z-index: 999; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+        .latest-commands-widget { position: fixed; top: 150px; right: 80px; width: 320px; z-index: 999; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
         .latest-commands-widget summary { padding: 12px 15px; font-weight: bold; color: #1d3557; cursor: pointer; outline: none; list-style: none; display: flex; justify-content: space-between; align-items: center; }
         .latest-commands-widget summary::-webkit-details-marker { display: none; }
         .latest-commands-widget summary::after { content: '▼'; font-size: 12px; transition: transform 0.3s; }
@@ -89,45 +93,54 @@
         #latest-commands-list ul { list-style: none; padding: 0; margin: 0; }
         .latest-command-item { padding: 10px 0; border-bottom: 1px solid #eee; }
         .latest-command-item:last-child { border-bottom: none; }
-        
-        .latest-command-button {
-            width: 100%; background-color: #457b9d; color: white; border: none; padding: 6px 10px;
-            border-radius: 5px; font-size: 15px; transition: background-color 0.3s;
-            text-align: center; font-weight: 500; text-transform: uppercase; cursor: pointer;
-            margin-bottom: 5px;
-        }
+        .latest-command-button { width: 100%; background-color: #457b9d; color: white; border: none; padding: 6px 10px; border-radius: 5px; font-size: 15px; transition: background-color 0.3s; text-align: center; font-weight: 500; text-transform: uppercase; cursor: pointer; margin-bottom: 5px; }
         .latest-command-button:hover { background-color: #1d3557; }
-
         .latest-command-item-desc { font-size: 0.9em; color: #555; display: block; margin-bottom: 6px; }
-        
-        /* ПРОМЯНА: Напълно нов стил за бутона за категория */
-        .latest-command-category-btn {
-            display: inline-block;
-            background: rgba(230, 57, 70, 0.1); /* Прозрачен червен фон */
-            border: 1px solid rgba(230, 57, 70, 0.2); /* Лека рамка */
-            padding: 2px 8px; 
-            font-size: 12px; 
-            font-weight: 500;
-            color: #b12732; /* По-тъмен червен текст */
-            border-radius: 12px; /* По-заоблени краища за вид на "таг" */
-            cursor: pointer;
-            text-align: left;
-            transition: all 0.2s ease;
+        .latest-command-category-btn { display: inline-block; background: rgba(230, 57, 70, 0.1); border: 1px solid rgba(230, 57, 70, 0.2); padding: 2px 8px; font-size: 12px; font-weight: 500; color: #b12732; border-radius: 12px; cursor: pointer; text-align: left; transition: all 0.2s ease; }
+        .latest-command-category-btn:hover { background: rgba(230, 57, 70, 0.2); border-color: rgba(230, 57, 70, 0.4); color: #a8202b; }
+        .copy-feedback-latest { padding: 6px 10px; margin-top: 8px; background-color: #e6f4ea; color: #137333; border-radius: 4px; text-align: center; font-size: 13px; font-weight: 500; animation: fadeInOut 3.5s ease-in-out forwards; }
+    
+        /* --- НОВА ПРОМЯНА: СТИЛОВЕ ЗА КЪСТЪМ КУРСОР --- */
+        #cursor-dot, #cursor-outline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            z-index: 9999;
+            pointer-events: none; /* Много важно! */
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
         }
-        .latest-command-category-btn:hover {
-            background: rgba(230, 57, 70, 0.2);
+
+        #cursor-dot {
+            width: 8px;
+            height: 8px;
+            background-color: white;
+            border: 1px solid #333;
+        }
+
+        #cursor-outline {
+            width: 40px;
+            height: 40px;
+            background-color: rgba(230, 57, 70, 0.4);
+            border: 2px solid rgba(230, 57, 70, 0.6);
+            transition: transform 0.15s ease-out, background-color 0.2s, border-color 0.2s;
+        }
+        
+        #cursor-outline.hover {
+            transform: translate(-50%, -50%) scale(1.5);
+            background-color: rgba(230, 57, 70, 0.2);
             border-color: rgba(230, 57, 70, 0.4);
-            color: #a8202b; /* Още по-тъмен при hover */
         }
-        
-        .copy-feedback-latest {
-            padding: 6px 10px; margin-top: 8px; background-color: #e6f4ea; color: #137333; 
-            border-radius: 4px; text-align: center; font-size: 13px; font-weight: 500; 
-            animation: fadeInOut 3.5s ease-in-out forwards;
-        }
+
     </style>
 </head>
 <body>
+    <!-- НОВА ПРОМЯНА: Добавени елементи за курсора -->
+    <div id="cursor-dot"></div>
+    <div id="cursor-outline"></div>
+
     <div class="container">
         <div class="header-buttons"><button id="add-suggestion-btn" class="header-btn">Предложение</button><button id="view-suggestions-btn" class="header-btn">Виж предложенията<span id="suggestion-count">0</span></button></div>
         <h1>PAF's PROGRAMS SUITE</h1><h3 class="main-subtitle">Интерактивен списък на AutoLISP команди</h3><h3 id="command-counter">Зареждане на командите...</h3>
@@ -152,7 +165,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-        // Няма никакви промени в JavaScript кода, той си остава същият
         const firebaseConfig = {
           apiKey: "AIzaSyACB9shT_VTr3PGW_1nFjJCGAgwSI55Omw", authDomain: "clickcount-a6e46.firebaseapp.com", databaseURL: "https://clickcount-a6e46-default-rtdb.firebaseio.com", projectId: "clickcount-a6e46", storageBucket: "clickcount-a6e46.appspot.com", messagingSenderId: "53304151952", appId: "1:53304151952:web:ed0c365ace6b1232842d15", measurementId: "G-5S028177MG"
         };
@@ -162,6 +174,9 @@
 
         document.addEventListener('DOMContentLoaded', async function() {
             initializeFirebaseFunctionality();
+            // НОВА ПРОМЯНА: Извикваме новата функция за курсора
+            initializeCustomCursor(); 
+
             const COMMANDS_FILE_URL = "https://raw.githubusercontent.com/PafApps/lisp/main/HELP_LISP.lsp";
             const categoryConfig = {
                 "СИТУАЦИЯ": { id: "situation", title: "Команди за Ситуация", filterName: "Ситуация" }, "НАДЛЪЖНИ": { id: "longitudinal-profiles", title: "Команди за Надлъжни профили", filterName: "Надлъжни" }, "НАПРЕЧНИ": { id: "cross-sections", title: "Команди за Напречни профили", filterName: "Напречни" }, "БЛОКОВЕ": { id: "blocks", title: "Команди за Блокове", filterName: "Блокове" }, "ЛЕЙАУТИ": { id: "layouts", title: "Команди за Layouts", filterName: "Layouts" }, "СИВИЛ": { id: "civil", title: "Команди за Civil 3D", filterName: "Civil 3D" }, "РЕГИСТРИ": { id: "registers", title: "Команди за Регистри (Civil 3D)", filterName: "Регистри (Civil)" }, "ДРУГИ": { id: "other", title: "Други команди", filterName: "Други" },
@@ -188,6 +203,63 @@
                 commandCounter.textContent = 'Грешка при зареждане';
             }
         });
+
+        // НОВА ПРОМЯНА: Изцяло нова функция за къстъм курсора
+        function initializeCustomCursor() {
+            const cursorDot = document.getElementById('cursor-dot');
+            const cursorOutline = document.getElementById('cursor-outline');
+
+            let mouseX = 0, mouseY = 0;
+            let posX = 0, posY = 0;
+            const smoothing = 0.1; // Стойност между 0 и 1. По-малка = по-плавно
+
+            window.addEventListener('mousemove', e => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            });
+
+            // Показване на курсора, когато е в прозореца
+            document.addEventListener('mouseenter', () => {
+                cursorDot.style.opacity = 1;
+                cursorOutline.style.opacity = 1;
+            });
+
+            // Скриване на курсора, когато напусне прозореца
+            document.addEventListener('mouseleave', () => {
+                cursorDot.style.opacity = 0;
+                cursorOutline.style.opacity = 0;
+            });
+
+            function animateCursor() {
+                // Изчисляваме "забавянето" за плавния ефект
+                const dX = mouseX - posX;
+                const dY = mouseY - posY;
+                
+                posX += dX * smoothing;
+                posY += dY * smoothing;
+
+                // Задаваме позицията на двата елемента
+                cursorDot.style.left = `${mouseX}px`;
+                cursorDot.style.top = `${mouseY}px`;
+                
+                cursorOutline.style.left = `${posX}px`;
+                cursorOutline.style.top = `${posY}px`;
+
+                requestAnimationFrame(animateCursor);
+            }
+            animateCursor();
+
+            // Добавяне на hover ефект върху интерактивни елементи
+            const interactiveElements = document.querySelectorAll('a, button, summary, .close-button, [role="button"]');
+            interactiveElements.forEach(el => {
+                el.addEventListener('mouseenter', () => {
+                    cursorOutline.classList.add('hover');
+                });
+                el.addEventListener('mouseleave', () => {
+                    cursorOutline.classList.remove('hover');
+                });
+            });
+        }
 
         function renderLatestCommands(orderedCommandKeys, commandDetailsMap) {
             const listContainer = document.getElementById('latest-commands-list');
