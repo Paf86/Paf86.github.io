@@ -8,6 +8,12 @@
         html, body {
             cursor: none !important;
         }
+        /* START OF CORRECTION / НАЧАЛО НА КОРЕКЦИЯТА */
+        body.modal-open {
+            overflow: hidden;
+        }
+        /* END OF CORRECTION / КРАЙ НА КОРЕКЦИЯТА */
+
         #cursor-canvas {
             position: fixed;
             top: 0;
@@ -28,29 +34,64 @@
         .header-btn { background-color: #e63946; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; transition: background-color 0.3s; }
         .header-btn:hover { background-color: #a8202b; }
         #suggestion-count { background-color: white; color: #e63946; border-radius: 50%; padding: 0px 6px; font-size: 12px; margin-left: 5px; }
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
-        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 8px; position: relative; }
+        
+        /* START OF CORRECTION / НАЧАЛО НА КОРЕКЦИЯТА */
+        .modal { 
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0; top: 0; 
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.5); 
+            /* Added for centering the content box */
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content { 
+            background-color: #fefefe; 
+            margin: 0; /* Let the flex parent handle margins */
+            padding: 20px; 
+            border: 1px solid #888; 
+            width: 80%; 
+            max-width: 600px; 
+            border-radius: 8px; 
+            position: relative; 
+        }
+
+        #suggestions-list-modal .modal-content {
+            width: 90%;
+            max-width: 900px;
+            height: 85vh; /* Proportional height */
+            display: flex;
+            flex-direction: column;
+            padding: 20px 25px;
+        }
+        
+        #suggestions-list-modal h2 {
+            text-align: center;
+            font-size: 1.8em;
+            color: #1d3557;
+            margin: 0 0 15px 0;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+            flex-shrink: 0; /* Prevent header from shrinking */
+        }
+        
+        #suggestions-list {
+            flex-grow: 1; /* Take remaining space */
+            overflow-y: auto; /* Scroll only this area */
+            padding-right: 15px;
+        }
+        /* END OF CORRECTION / КРАЙ НА КОРЕКЦИЯТА */
+
         .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
         #suggestion-form label { display: block; margin-top: 10px; font-weight: bold; }
         #suggestion-form input[type="text"], #suggestion-form textarea { width: 95%; padding: 10px; margin-top: 5px; border-radius: 4px; border: 1px solid #ccc; }
         #suggestion-form textarea { height: 100px; resize: vertical; }
         #suggestion-form button { background-color: #457b9d; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin-top: 15px; font-size: 16px; }
         
-        /* START OF CORRECTION / НАЧАЛО НА КОРЕКЦИЯТА */
-        #suggestions-list-modal .modal-content {
-            height: 85vh;
-            display: flex;
-            flex-direction: column;
-            max-width: 800px;
-        }
-
-        #suggestions-list {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding-right: 15px;
-            margin-top: 10px;
-        }
-
         #suggestions-list .suggestion-item {
             border-bottom: 1px solid #eee;
             padding: 15px 5px;
@@ -67,7 +108,6 @@
             min-width: 25px;
             text-align: right;
         }
-        /* END OF CORRECTION / КРАЙ НА КОРЕКЦИЯТА */
         
         #suggestions-list .suggestion-details { flex-grow: 1; }
         .suggested-by-label { font-size: 0.9em; color: #555; margin-bottom: 2px; }
@@ -203,7 +243,6 @@
             }
         });
 
-        // --- ПРОМЯНА: Финална версия на функцията ---
         function initializeCometAndParticlesCursor() {
             const canvas = document.getElementById('cursor-canvas');
             const ctx = canvas.getContext('2d');
@@ -220,9 +259,7 @@
 
             const PARTICLE_COUNT = 50;
             const GRAVITY = 0.08;
-            // ПРОМЯНА: Премахнати са транспортир и влакче
             const PARTICLE_TYPES = ['ruler', 'set_square', 'compass', 'pencil'];
-
 
             function resizeCanvas() {
                 canvas.width = window.innerWidth;
@@ -332,13 +369,13 @@
                     case 'compass':
                         ctx.strokeStyle = `rgba(150, 150, 150, ${alpha})`;
                         ctx.lineWidth = 3;
-                        ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(-10, 15); ctx.stroke(); // Left leg
-                        ctx.beginPath(); ctx.moveTo(-10, 15); ctx.lineTo(-12, 13); ctx.stroke(); // Left leg tip
-                        ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(10, 15); ctx.stroke(); // Right leg
+                        ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(-10, 15); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(-10, 15); ctx.lineTo(-12, 13); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(10, 15); ctx.stroke();
                         ctx.fillStyle = `rgba(0, 128, 255, ${alpha})`;
                         ctx.beginPath(); ctx.arc(0, -15, 5, 0, Math.PI * 2); ctx.fill();
                         ctx.fillStyle = `rgba(50, 50, 50, ${alpha})`;
-                        ctx.fillRect(8, 10, 4, 8); // Pencil holder on right leg
+                        ctx.fillRect(8, 10, 4, 8);
                         break;
                     case 'pencil':
                         ctx.globalAlpha = alpha;
@@ -387,8 +424,6 @@
             resizeCanvas();
             animate();
         }
-
-        // --- Останалата част от JavaScript кода е непроменена ---
 
         function renderLatestCommands(orderedCommandKeys, commandDetailsMap) {
             const listContainer = document.getElementById('latest-commands-list');
@@ -460,7 +495,6 @@
             const isAdmin = () => new URLSearchParams(window.location.search).get('admin') === 'true'; const adminMode = isAdmin();
             const addSuggestionBtn = document.getElementById('add-suggestion-btn'); const viewSuggestionsBtn = document.getElementById('view-suggestions-btn'); const suggestionFormModal = document.getElementById('suggestion-form-modal'); const suggestionsListModal = document.getElementById('suggestions-list-modal'); const suggestionForm = document.getElementById('suggestion-form'); const suggestionsListDiv = document.getElementById('suggestions-list'); const suggestionCountSpan = document.getElementById('suggestion-count'); const closeButtons = document.querySelectorAll('.close-button');
             
-            // START OF CORRECTION / НАЧАЛО НА КОРЕКЦИЯТА
             const renderSuggestions = (snapshot) => {
                 suggestionsListDiv.innerHTML = ''; 
                 const suggestionsArray = [];
@@ -468,7 +502,6 @@
                     suggestionsArray.push({ key: childSnapshot.key, ...childSnapshot.val() });
                 });
                 
-                // Reverse array so newest are first, but keep index for numbering
                 suggestionsArray.reverse();
                 suggestionCountSpan.textContent = suggestionsArray.length;
 
@@ -542,15 +575,53 @@
                     suggestionsListDiv.appendChild(item);
                 });
             };
-            // END OF CORRECTION / КРАЙ НА КОРЕКЦИЯТА
             
             suggestionsRef.on("value", renderSuggestions);
-            addSuggestionBtn.addEventListener('click', (e) => { e.stopPropagation(); suggestionFormModal.style.display = 'block'; }); viewSuggestionsBtn.addEventListener('click', (e) => { e.stopPropagation(); suggestionsListModal.style.display = 'block'; });
-            closeButtons.forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); suggestionFormModal.style.display = 'none'; suggestionsListModal.style.display = 'none'; }));
-            window.addEventListener('click', (event) => { if (event.target == suggestionFormModal || event.target == suggestionsListModal) { suggestionFormModal.style.display = 'none'; suggestionsListModal.style.display = 'none'; } });
+
+            // START OF CORRECTION / НАЧАЛО НА КОРЕКЦИЯТА
+            const openModal = (modal) => {
+                modal.style.display = 'flex';
+                document.body.classList.add('modal-open');
+            };
+
+            const closeModal = (modal) => {
+                modal.style.display = 'none';
+                document.body.classList.remove('modal-open');
+            };
+
+            addSuggestionBtn.addEventListener('click', (e) => { 
+                e.stopPropagation(); 
+                openModal(suggestionFormModal);
+            });
+
+            viewSuggestionsBtn.addEventListener('click', (e) => { 
+                e.stopPropagation(); 
+                openModal(suggestionsListModal);
+            });
+            
+            closeButtons.forEach(btn => btn.addEventListener('click', (e) => { 
+                e.stopPropagation(); 
+                closeModal(suggestionFormModal);
+                closeModal(suggestionsListModal);
+            }));
+            
+            window.addEventListener('click', (event) => { 
+                if (event.target == suggestionFormModal) {
+                    closeModal(suggestionFormModal);
+                }
+                if (event.target == suggestionsListModal) {
+                    closeModal(suggestionsListModal);
+                }
+            });
+            // END OF CORRECTION / КРАЙ НА КОРЕКЦИЯТА
+
             suggestionForm.addEventListener('submit', (e) => {
                 e.preventDefault(); const name = document.getElementById('suggester-name').value; const text = document.getElementById('suggestion-text').value; if (!text.trim()) { alert('Моля, въведете текст.'); return; }
-                suggestionsRef.push({ name: name.trim() || 'Анонимен', text: text.trim(), status: 'pending', timestamp: firebase.database.ServerValue.TIMESTAMP }).then(() => { suggestionForm.reset(); suggestionFormModal.style.display = 'none'; alert('Благодарим за предложението!'); }).catch((error) => console.error("Грешка: ", error));
+                suggestionsRef.push({ name: name.trim() || 'Анонимен', text: text.trim(), status: 'pending', timestamp: firebase.database.ServerValue.TIMESTAMP }).then(() => { 
+                    suggestionForm.reset(); 
+                    closeModal(suggestionFormModal);
+                    alert('Благодарим за предложението!'); 
+                }).catch((error) => console.error("Грешка: ", error));
             });
             suggestionsListDiv.addEventListener('click', (e) => {
                 if (e.target.classList.contains('status-toggle') && adminMode) { const id = e.target.dataset.id; const docRef = suggestionsRef.child(id); docRef.get().then((snapshot) => { if (snapshot.exists()) { const newStatus = snapshot.val().status === 'pending' ? 'done' : 'pending'; docRef.update({ status: newStatus }); } }); }
