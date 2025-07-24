@@ -115,18 +115,17 @@
         #suggestion-form textarea { height: 100px; resize: vertical; }
         #suggestion-form button { background-color: #457b9d; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin-top: 15px; font-size: 16px; }
         
-        /* START OF CORRECTION / НАЧАЛО НА КОРЕКЦИЯТА */
         #suggestions-list .suggestion-item {
             display: flex;
-            align-items: flex-start; /* Подравнява лявата и дясната колона в горната им част */
+            align-items: flex-start;
             gap: 15px;
             padding: 15px 5px;
-            border-bottom: 3px double #eee; /* Двоен разделител */
+            border-bottom: 3px double #eee;
         }
         
         .suggestion-content-left {
-            flex: 1; /* Позволява на лявата колона да заеме наличното пространство */
-            min-width: 0; /* КЛЮЧОВО: Позволява на колоната да се свие и текстът да се пренесе */
+            flex: 1;
+            min-width: 0;
             display: flex;
             align-items: flex-start;
             gap: 10px;
@@ -169,25 +168,48 @@
         #suggestions-list .actions-container {
             display: flex;
             align-items: flex-start;
-            min-width: 170px; /* Задава минимална ширина на дясната колона */
+            min-width: 170px;
         }
-        /* END OF CORRECTION / КРАЙ НА КОРЕКЦИЯТА */
         
         #suggestions-list .status-container { display: flex; flex-direction: column; align-items: flex-end; width: 100%;}
         #suggestions-list .status-toggle { border: none; background: none; font-size: 16px; padding: 5px 10px; border-radius: 5px; transition: background-color 0.3s; width: 100%; text-align: left; }
         #suggestions-list .status-toggle.is-pending { background-color: #fce8e6; color: #a50e0e; }
         #suggestions-list .status-toggle.is-done { background-color: #e6f4ea; color: #137333; }
         
+        /* START OF CORRECTION / НАЧАЛО НА КОРЕКЦИЯТА */
         .new-command-section {
-            margin-top: 5px;
+            margin-top: 2px; /* Намален, за да се качи целият блок нагоре */
             padding-top: 5px;
             border-top: 1px solid #e9ecef;
             width: 100%;
         }
 
-        .new-command-section .label { color: #555; font-size: 14px; text-align: left; }
-        .new-command-section input[type="text"] { width: 95%; padding: 6px; border-radius: 4px; border: 1px solid #ccc; margin-top: 4px; }
-        .new-command-section .command-name { font-weight: bold; font-size: 1.1em; color: #1d3557; margin-top: 4px; text-align: left;}
+        .new-command-section .label {
+            color: #555;
+            font-size: 14px;
+            text-align: left;
+            margin: 0; /* Премахва стандартния отстъп на параграфа */
+            line-height: 1.2;
+        }
+
+        .new-command-section input[type="text"] {
+            width: 95%;
+            padding: 6px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            margin-top: 2px; /* Намален от 4px, за да е по-близо до етикета */
+        }
+
+        .new-command-section .command-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #1d3557;
+            margin-top: 2px; /* Намален от 4px, за да е по-близо до етикета */
+            text-align: left;
+            line-height: 1.2;
+        }
+        /* END OF CORRECTION / КРАЙ НА КОРЕКЦИЯТА */
+
         .delete-suggestion-btn { background-color: transparent; border: none; color: #e63946; font-size: 18px; padding: 5px; margin-left: 10px; opacity: 0.6; transition: opacity 0.3s; }
         .delete-suggestion-btn:hover { opacity: 1; }
 
@@ -548,7 +570,6 @@
             const isAdmin = () => new URLSearchParams(window.location.search).get('admin') === 'true'; const adminMode = isAdmin();
             const addSuggestionBtn = document.getElementById('add-suggestion-btn'); const viewSuggestionsBtn = document.getElementById('view-suggestions-btn'); const suggestionFormModal = document.getElementById('suggestion-form-modal'); const suggestionsListModal = document.getElementById('suggestions-list-modal'); const suggestionForm = document.getElementById('suggestion-form'); const suggestionsListDiv = document.getElementById('suggestions-list'); const suggestionCountSpan = document.getElementById('suggestion-count'); const closeButtons = document.querySelectorAll('.close-button');
             
-            /* START OF CORRECTION / НАЧАЛО НА КОРЕКЦИЯТА */
             const renderSuggestions = (snapshot) => {
                 suggestionsListDiv.innerHTML = ''; 
                 const suggestionsArray = [];
@@ -643,7 +664,6 @@
                     suggestionsListDiv.appendChild(item);
                 });
             };
-            /* END OF CORRECTION / КРАЙ НА КОРЕКЦИЯТА */
             
             suggestionsRef.on("value", renderSuggestions);
 
