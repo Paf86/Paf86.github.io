@@ -28,7 +28,6 @@
         .main-subtitle { text-align: center; font-size: 1.3em; font-weight: 500; color: #e63946; margin: 0 0 5px 0; padding: 0; }
         #command-counter { text-align: center; border-bottom: none; color: #555; font-weight: normal; margin-top: 0; margin-bottom: 30px; }
 
-        /* START OF CORRECTION / НАЧАЛО НА КОРЕКЦИЯТА */
         #fun-toggle-btn {
             position: absolute;
             top: 20px;
@@ -56,7 +55,6 @@
             box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.3);
             transform: translate(2px, 2px);
         }
-        /* END OF CORRECTION / КРАЙ НА КОРЕКЦИЯТА */
 
         .header-buttons { position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; }
         .header-btn { background-color: #e63946; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; transition: background-color 0.3s; }
@@ -134,10 +132,20 @@
             text-align: right;
         }
         
-        #suggestions-list .suggestion-details { flex-grow: 1; }
+        /* START OF CORRECTION / НАЧАЛО НА КОРЕКЦИЯТА */
+        #suggestions-list .suggestion-details { 
+            flex-grow: 1;
+            min-width: 0; /* Allow flex item to shrink below its content size */
+        }
         .suggested-by-label { font-size: 0.9em; color: #555; margin-bottom: 2px; }
         #suggestions-list .suggester-name { font-weight: bold; color: #1d3557; margin-top: 0; }
-        #suggestions-list .suggestion-text { margin-top: 5px; white-space: pre-wrap; }
+        #suggestions-list .suggestion-text {
+            margin-top: 5px;
+            white-space: pre-wrap;
+            overflow-wrap: break-word; /* Wrap long words to prevent overflow */
+        }
+        /* END OF CORRECTION / КРАЙ НА КОРЕКЦИЯТА */
+
         #suggestions-list .status-container { display: flex; flex-direction: column; align-items: flex-end; min-width: 170px; }
         #suggestions-list .actions-container { display: flex; align-items: flex-start; }
         #suggestions-list .status-toggle { border: none; background: none; font-size: 16px; padding: 5px 10px; border-radius: 5px; transition: background-color 0.3s; width: 100%; text-align: left; }
@@ -207,9 +215,7 @@
     <canvas id="cursor-canvas"></canvas>
 
     <div class="container">
-        <!-- START OF CORRECTION / НАЧАЛО НА КОРЕКЦИЯТА -->
         <button id="fun-toggle-btn">FUN</button>
-        <!-- END OF CORRECTION / КРАЙ НА КОРЕКЦИЯТА -->
         <div class="header-buttons"><button id="add-suggestion-btn" class="header-btn">Предложение</button><button id="view-suggestions-btn" class="header-btn">Виж предложенията<span id="suggestion-count">0</span></button></div>
         <h1>PAF's PROGRAMS SUITE</h1><h3 class="main-subtitle">Интерактивен списък на AutoLISP команди</h3><h3 id="command-counter">Зареждане на командите...</h3>
         <div class="search-container"><input type="text" id="search-bar" placeholder="Търсене по име или описание..."></div>
@@ -242,9 +248,7 @@
         document.addEventListener('DOMContentLoaded', async function() {
             initializeFirebaseFunctionality();
             
-            // START OF CORRECTION / НАЧАЛО НА КОРЕКЦИЯТА
             initializeFunMode();
-            // END OF CORRECTION / КРАЙ НА КОРЕКЦИЯТА
 
             const COMMANDS_FILE_URL = "https://raw.githubusercontent.com/PafApps/lisp/main/HELP_LISP.lsp";
             const categoryConfig = {
@@ -273,7 +277,6 @@
             }
         });
 
-        // START OF CORRECTION / НАЧАЛО НА КОРЕКЦИЯТА
         function initializeFunMode() {
             const funToggleButton = document.getElementById('fun-toggle-btn');
             const canvas = document.getElementById('cursor-canvas');
@@ -441,7 +444,6 @@
                 funCursor.start();
             }
         }
-        // END OF CORRECTION / КРАЙ НА КОРЕКЦИЯТА
         
         function renderLatestCommands(orderedCommandKeys, commandDetailsMap) {
             const listContainer = document.getElementById('latest-commands-list');
