@@ -5,10 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PAF's PROGRAMS SUITE</title>
     <style>
-        /* --- Стил за курсора --- */
-        html, body {
-            cursor: none !important;
-        }
+        /* --- ПРОМЯНА: Премахнато е скриването на системния курсор --- */
         #cursor-canvas {
             position: fixed;
             top: 0;
@@ -16,7 +13,6 @@
             z-index: 9999;
             pointer-events: none;
         }
-        /* --- Край на стиловете --- */
 
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; color: #333; line-height: 1.6; margin: 0; padding: 20px; }
 
@@ -144,7 +140,8 @@
         document.addEventListener('DOMContentLoaded', async function() {
             initializeFirebaseFunctionality();
             
-            initializeCometAndParticlesCursor();
+            // --- ПРОМЯНА: Името на функцията е променено, за да отрази, че е само за частици ---
+            initializeClickParticles();
 
             const COMMANDS_FILE_URL = "https://raw.githubusercontent.com/PafApps/lisp/main/HELP_LISP.lsp";
             const categoryConfig = {
@@ -173,37 +170,20 @@
             }
         });
 
-        // --- ПРОМЯНА: Дебелината на линията и формите на частиците са актуализирани ---
-        function initializeCometAndParticlesCursor() {
+        // --- ПРОМЯНА: Функцията е обновена да има само частици при клик, без следа от курсора ---
+        function initializeClickParticles() {
             const canvas = document.getElementById('cursor-canvas');
             const ctx = canvas.getContext('2d');
 
-            let mouse = { x: 0, y: 0, moved: false };
             let particles = [];
-            let path = [];
-
-            // --- ПРОМЯНА: Дебелината на линията е увеличена от 4 на 8 ---
-            const LINE_THICKNESS = 8;
-            const MAX_TRAIL_LENGTH = 30;
-            const RETRACTION_SPEED = 2;
-            let retractionCounter = 0;
-            let hue = 0;
 
             const PARTICLE_COUNT = 50;
             const GRAVITY = 0.08;
-            // --- ПРОМЯНА: Добавен е 'protractor' (транспортир) ---
             const PARTICLE_TYPES = ['ruler', 'set_square', 'compass', 'pencil', 'protractor', 'train'];
-
 
             function resizeCanvas() {
                 canvas.width = window.innerWidth;
                 canvas.height = window.innerHeight;
-            }
-
-            function handleMouseMove(e) {
-                mouse.x = e.clientX;
-                mouse.y = e.clientY;
-                mouse.moved = true;
             }
 
             function handleClick(e) {
@@ -224,28 +204,6 @@
                     });
                 }
             }
-
-            function drawTrail() {
-                 if (path.length > 0) {
-                    ctx.beginPath();
-                    ctx.moveTo(path[0].x, path[0].y);
-
-                    for (let i = 1; i < path.length; i++) {
-                        ctx.lineTo(path[i].x, path[i].y);
-                    }
-                    
-                    const gradient = ctx.createLinearGradient(path[0].x, path[0].y, path[path.length - 1].x, path[path.length - 1].y);
-                    gradient.addColorStop(0, `hsl(${hue}, 90%, 60%)`);
-                    gradient.addColorStop(0.5, `hsl(${(hue + 40) % 360}, 90%, 60%)`);
-                    gradient.addColorStop(1, `hsl(${(hue + 80) % 360}, 90%, 60%)`);
-
-                    ctx.strokeStyle = gradient;
-                    ctx.lineWidth = LINE_THICKNESS;
-                    ctx.lineCap = 'round';
-                    ctx.lineJoin = 'round';
-                    ctx.stroke();
-                }
-            }
             
             function drawParticles() {
                 for (let i = particles.length - 1; i >= 0; i--) {
@@ -256,7 +214,7 @@
                     p.rotation += p.rotationSpeed;
                     p.life--;
 
-                    if (p.life <= 0 || p.y > canvas.height) {
+                    if (p.life <= 0 || p.y > canvas.height + 20) {
                         particles.splice(i, 1);
                     } else {
                         drawShape(p);
@@ -264,82 +222,73 @@
                 }
             }
             
-            // --- ПРОМЯНА: Функцията за рисуване на форми е обновена да съответства на снимката ---
+            // --- ПРОМЯНА: Дизайнът на триъгълника и цветът на линиите са променени ---
             function drawShape(p) {
                 ctx.save();
                 ctx.translate(p.x, p.y);
                 ctx.rotate(p.rotation);
-                ctx.scale(p.size / 25, p.size / 25); // Базов мащаб
+                ctx.scale(p.size / 25, p.size / 25);
                 ctx.beginPath();
-                ctx.strokeStyle = `rgba(0, 0, 0, ${p.life / 50})`;
+                // Линиите са сиви и полупрозрачни
+                ctx.strokeStyle = `rgba(100, 100, 100, ${Math.max(0, p.life / 70)})`;
+                ctx.fillStyle = `rgba(100, 100, 100, ${Math.max(0, p.life / 70)})`;
                 ctx.lineWidth = 1.5;
 
                 switch (p.type) {
                     case 'ruler':
-                        ctx.rect(-20, -4, 40, 8);
+                        ctx.strokeRect(-20, -4, 40, 8);
                         for(let i=-18; i<=18; i+=4) { ctx.moveTo(i, -4); ctx.lineTo(i, 0); }
+                        ctx.stroke();
                         break;
-                    case 'set_square': // Правоъгълен триъгълник
-                        ctx.moveTo(-15, 10); ctx.lineTo(15, 10); ctx.lineTo(-15, -10); ctx.closePath();
+                    case 'set_square': // Два триъгълника един в друг, разграфени
+                        ctx.moveTo(-15, 12); ctx.lineTo(15, 12); ctx.lineTo(-15, -8); ctx.closePath(); // Външен
+                        ctx.moveTo(-12, 9); ctx.lineTo(12, 9); ctx.lineTo(-12, -3); ctx.closePath(); // Вътрешен
+                        // Разграфяване
+                        for(let i=-15; i<=15; i+=5) { ctx.moveTo(i, 12); ctx.lineTo(i, 10); }
+                        for(let i=-8; i<=12; i+=5) { ctx.moveTo(-15, i); ctx.lineTo(-13, i); }
+                        ctx.stroke();
                         break;
                     case 'compass':
-                        ctx.moveTo(-3, -12); ctx.lineTo(-8, 12); // Ляв крак
-                        ctx.moveTo(3, -12); ctx.lineTo(8, 12); // Десен крак
-                        ctx.arc(0, -12, 4, 0, Math.PI * 2); // Глава
+                        ctx.moveTo(-3, -12); ctx.lineTo(-8, 12);
+                        ctx.moveTo(3, -12); ctx.lineTo(8, 12);
+                        ctx.stroke();
+                        ctx.beginPath(); ctx.arc(0, -12, 4, 0, Math.PI * 2); ctx.stroke();
                         break;
                     case 'pencil':
+                        ctx.beginPath();
                         ctx.moveTo(-3, 12); ctx.lineTo(3, 12); ctx.lineTo(3, -6);
                         ctx.lineTo(5, -6); ctx.lineTo(0, -14); ctx.lineTo(-5, -6);
                         ctx.lineTo(-3, -6); ctx.closePath();
+                        ctx.stroke();
                         break;
-                    case 'protractor': // Транспортир
-                        ctx.arc(0, 5, 15, Math.PI, 0); // Дъга
-                        ctx.lineTo(15, 5); // Долна линия
-                        ctx.closePath();
-                        for(let i=1; i < 6; i++) { // Лъчи
+                    case 'protractor':
+                        ctx.beginPath();
+                        ctx.arc(0, 5, 15, Math.PI, 0);
+                        ctx.lineTo(15, 5); ctx.closePath();
+                        for(let i=1; i < 6; i++) {
                            let angle = Math.PI + (i * Math.PI / 7);
                            ctx.moveTo(0,5); ctx.lineTo(Math.cos(angle) * 15, 5 + Math.sin(angle) * 15);
                         }
+                        ctx.stroke();
                         break;
                     case 'train':
-                         ctx.fillStyle = `rgba(0, 0, 0, ${p.life / 50})`;
-                         ctx.rect(-12, -5, 10, 8); ctx.rect(0, -8, 8, 11);
-                         ctx.beginPath(); ctx.arc(2, 4, 2.5, 0, Math.PI*2); ctx.fill();
-                         ctx.beginPath(); ctx.arc(-8, 4, 2.5, 0, Math.PI*2); ctx.fill();
+                         ctx.strokeRect(-12, -5, 10, 8); ctx.strokeRect(0, -8, 8, 11);
+                         ctx.beginPath(); ctx.arc(2, 4.5, 2.5, 0, Math.PI*2); ctx.fill();
+                         ctx.beginPath(); ctx.arc(-8, 4.5, 2.5, 0, Math.PI*2); ctx.fill();
                         break;
                 }
-                ctx.stroke();
+                
                 ctx.restore();
             }
 
-            function update() {
-                if (mouse.moved) {
-                    path.unshift({ x: mouse.x, y: mouse.y });
-                    if (path.length > MAX_TRAIL_LENGTH) {
-                        path.pop();
-                    }
-                    mouse.moved = false; 
-                    retractionCounter = 0;
-                } else if (path.length > 0) {
-                     retractionCounter++;
-                    if (retractionCounter >= RETRACTION_SPEED) {
-                        path.pop();
-                        retractionCounter = 0;
-                    }
-                }
-            }
-
             function animate() {
-                hue = (hue + 1.5) % 360; 
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                update();
-                drawTrail();
                 drawParticles();
                 requestAnimationFrame(animate);
             }
             
             window.addEventListener('resize', resizeCanvas);
-            window.addEventListener('mousemove', handleMouseMove);
+            // --- ПРОМЯНА: Премахнат е 'mousemove' event listener-ът ---
             window.addEventListener('click', handleClick);
             resizeCanvas();
             animate();
