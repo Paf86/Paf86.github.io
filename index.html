@@ -1,23 +1,20 @@
 <!DOCTYPE html>
 <html lang="bg">
 <head>
-    <!-- Важно: Файлът трябва да бъде запазен с кодиране (Encoding) UTF-8 -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PAF's PROGRAMS SUITE</title>
     <style>
-        /* --- НОВА ПРОМЯНА: Скриване на системния курсор и стил за новия курсор "червей" --- */
-        * {
-            cursor: none;
+        /* --- НОВА ПРОМЯНА: Стил за курсор "Флумастер" от предоставения код --- */
+        html, body {
+            cursor: none !important;
         }
-
-        .worm-segment {
+        #cursor-canvas {
             position: fixed;
-            pointer-events: none;
+            top: 0;
+            left: 0;
             z-index: 9999;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            transition: width 0.1s, height 0.1s; /* Плавна промяна на размера */
+            pointer-events: none;
         }
         /* --- Край на новите стилове --- */
 
@@ -112,7 +109,8 @@
     </style>
 </head>
 <body>
-    <!-- HTML елементите за курсора ще бъдат създадени от JavaScript -->
+    <!-- НОВА ПРОМЯНА: Добавен е canvas елементът за новия курсор -->
+    <canvas id="cursor-canvas"></canvas>
 
     <div class="container">
         <div class="header-buttons"><button id="add-suggestion-btn" class="header-btn">Предложение</button><button id="view-suggestions-btn" class="header-btn">Виж предложенията<span id="suggestion-count">0</span></button></div>
@@ -148,8 +146,8 @@
         document.addEventListener('DOMContentLoaded', async function() {
             initializeFirebaseFunctionality();
             
-            // НОВА ПРОМЯНА: Извикваме новата функция за курсор "дъгов червей"
-            initializeRainbowWormCursor();
+            // НОВА ПРОМЯНА: Извикваме новата функция за курсор "Флумастер"
+            initializeFeltPenCursor();
 
             const COMMANDS_FILE_URL = "https://raw.githubusercontent.com/PafApps/lisp/main/HELP_LISP.lsp";
             const categoryConfig = {
@@ -178,68 +176,144 @@
             }
         });
 
-        // НОВА ПРОМЯНА: Изцяло нова функция за курсор "дъгов червей"
-        function initializeRainbowWormCursor() {
-            const TRAIL_COUNT = 35; // По-дълга следа
-            const segments = [];
-            const positions = [];
-            let hue = 0;
+        // НОВА ПРОМЯНА: Изцяло нова функция за курсор "Флумастер"
+        function initializeFeltPenCursor() {
+            const canvas = document.getElementById('cursor-canvas');
+            const ctx = canvas.getContext('2d');
 
-            for (let i = 0; i < TRAIL_COUNT; i++) {
-                const segment = document.createElement('div');
-                segment.className = 'worm-segment';
-                document.body.appendChild(segment);
-                segments.push(segment);
-                positions.push({ x: -100, y: -100 });
+            // --- 1. НАСТРОЙКИ НА ЕФЕКТА (С АДАПТИРАНИ ЦВЕТОВЕ) ---
+            const LINE_COLORS = ['#e63946', '#457b9d', '#a8dadc'];
+            const LINE_THICKNESS = 8;
+            const MAX_TRAIL_LENGTH = 20;
+            const RETRACTION_SPEED = 2; // Колко бързо се прибира опашката
+
+            const PARTICLE_COUNT = 60;
+            const PARTICLE_COLORS = ['#e63946', '#f1faee', '#a8dadc', '#457b9d', '#1d3557'];
+            const GRAVITY = 0.15;
+
+            // --- 2. ПРОМЕНЛИВИ ---
+            let path = [];
+            let particles = [];
+            let mouse = { x: 0, y: 0, moved: false };
+            let animationFrameId = null;
+            let retractionCounter = 0;
+
+            // --- 3. ФУНКЦИИ ---
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
             }
 
-            window.addEventListener('mousemove', (e) => {
-                positions[0].x = e.clientX;
-                positions[0].y = e.clientY;
-            });
+            function handleMouseMove(e) {
+                mouse.x = e.clientX;
+                mouse.y = e.clientY;
+                mouse.moved = true;
+                
+                if (!animationFrameId) {
+                    for (let i = 0; i < MAX_TRAIL_LENGTH; i++) {
+                        path.push({ ...mouse });
+                    }
+                    animate();
+                }
+            }
+            
+            function handleClick(e) {
+                for (let i = 0; i < PARTICLE_COUNT; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = Math.random() * 8 + 2;
+                    particles.push({
+                        x: e.clientX, y: e.clientY,
+                        vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+                        color: PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)],
+                        size: Math.random() * 4 + 2
+                    });
+                }
+            }
 
-            function animate() {
-                // Движение на опашката
-                for (let i = 1; i < TRAIL_COUNT; i++) {
-                    const leader = positions[i - 1];
-                    const follower = positions[i];
-                    
-                    // Всяка точка плавно следва тази пред нея
-                    follower.x += (leader.x - follower.x) * 0.5;
-                    follower.y += (leader.y - follower.y) * 0.5;
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Рисуване на частиците
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.vy += GRAVITY;
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.y - p.size > canvas.height) {
+                        particles.splice(i, 1);
+                    } else {
+                        ctx.beginPath();
+                        ctx.fillStyle = p.color;
+                        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
                 }
                 
-                // Промяна на hue за ефект на движеща се дъга
-                hue = (hue + 1) % 360;
+                // Рисуване на линията/точката
+                if (path.length > 0) {
+                    if (path.length === 1) { // Ако има само една точка, рисуваме кръг
+                        const point = path[0];
+                        ctx.beginPath();
+                        ctx.fillStyle = LINE_COLORS[0];
+                        ctx.arc(point.x, point.y, LINE_THICKNESS / 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else { // Иначе рисуваме линия
+                        ctx.beginPath();
+                        ctx.moveTo(path[0].x, path[0].y);
 
-                // Стилизиране на сегментите
-                segments.forEach((seg, i) => {
-                    const pos = positions[i];
-                    
-                    // Първата точка ("главата") е много малка
-                    if (i === 0) {
-                        seg.style.width = '4px';
-                        seg.style.height = '4px';
-                    } else {
-                        // Останалите точки растат до средата и после намаляват
-                        const midPoint = Math.floor(TRAIL_COUNT / 2);
-                        const scaleFactor = i < midPoint ? (i / midPoint) : ((TRAIL_COUNT - i) / (TRAIL_COUNT - midPoint));
-                        const size = Math.max(2, 10 * scaleFactor); // Максимален размер 10px
-                        seg.style.width = `${size}px`;
-                        seg.style.height = `${size}px`;
+                        for (let i = 1; i < path.length; i++) {
+                            ctx.lineTo(path[i].x, path[i].y);
+                        }
+                        
+                        const gradient = ctx.createLinearGradient(path[0].x, path[0].y, path[path.length - 1].x, path[path.length - 1].y);
+                        for (let j = 0; j < LINE_COLORS.length; j++) {
+                            gradient.addColorStop(j / (LINE_COLORS.length - 1), LINE_COLORS[j]);
+                        }
+                        ctx.strokeStyle = gradient;
+                        ctx.lineWidth = LINE_THICKNESS;
+                        ctx.lineCap = 'round';
+                        ctx.lineJoin = 'round';
+                        ctx.stroke();
                     }
-                    
-                    // Цвят на дъгата
-                    const segmentHue = (hue + i * 8) % 360; // Разпределяме цветовете по опашката
-                    seg.style.backgroundColor = `hsl(${segmentHue}, 90%, 65%)`;
-                    seg.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
-                });
-
-                requestAnimationFrame(animate);
+                }
             }
 
-            animate();
+            function update() {
+                // Ако мишката се е движила, добавяме нова точка в началото на пътеката
+                if (mouse.moved) {
+                    path.unshift({ x: mouse.x, y: mouse.y });
+                    mouse.moved = false; 
+                    retractionCounter = 0;
+                }
+                
+                // Ако мишката НЕ се е движила и има повече от 1 точка, започваме да прибираме опашката
+                if (!mouse.moved && path.length > 1) {
+                    retractionCounter++;
+                    if (retractionCounter >= RETRACTION_SPEED) {
+                        path.pop();
+                        retractionCounter = 0;
+                    }
+                }
+
+                // Уверяваме се, че пътеката не е по-дълга от максимума
+                if (path.length > MAX_TRAIL_LENGTH) {
+                    path.pop();
+                }
+            }
+
+            function animate() {
+                update();
+                draw();
+                animationFrameId = requestAnimationFrame(animate);
+            }
+
+            // --- 4. СВЪРЗВАНЕ НА СЪБИТИЯТА ---
+            window.addEventListener('resize', resizeCanvas);
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('click', handleClick);
+            resizeCanvas();
         }
+
 
         // --- Останалата част от JavaScript кода е непроменена ---
 
