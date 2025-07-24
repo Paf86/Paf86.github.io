@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PAF's PROGRAMS SUITE</title>
     <style>
-        /* --- ПРОМЯНА: Върнато е скриването на системния курсор --- */
         html, body {
             cursor: none !important;
         }
@@ -143,7 +142,6 @@
         document.addEventListener('DOMContentLoaded', async function() {
             initializeFirebaseFunctionality();
             
-            // --- ПРОМЯНА: Функцията отново е комбинирана ---
             initializeCometAndParticlesCursor();
 
             const COMMANDS_FILE_URL = "https://raw.githubusercontent.com/PafApps/lisp/main/HELP_LISP.lsp";
@@ -180,20 +178,18 @@
 
             let mouse = { x: 0, y: 0, moved: false };
             let particles = [];
-            let path = []; // За следата
+            let path = [];
 
-            // --- Настройки за следата (змията) ---
-            const LINE_THICKNESS = 10; // Дебелина 10
-            const MAX_TRAIL_LENGTH = 25; // Дължина 25
+            const LINE_THICKNESS = 10;
+            const MAX_TRAIL_LENGTH = 25;
             const RETRACTION_SPEED = 2;
             let retractionCounter = 0;
             let hue = 0;
 
-            // --- Настройки за частиците ---
             const PARTICLE_COUNT = 50;
             const GRAVITY = 0.08;
-            // Премахнат е 'set_square'
-            const PARTICLE_TYPES = ['ruler', 'compass', 'pencil', 'protractor', 'train'];
+            // ПРОМЯНА: Върнат е 'set_square' (триъгълник)
+            const PARTICLE_TYPES = ['ruler', 'set_square', 'compass', 'pencil', 'protractor', 'train'];
 
 
             function resizeCanvas() {
@@ -218,10 +214,10 @@
                         vx: Math.cos(angle) * speed,
                         vy: Math.sin(angle) * speed - 2,
                         type: type,
-                        size: Math.random() * 20 + 10,
+                        size: Math.random() * 25 + 15,
                         rotation: (Math.random() - 0.5) * Math.PI,
                         rotationSpeed: (Math.random() - 0.5) * 0.15,
-                        life: 100 + Math.random() * 50
+                        life: 120 + Math.random() * 60
                     });
                 }
             }
@@ -257,7 +253,7 @@
                     p.rotation += p.rotationSpeed;
                     p.life--;
 
-                    if (p.life <= 0 || p.y > canvas.height + 20) {
+                    if (p.life <= 0 || p.y > canvas.height + 40) {
                         particles.splice(i, 1);
                     } else {
                         drawShape(p);
@@ -265,62 +261,83 @@
                 }
             }
             
+            // --- ПРОМЯНА: Функцията за рисуване на форми е обновена с реалистични инструменти ---
             function drawShape(p) {
                 ctx.save();
                 ctx.translate(p.x, p.y);
                 ctx.rotate(p.rotation);
-                ctx.scale(p.size / 30, p.size / 30); // малко по-голям базов мащаб за молива
+                ctx.scale(p.size / 50, p.size / 50);
                 
-                const alpha = Math.max(0, p.life / 70);
-                ctx.lineWidth = 1.5;
+                const alpha = Math.max(0, p.life / 100);
 
                 switch (p.type) {
                     case 'ruler':
-                        ctx.strokeStyle = `rgba(100, 100, 100, ${alpha})`;
-                        ctx.strokeRect(-20, -4, 40, 8);
-                        for(let i=-18; i<=18; i+=4) { ctx.moveTo(i, -4); ctx.lineTo(i, 0); }
+                        ctx.fillStyle = `rgba(220, 220, 220, ${alpha * 0.7})`;
+                        ctx.strokeStyle = `rgba(30, 30, 30, ${alpha})`;
+                        ctx.lineWidth = 1;
+                        ctx.fillRect(-25, -5, 50, 10);
+                        ctx.strokeRect(-25, -5, 50, 10);
+                        for(let i = -25; i <= 25; i += 5) {
+                            ctx.beginPath();
+                            ctx.moveTo(i, -5);
+                            ctx.lineTo(i, (i % 10 === 0) ? 0 : -2);
+                            ctx.stroke();
+                        }
+                        break;
+                    case 'set_square':
+                        ctx.fillStyle = `rgba(135, 206, 235, ${alpha * 0.5})`;
+                        ctx.strokeStyle = `rgba(30, 30, 30, ${alpha})`;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(-20, 20); ctx.lineTo(20, 20); ctx.lineTo(-20, -20); ctx.closePath();
+                        // Cutout
+                        ctx.moveTo(-10, 10); ctx.lineTo(10, 10); ctx.lineTo(-10, -10); ctx.closePath();
+                        ctx.fill("evenodd");
                         ctx.stroke();
+                         for(let i = -20; i <= 20; i += 4) {
+                            ctx.beginPath();
+                            ctx.moveTo(i, 20); ctx.lineTo(i, 18); ctx.stroke();
+                        }
                         break;
                     case 'compass':
-                        ctx.strokeStyle = `rgba(100, 100, 100, ${alpha})`;
-                        ctx.moveTo(-3, -12); ctx.lineTo(-8, 12);
-                        ctx.moveTo(3, -12); ctx.lineTo(8, 12);
-                        ctx.stroke();
-                        ctx.beginPath(); ctx.arc(0, -12, 4, 0, Math.PI * 2); ctx.stroke();
+                        ctx.strokeStyle = `rgba(128, 128, 128, ${alpha})`;
+                        ctx.lineWidth = 3;
+                        // Legs
+                        ctx.beginPath();
+                        ctx.moveTo(0, -15); ctx.lineTo(-10, 15); ctx.stroke();
+                        ctx.beginPath();
+                        ctx.moveTo(0, -15); ctx.lineTo(15, 15); ctx.stroke();
+                        // Hinge
+                        ctx.fillStyle = `rgba(0, 128, 255, ${alpha})`;
+                        ctx.beginPath(); ctx.arc(0, -15, 5, 0, Math.PI * 2); ctx.fill();
+                        // Pencil on right leg
+                        ctx.fillStyle = `rgba(255, 221, 89, ${alpha})`;
+                        ctx.fillRect(12, 0, 6, 15);
                         break;
                     case 'pencil':
-                        // Гумичка
-                        ctx.fillStyle = `rgba(255, 105, 180, ${alpha})`;
-                        ctx.fillRect( -4, 12, 8, 5);
-                        // Метална част
-                        ctx.fillStyle = `rgba(192, 192, 192, ${alpha})`;
-                        ctx.fillRect(-4, 8, 8, 4);
-                        // Тяло на молива
-                        ctx.fillStyle = `rgba(255, 221, 89, ${alpha})`;
-                        ctx.fillRect(-4, -10, 8, 18);
-                        // Подострена част
-                        ctx.beginPath();
-                        ctx.moveTo(-4, -10); ctx.lineTo(0, -18); ctx.lineTo(4, -10);
-                        ctx.closePath();
-                        ctx.fillStyle = `rgba(210, 180, 140, ${alpha})`;
-                        ctx.fill();
-                        // Графит
-                        ctx.beginPath();
-                        ctx.moveTo(0, -18); ctx.lineTo(-1, -17); ctx.lineTo(1, -17);
-                        ctx.closePath();
-                        ctx.fillStyle = `rgba(50, 50, 50, ${alpha})`;
-                        ctx.fill();
+                        ctx.globalAlpha = alpha;
+                        ctx.fillStyle = `rgb(255, 180, 180)`; ctx.fillRect(-5, 18, 10, 6);
+                        ctx.fillStyle = `rgb(192, 192, 192)`; ctx.fillRect(-5, 14, 10, 4);
+                        ctx.fillStyle = `rgb(255, 221, 89)`; ctx.fillRect(-5, -12, 10, 26);
+                        ctx.beginPath(); ctx.moveTo(-5, -12); ctx.lineTo(0, -22); ctx.lineTo(5, -12); ctx.closePath();
+                        ctx.fillStyle = `rgb(242, 219, 194)`; ctx.fill();
+                        ctx.beginPath(); ctx.moveTo(0,-22); ctx.lineTo(0,-19); ctx.closePath();
+                        ctx.strokeStyle = 'black'; ctx.lineWidth = 2; ctx.stroke();
                         break;
                     case 'protractor':
-                        ctx.strokeStyle = `rgba(100, 100, 100, ${alpha})`;
+                        ctx.fillStyle = `rgba(200, 200, 200, ${alpha * 0.4})`;
+                        ctx.strokeStyle = `rgba(30, 30, 30, ${alpha})`;
+                        ctx.lineWidth = 1;
                         ctx.beginPath();
-                        ctx.arc(0, 5, 15, Math.PI, 0);
-                        ctx.lineTo(15, 5); ctx.closePath();
-                        for(let i=1; i < 6; i++) {
-                           let angle = Math.PI + (i * Math.PI / 7);
-                           ctx.moveTo(0,5); ctx.lineTo(Math.cos(angle) * 15, 5 + Math.sin(angle) * 15);
+                        ctx.arc(0, 10, 20, Math.PI, 0); ctx.closePath();
+                        ctx.fill(); ctx.stroke();
+                        for(let i = 0; i <= 180; i += 15) {
+                           const angle = Math.PI * i / 180;
+                           ctx.beginPath();
+                           ctx.moveTo(0,10);
+                           ctx.lineTo(Math.cos(angle) * -20, 10 - Math.sin(angle) * 20);
+                           ctx.stroke();
                         }
-                        ctx.stroke();
                         break;
                     case 'train':
                          const grayAlpha = `rgba(100, 100, 100, ${alpha})`
@@ -336,7 +353,6 @@
             }
 
             function update() {
-                // Логика за следата
                 if (mouse.moved) {
                     path.unshift({ x: mouse.x, y: mouse.y });
                     if (path.length > MAX_TRAIL_LENGTH) {
@@ -356,11 +372,9 @@
             function animate() {
                 hue = (hue + 1.5) % 360; 
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                update(); // Обновява позицията на следата
-                drawTrail(); // Рисува следата
-                drawParticles(); // Рисува частиците
-                
+                update();
+                drawTrail();
+                drawParticles();
                 requestAnimationFrame(animate);
             }
             
@@ -688,4 +702,4 @@
         }
     </script>
 </body>
-</html>```
+</html>
