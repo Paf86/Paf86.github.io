@@ -79,13 +79,19 @@
         
         mark { background-color: rgba(255, 251, 143, 0.6); padding: 1px 0; border-radius: 3px; color: inherit; }
         
-        /* --- НОВИ СТИЛОВЕ САМО ЗА СТРАНИЧНОТО МЕНЮ --- */
+        /* --- НОВИ СТИЛОВЕ ЗА СТРАНИЧНОТО МЕНЮ --- */
         .latest-commands-widget { position: fixed; top: 150px; right: 20px; width: 320px; z-index: 999; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
         .latest-commands-widget summary { padding: 12px 15px; font-weight: bold; color: #1d3557; cursor: pointer; outline: none; list-style: none; display: flex; justify-content: space-between; align-items: center; }
         .latest-commands-widget summary::-webkit-details-marker { display: none; }
         .latest-commands-widget summary::after { content: '▼'; font-size: 12px; transition: transform 0.3s; }
         .latest-commands-widget details[open] > summary::after { transform: rotate(180deg); }
-        #latest-commands-list { padding: 15px; }
+        #latest-commands-list { padding: 0 15px 15px 15px; }
+        /* ДОБАВЕНИ СТИЛОВЕ ЗА СПИСЪКА */
+        #latest-commands-list ul { list-style: none; padding: 0; margin: 0; }
+        .latest-command-item { padding: 10px 0; border-bottom: 1px solid #eee; }
+        .latest-command-item:last-child { border-bottom: none; }
+        .latest-command-item-name { font-weight: bold; color: #1d3557; display: block; margin-bottom: 3px; font-size: 1.05em; text-transform: uppercase; }
+        .latest-command-item-desc { font-size: 0.9em; color: #555; }
 
     </style>
 </head>
@@ -98,12 +104,12 @@
         <div id="commands-container"></div>
     </div> 
 
-    <!-- НОВ HTML САМО ЗА СТРАНИЧНОТО МЕНЮ -->
+    <!-- ПРОМЯНА: Променено е заглавието на summary и е изчистен контейнера -->
     <div class="latest-commands-widget">
-        <details>
-            <summary>Странично меню</summary>
+        <details open>
+            <summary>Последни 5 добавени команди</summary>
             <div id="latest-commands-list">
-                <p>1, 2, 3</p>
+                <!-- Съдържанието ще се генерира от JavaScript -->
             </div>
         </details>
     </div>
@@ -115,7 +121,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-        // --- ЦЕЛИЯТ JAVASCRIPT Е АБСОЛЮТНО НЕПРОМЕНЕН ---
         const firebaseConfig = {
           apiKey: "AIzaSyACB9shT_VTr3PGW_1nFjJCGAgwSI55Omw", authDomain: "clickcount-a6e46.firebaseapp.com", databaseURL: "https://clickcount-a6e46-default-rtdb.firebaseio.com", projectId: "clickcount-a6e46", storageBucket: "clickcount-a6e46.appspot.com", messagingSenderId: "53304151952", appId: "1:53304151952:web:ed0c365ace6b1232842d15", measurementId: "G-5S028177MG"
         };
@@ -138,14 +143,57 @@
                 if (!response.ok) throw new Error(`HTTP грешка! Статус: ${response.status}`);
                 const lispContent = await response.text();
                 const parsedResult = parseLispFileImproved(lispContent, categoryConfig);
+
                 renderAllCommands(parsedResult.categorizedData, commandsContainer, categoryFilterContainer, commandCounter, parsedResult.uniqueCommandCount, categoryConfig);
+                
+                // НОВА ПРОМЯНА: Извикваме новата функция, за да попълни страничното меню
+                renderLatestCommands(parsedResult.categorizedData);
+
                 initializeFiltersAndAccordions();
+
             } catch (error) {
                 console.error("Грешка при зареждане:", error);
                 commandsContainer.innerHTML = `<p style="color: red; text-align: center;">Възникна грешка. Проверете конзолата.</p>`;
                 commandCounter.textContent = 'Грешка при зареждане';
             }
         });
+
+        // НОВА ПРОМЯНА: Цялата тази функция е нова. Тя се грижи за страничното меню.
+        function renderLatestCommands(categorizedData) {
+            const listContainer = document.getElementById('latest-commands-list');
+            if (!listContainer) return; // Предпазна проверка
+
+            // 1. Създаваме един общ масив с всички команди от всички категории.
+            // Object.values(categorizedData) взима масивите с команди от всяка категория.
+            // .flat() ги обединява в един единствен масив, запазвайки реда.
+            const allCommands = Object.values(categorizedData).flat();
+
+            // 2. Взимаме последните 5 елемента и ги обръщаме (за да е най-новата отгоре)
+            const latestCommands = allCommands.slice(-5).reverse();
+
+            if (latestCommands.length === 0) {
+                listContainer.innerHTML = '<p style="padding: 10px 0;">Няма намерени команди.</p>';
+                return;
+            }
+
+            // 3. Създаваме HTML за списъка
+            const ul = document.createElement('ul');
+            latestCommands.forEach(command => {
+                const li = document.createElement('li');
+                li.className = 'latest-command-item';
+                
+                // Използваме класове за по-добро стилизиране
+                li.innerHTML = `
+                    <span class="latest-command-item-name">${command.name}</span>
+                    <span class="latest-command-item-desc">${command.description}</span>
+                `;
+                ul.appendChild(li);
+            });
+
+            // 4. Изчистваме контейнера и добавяме новия списък
+            listContainer.innerHTML = '';
+            listContainer.appendChild(ul);
+        }
 
         function initializeFirebaseFunctionality() {
             const isAdmin = () => new URLSearchParams(window.location.search).get('admin') === 'true'; const adminMode = isAdmin();
