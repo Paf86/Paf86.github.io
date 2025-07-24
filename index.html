@@ -80,7 +80,7 @@
         mark { background-color: rgba(255, 251, 143, 0.6); padding: 1px 0; border-radius: 3px; color: inherit; }
         
         /* ПРОМЯНА: ДОБАВЕНИ/МОДИФИЦИРАНИ СТИЛОВЕ ЗА СТРАНИЧНАТА ЛЕНТА */
-        .latest-commands-widget { position: fixed; top: 150px; right: 20px; width: 320px; z-index: 999; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+        .latest-commands-widget { position: fixed; top: 150px; right: 40px; /* Преместено наляво */ width: 320px; z-index: 999; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
         .latest-commands-widget summary { padding: 12px 15px; font-weight: bold; color: #1d3557; cursor: pointer; outline: none; list-style: none; display: flex; justify-content: space-between; align-items: center; }
         .latest-commands-widget summary::-webkit-details-marker { display: none; }
         .latest-commands-widget summary::after { content: '▼'; font-size: 12px; transition: transform 0.3s; }
@@ -90,9 +90,8 @@
         .latest-command-item { padding: 10px 0; border-bottom: 1px solid #eee; }
         .latest-command-item:last-child { border-bottom: none; }
         
-        .latest-command-button { /* Нов стил за бутона */
-            width: 100%;
-            background-color: #457b9d; color: white; border: none; padding: 6px 10px;
+        .latest-command-button {
+            width: 100%; background-color: #457b9d; color: white; border: none; padding: 6px 10px;
             border-radius: 5px; font-size: 15px; transition: background-color 0.3s;
             text-align: center; font-weight: 500; text-transform: uppercase; cursor: pointer;
             margin-bottom: 5px;
@@ -100,10 +99,15 @@
         .latest-command-button:hover { background-color: #1d3557; }
 
         .latest-command-item-desc { font-size: 0.9em; color: #555; display: block; margin-bottom: 4px; }
-        .latest-command-item-category { /* Нов стил за категорията */
-            font-size: 0.8em; color: #e63946; font-style: italic;
+        
+        .latest-command-category-btn { /* Нов стил за кликаема категория */
+            background: none; border: none; padding: 0; font: inherit; color: #e63946;
+            font-size: 0.8em; font-style: italic; text-decoration: underline; cursor: pointer;
+            text-align: left;
         }
-        .copy-feedback-latest { /* Нов стил за обратна връзка */
+        .latest-command-category-btn:hover { color: #a8202b; }
+
+        .copy-feedback-latest {
             padding: 6px 10px; margin-top: 8px; background-color: #e6f4ea; color: #137333; 
             border-radius: 4px; text-align: center; font-size: 13px; font-weight: 500; 
             animation: fadeInOut 3.5s ease-in-out forwards;
@@ -160,12 +164,9 @@
                 const parsedResult = parseLispFileImproved(lispContent, categoryConfig);
 
                 renderAllCommands(parsedResult.categorizedData, commandsContainer, categoryFilterContainer, commandCounter, parsedResult.commandCount, categoryConfig);
-                
-                // ПРОМЯНА: Подаваме и новата карта с категориите
                 renderLatestCommands(parsedResult.orderedCommandKeys, parsedResult.commandDetailsMap);
-
                 initializeFiltersAndAccordions();
-                initializeLatestCommandsInteraction(); // ПРОМЯНА: Инициализираме клик-функционалността
+                initializeLatestCommandsInteraction();
 
             } catch (error) {
                 console.error("Грешка при зареждане:", error);
@@ -174,13 +175,11 @@
             }
         });
 
-        // ПРОМЯНА: Функцията вече приема карта с детайли (описание и категория)
         function renderLatestCommands(orderedCommandKeys, commandDetailsMap) {
             const listContainer = document.getElementById('latest-commands-list');
             if (!listContainer) return;
 
             const latestCommandKeys = orderedCommandKeys.slice(-5).reverse();
-
             if (latestCommandKeys.length === 0) {
                 listContainer.innerHTML = '<p style="padding: 10px 0;">Няма намерени команди.</p>';
                 return;
@@ -191,13 +190,13 @@
                 const li = document.createElement('li');
                 li.className = 'latest-command-item';
                 
-                const details = commandDetailsMap[commandName] || { description: '(Няма описание)', category: 'Неизвестна' };
+                const details = commandDetailsMap[commandName] || { description: '(Няма описание)', categoryName: 'Неизвестна', categoryId: null };
                 
-                // ПРОМЯНА: Генерираме HTML с <button> и <span> за категорията
+                // ПРОМЯНА: Генерираме HTML с <button> и за категорията, като добавяме и data-category-id
                 li.innerHTML = `
                     <button class="latest-command-button" data-command="${commandName}">${commandName}</button>
                     <span class="latest-command-item-desc">${details.description}</span>
-                    <span class="latest-command-item-category">Категория: ${details.category}</span>
+                    <button class="latest-command-category-btn" data-category-id="${details.categoryId}">Категория: ${details.categoryName}</button>
                 `;
                 ul.appendChild(li);
             });
@@ -206,31 +205,44 @@
             listContainer.appendChild(ul);
         }
         
-        // ПРОМЯНА: Тази нова функция се грижи за копирането в страничната лента
+        // ПРОМЯНА: Функцията вече обработва и клик върху категория
         function initializeLatestCommandsInteraction() {
             const latestCommandsList = document.getElementById('latest-commands-list');
             if (!latestCommandsList) return;
 
             latestCommandsList.addEventListener('click', function(e) {
                 const commandButton = e.target.closest('.latest-command-button');
-                if (!commandButton) return;
+                const categoryButton = e.target.closest('.latest-command-category-btn');
 
-                const commandText = commandButton.dataset.command;
-                navigator.clipboard.writeText(commandText).then(() => {
-                    // Премахваме предишна обратна връзка, ако съществува
-                    const existingFeedback = latestCommandsList.querySelector('.copy-feedback-latest');
-                    if (existingFeedback) { existingFeedback.remove(); }
+                if (commandButton) {
+                    const commandText = commandButton.dataset.command;
+                    navigator.clipboard.writeText(commandText).then(() => {
+                        const existingFeedback = latestCommandsList.querySelector('.copy-feedback-latest');
+                        if (existingFeedback) { existingFeedback.remove(); }
 
-                    const feedbackElement = document.createElement('div');
-                    feedbackElement.className = 'copy-feedback-latest'; // Използваме нов клас
-                    feedbackElement.textContent = `Командата "${commandText}" е копирана!`;
+                        const feedbackElement = document.createElement('div');
+                        feedbackElement.className = 'copy-feedback-latest';
+                        feedbackElement.textContent = `Командата "${commandText}" е копирана!`;
+                        
+                        const commandItem = commandButton.closest('.latest-command-item');
+                        commandItem.appendChild(feedbackElement);
+
+                        setTimeout(() => { feedbackElement.remove(); }, 3500);
+                    }).catch(err => { console.error('Грешка при копиране: ', err); });
+                } else if (categoryButton) {
+                    const categoryId = categoryButton.dataset.categoryId;
+                    if (!categoryId || categoryId === 'null') return; // Предпазна проверка
+
+                    // Намираме главния филтър бутон по data атрибута
+                    const mainFilterButton = document.querySelector(`.category-filter-button[data-filter="${categoryId}"]`);
                     
-                    // Добавяме елемента след родителския 'li' елемент
-                    const commandItem = commandButton.closest('.latest-command-item');
-                    commandItem.appendChild(feedbackElement);
-
-                    setTimeout(() => { feedbackElement.remove(); }, 3500);
-                }).catch(err => { console.error('Грешка при копиране: ', err); });
+                    if (mainFilterButton) {
+                        // Симулираме клик върху него, за да използваме съществуващата логика
+                        mainFilterButton.click();
+                        // Плавно превъртаме до филтрите, за да види потребителят промяната
+                        mainFilterButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
             });
         }
 
@@ -273,10 +285,9 @@
             suggestionsListDiv.addEventListener('blur', (e) => { if (e.target.tagName === 'INPUT' && e.target.closest('.new-command-section') && adminMode) { const id = e.target.dataset.id; const newName = e.target.value.trim(); suggestionsRef.child(id).update({ newCommandName: newName }).catch(error => console.error("Грешка:", error)); } }, true);
         }
         
-        // ПРОМЯНА: Функцията сега събира и категорията
+        // ПРОМЯНА: Функцията сега събира и ID на категорията
         function parseLispFileImproved(content, config) {
             const categorizedData = {};
-            // ПРОМЯНА: commandDetailsMap ще съдържа обект с описание и категория
             const commandDetailsMap = {}; 
             Object.values(config).forEach(c => categorizedData[c.id] = []);
             
@@ -289,7 +300,6 @@
                 const lispCategoryName = categoryMatch[1];
                 const categoryId = lispNameToIdMap[lispCategoryName]; if (!categoryId) return;
                 
-                // Намираме информацията за категорията от конфигурацията
                 const categoryInfo = Object.values(config).find(c => c.id === categoryId);
                 if (!categoryInfo) return;
                 
@@ -306,10 +316,10 @@
                     const commandObject = { name: commandName, description: fullDescription };
                     
                     categorizedData[categoryId].push(commandObject);
-                    // ПРОМЯНА: Пълним картата с обект, съдържащ описание и името на категорията
                     commandDetailsMap[commandName] = { 
                         description: fullDescription, 
-                        category: categoryInfo.filterName 
+                        categoryName: categoryInfo.filterName,
+                        categoryId: categoryInfo.id // Запазваме и ID-то
                     };
                 }
             });
@@ -333,7 +343,7 @@
                 categorizedData: categorizedData,
                 commandCount: orderedCommandKeys.length,
                 orderedCommandKeys: orderedCommandKeys,
-                commandDetailsMap: commandDetailsMap // ПРОМЯНА: Връщаме новата карта
+                commandDetailsMap: commandDetailsMap
             };
         }
         
