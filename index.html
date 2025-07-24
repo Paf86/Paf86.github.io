@@ -6,30 +6,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PAF's PROGRAMS SUITE</title>
     <style>
-        /* --- НОВА ПРОМЯНА: Скриване на системния курсор и стил за новия флуиден курсор --- */
+        /* --- НОВА ПРОМЯНА: Скриване на системния курсор и стил за новия курсор "червей" --- */
         * {
             cursor: none;
         }
 
-        #fluid-cursor {
+        .worm-segment {
             position: fixed;
-            width: 30px;
-            height: 30px;
-            background-color: #e63946;
-            border-radius: 50%;
-            top: 0;
-            left: 0;
             pointer-events: none;
             z-index: 9999;
-            transform-origin: center center;
-            transition: transform 0.2s ease-out, width 0.3s ease, height 0.3s ease, opacity 0.3s ease;
-            opacity: 0.8;
-        }
-
-        #fluid-cursor.hovered {
-            width: 50px;
-            height: 50px;
-            opacity: 0.2;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.1s, height 0.1s; /* Плавна промяна на размера */
         }
         /* --- Край на новите стилове --- */
 
@@ -160,8 +148,8 @@
         document.addEventListener('DOMContentLoaded', async function() {
             initializeFirebaseFunctionality();
             
-            // НОВА ПРОМЯНА: Извикваме новата функция за флуиден курсор
-            initializeFluidCursor();
+            // НОВА ПРОМЯНА: Извикваме новата функция за курсор "дъгов червей"
+            initializeRainbowWormCursor();
 
             const COMMANDS_FILE_URL = "https://raw.githubusercontent.com/PafApps/lisp/main/HELP_LISP.lsp";
             const categoryConfig = {
@@ -190,62 +178,68 @@
             }
         });
 
-        // НОВА ПРОМЯНА: Изцяло нова функция за флуиден курсор, имитиращ iamsterdam.com
-        function initializeFluidCursor() {
-            const cursor = document.createElement('div');
-            cursor.id = 'fluid-cursor';
-            document.body.appendChild(cursor);
+        // НОВА ПРОМЯНА: Изцяло нова функция за курсор "дъгов червей"
+        function initializeRainbowWormCursor() {
+            const TRAIL_COUNT = 35; // По-дълга следа
+            const segments = [];
+            const positions = [];
+            let hue = 0;
 
-            let mouse = { x: -100, y: -100 }; // Реалната позиция на мишката
-            let pos = { x: 0, y: 0 }; // Позицията на нашия курсор (която ще се движи плавно)
-            let prevPos = { x: 0, y: 0 }; // Позицията от предишния кадър
-            let speed = 0;
+            for (let i = 0; i < TRAIL_COUNT; i++) {
+                const segment = document.createElement('div');
+                segment.className = 'worm-segment';
+                document.body.appendChild(segment);
+                segments.push(segment);
+                positions.push({ x: -100, y: -100 });
+            }
 
-            window.addEventListener('mousemove', e => {
-                mouse.x = e.clientX;
-                mouse.y = e.clientY;
+            window.addEventListener('mousemove', (e) => {
+                positions[0].x = e.clientX;
+                positions[0].y = e.clientY;
             });
 
-            const tick = () => {
-                // Плавно придвижване на курсора към мишката (easing)
-                const easeFactor = 0.2;
-                pos.x += (mouse.x - pos.x) * easeFactor;
-                pos.y += (mouse.y - pos.y) * easeFactor;
-
-                // Изчисляване на разликата (скоростта) спрямо предния кадър
-                const dx = pos.x - prevPos.x;
-                const dy = pos.y - prevPos.y;
+            function animate() {
+                // Движение на опашката
+                for (let i = 1; i < TRAIL_COUNT; i++) {
+                    const leader = positions[i - 1];
+                    const follower = positions[i];
+                    
+                    // Всяка точка плавно следва тази пред нея
+                    follower.x += (leader.x - follower.x) * 0.5;
+                    follower.y += (leader.y - follower.y) * 0.5;
+                }
                 
-                // Изчисляване на скоростта (дължината на вектора)
-                speed = Math.sqrt(dx * dx + dy * dy);
-                
-                // Изчисляване на ъгъла на движение
-                const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                // Промяна на hue за ефект на движеща се дъга
+                hue = (hue + 1) % 360;
 
-                // Мащабиране (разтягане и сплескване) на база скорост
-                const scaleX = 1 + Math.min(speed / 30, 1);  // Разтягане до 2 пъти
-                const scaleY = 1 - Math.min(speed / 80, 0.5); // Сплескване до 0.5 пъти
+                // Стилизиране на сегментите
+                segments.forEach((seg, i) => {
+                    const pos = positions[i];
+                    
+                    // Първата точка ("главата") е много малка
+                    if (i === 0) {
+                        seg.style.width = '4px';
+                        seg.style.height = '4px';
+                    } else {
+                        // Останалите точки растат до средата и после намаляват
+                        const midPoint = Math.floor(TRAIL_COUNT / 2);
+                        const scaleFactor = i < midPoint ? (i / midPoint) : ((TRAIL_COUNT - i) / (TRAIL_COUNT - midPoint));
+                        const size = Math.max(2, 10 * scaleFactor); // Максимален размер 10px
+                        seg.style.width = `${size}px`;
+                        seg.style.height = `${size}px`;
+                    }
+                    
+                    // Цвят на дъгата
+                    const segmentHue = (hue + i * 8) % 360; // Разпределяме цветовете по опашката
+                    seg.style.backgroundColor = `hsl(${segmentHue}, 90%, 65%)`;
+                    seg.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+                });
 
-                // Прилагане на всички трансформации
-                cursor.style.transform = `translate(${pos.x - cursor.offsetWidth / 2}px, ${pos.y - cursor.offsetHeight / 2}px) rotate(${angle}deg) scaleX(${scaleX}) scaleY(${scaleY})`;
+                requestAnimationFrame(animate);
+            }
 
-                // Запазване на текущата позиция за следващия кадър
-                prevPos.x = pos.x;
-                prevPos.y = pos.y;
-                
-                requestAnimationFrame(tick);
-            };
-
-            tick();
-            
-            // Ефект при hover върху бутони
-            const interactiveElements = document.querySelectorAll('a, button, summary, .close-button, [role="button"]');
-            interactiveElements.forEach(el => {
-                el.addEventListener('mouseenter', () => cursor.classList.add('hovered'));
-                el.addEventListener('mouseleave', () => cursor.classList.remove('hovered'));
-            });
+            animate();
         }
-
 
         // --- Останалата част от JavaScript кода е непроменена ---
 
