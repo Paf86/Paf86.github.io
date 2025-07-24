@@ -117,23 +117,19 @@
         
         /* START OF CORRECTION / НАЧАЛО НА КОРЕКЦИЯТА */
         #suggestions-list .suggestion-item {
-            border-bottom: 3px double #eee; /* Променен разделител */
-            padding: 15px 5px;
-        }
-        
-        .suggestion-top-row {
             display: flex;
-            align-items: center; /* Подравняване на елементите на един ред */
+            align-items: flex-start; /* Подравнява лявата и дясната колона в горната им част */
             gap: 15px;
-        }
-
-        .suggestion-meta {
-            flex-grow: 1;
+            padding: 15px 5px;
+            border-bottom: 3px double #eee; /* Двоен разделител */
         }
         
-        .suggestion-body {
-            padding-left: 45px; /* Отстъп за текста на предложението */
-            padding-top: 5px;
+        .suggestion-content-left {
+            flex: 1; /* Позволява на лявата колона да заеме наличното пространство */
+            min-width: 0; /* КЛЮЧОВО: Позволява на колоната да се свие и текстът да се пренесе */
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
         }
 
         .suggestion-number {
@@ -143,26 +139,41 @@
             min-width: 25px;
             text-align: right;
         }
-        
+
+        .suggestion-details {
+             flex: 1;
+             min-width: 0;
+        }
+
+        .suggester-info {
+            margin: 0;
+            padding: 0;
+        }
+
         .suggested-by-label { 
             font-size: 0.9em; 
-            color: #555; 
-            margin-right: 5px;
+            color: #555;
         }
+
         #suggestions-list .suggester-name { 
             font-weight: bold; 
             color: #1d3557; 
         }
-
+        
         #suggestions-list .suggestion-text {
             margin-top: 5px;
             white-space: pre-wrap;
             overflow-wrap: break-word;
         }
+        
+        #suggestions-list .actions-container {
+            display: flex;
+            align-items: flex-start;
+            min-width: 170px; /* Задава минимална ширина на дясната колона */
+        }
         /* END OF CORRECTION / КРАЙ НА КОРЕКЦИЯТА */
-
-        #suggestions-list .status-container { display: flex; flex-direction: column; align-items: flex-end; min-width: 170px; }
-        #suggestions-list .actions-container { display: flex; align-items: flex-start; }
+        
+        #suggestions-list .status-container { display: flex; flex-direction: column; align-items: flex-end; width: 100%;}
         #suggestions-list .status-toggle { border: none; background: none; font-size: 16px; padding: 5px 10px; border-radius: 5px; transition: background-color 0.3s; width: 100%; text-align: left; }
         #suggestions-list .status-toggle.is-pending { background-color: #fce8e6; color: #a50e0e; }
         #suggestions-list .status-toggle.is-done { background-color: #e6f4ea; color: #137333; }
@@ -558,22 +569,30 @@
                     const item = document.createElement('div');
                     item.className = 'suggestion-item';
 
-                    // --- Create Top Row ---
-                    const topRow = document.createElement('div');
-                    topRow.className = 'suggestion-top-row';
+                    // --- Лява колона (Номер, Предложил, Текст) ---
+                    const leftCol = document.createElement('div');
+                    leftCol.className = 'suggestion-content-left';
 
                     const numberDiv = document.createElement('div');
                     numberDiv.className = 'suggestion-number';
                     numberDiv.textContent = `${index + 1}.`;
-                    topRow.appendChild(numberDiv);
+                    leftCol.appendChild(numberDiv);
 
-                    const metaDiv = document.createElement('div');
-                    metaDiv.className = 'suggestion-meta';
-                    metaDiv.innerHTML = `<span class="suggested-by-label">Предложил:</span><span class="suggester-name">${suggestion.name || 'Анонимен'}</span>`;
-                    topRow.appendChild(metaDiv);
+                    const detailsDiv = document.createElement('div');
+                    detailsDiv.className = 'suggestion-details';
+                    detailsDiv.innerHTML = `
+                        <p class="suggester-info">
+                            <span class="suggested-by-label">Предложил:</span>
+                            <span class="suggester-name">${suggestion.name || 'Анонимен'}</span>
+                        </p>
+                        <p class="suggestion-text">${suggestion.text}</p>
+                    `;
+                    leftCol.appendChild(detailsDiv);
 
-                    const rightColumn = document.createElement('div');
-                    rightColumn.className = 'actions-container';
+                    // --- Дясна колона (Статус, Изтриване) ---
+                    const rightCol = document.createElement('div');
+                    rightCol.className = 'actions-container';
+                    
                     const statusContainer = document.createElement('div');
                     statusContainer.className = 'status-container';
                     const statusBtn = document.createElement('button');
@@ -607,8 +626,7 @@
                         statusContainer.appendChild(statusBtn);
                     }
                     if (adminMode) statusBtn.classList.add('admin-enabled');
-                    
-                    rightColumn.appendChild(statusContainer);
+                    rightCol.appendChild(statusContainer);
 
                     if(adminMode){
                         const deleteBtn = document.createElement('button');
@@ -616,21 +634,12 @@
                         deleteBtn.innerHTML = '';
                         deleteBtn.title = 'Изтрий предложението';
                         deleteBtn.dataset.id = key;
-                        rightColumn.appendChild(deleteBtn);
-                    }
-                    topRow.appendChild(rightColumn);
-
-                    // --- Create Body ---
-                    const bodyDiv = document.createElement('div');
-                    bodyDiv.className = 'suggestion-body';
-                    bodyDiv.innerHTML = `<p class="suggestion-text">${suggestion.text}</p>`;
-                    
-                    // --- Assemble ---
-                    item.appendChild(topRow);
-                    if (suggestion.text && suggestion.text.trim() !== '') {
-                        item.appendChild(bodyDiv);
+                        rightCol.appendChild(deleteBtn);
                     }
                     
+                    // --- Сглобяване ---
+                    item.appendChild(leftCol);
+                    item.appendChild(rightCol);
                     suggestionsListDiv.appendChild(item);
                 });
             };
