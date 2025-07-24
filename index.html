@@ -635,7 +635,9 @@
                     const commandButton = entry.querySelector('.command-button');
                     const descriptionSpan = entry.querySelector('.short-description');
                     commandButton.innerHTML = commandButton.dataset.originalText;
-                    descriptionSpan.innerHTML = originalDescription;
+                    //  START OF CORRECTION / НАЧАЛО НА КОРЕКЦИЯТА
+                    descriptionSpan.innerHTML = descriptionSpan.dataset.originalText; // BUG FIX: Was using an undefined variable 'originalDescription'
+                    //  END OF CORRECTION / КРАЙ НА КОРЕКЦИЯТА
                 });
             }
 
