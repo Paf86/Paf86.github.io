@@ -315,38 +315,56 @@
         const db = firebase.database();
         const suggestionsRef = db.ref("suggestions");
 
-        // --- НАЧАЛО НА ПОДОБРЕНИЯ КОД ЗА БРОЯЧ С АНАЛИТИКА ---
+        // --- НАЧАЛО НА КОДА ЗА БРОЯЧ С УНИКАЛНИ ПОСЕТИТЕЛИ ---
         
-        // 1. Вземаме днешната дата в удобен за базата данни формат (ГГГГ-ММ-ДД)
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0'); // Месеците са от 0-11, затова +1
-        const day = String(today.getDate()).padStart(2, '0');
-        const dateKey = `${year}-${month}-${day}`; // Резултат: "2023-10-27"
+        function trackVisitor() {
+            // 1. Вземаме днешната дата в удобен за базата данни формат (ГГГГ-ММ-ДД)
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const dateKey = `${year}-${month}-${day}`;
 
-        // 2. Създаваме референции към две места в базата данни
-        const totalVisitsRef = db.ref('analytics/total_visits');
-        const dailyVisitsRef = db.ref(`analytics/visits_by_day/${dateKey}`); // Например: analytics/visits_by_day/2023-10-27
-        const visitorCounterElement = document.getElementById('visitor-counter');
+            // 2. Създаваме референции към местата в базата данни
+            const totalVisitsRef = db.ref('analytics/total_visits');
+            const dailyPageLoadsRef = db.ref(`analytics/visits_by_day/${dateKey}`);
+            const uniqueDailyVisitsRef = db.ref(`analytics/unique_visits_by_day/${dateKey}`); // <-- Ново
+            const visitorCounterElement = document.getElementById('visitor-counter');
 
-        // 3. Използваме транзакции, за да увеличим и двата брояча безопасно
-        totalVisitsRef.transaction(currentValue => {
-            return (currentValue || 0) + 1;
-        });
+            // 3. Винаги увеличаваме броя на зарежданията на страницата (page loads)
+            totalVisitsRef.transaction(currentValue => (currentValue || 0) + 1);
+            dailyPageLoadsRef.transaction(currentValue => (currentValue || 0) + 1);
 
-        dailyVisitsRef.transaction(currentValue => {
-            return (currentValue || 0) + 1;
-        });
-        
-        // 4. "Слушаме" за промени само в ОБЩИЯ брояч и го показваме на сайта
-        totalVisitsRef.on('value', (snapshot) => {
-            const count = snapshot.val() || 0;
-            if (visitorCounterElement) {
-                visitorCounterElement.textContent = `Посещения: ${count}`;
+            // 4. Проверяваме дали потребителят е "уникален" за днес
+            const lastVisitKey = 'lastVisitDate';
+            const lastVisit = localStorage.getItem(lastVisitKey);
+            
+            if (lastVisit !== dateKey) {
+                // Ако датата е различна (или не съществува), това е уникален посетител за днес
+                console.log("Уникален посетител за днес! Броим го.");
+                
+                // Увеличаваме брояча за уникални посетители за днес
+                uniqueDailyVisitsRef.transaction(currentValue => (currentValue || 0) + 1);
+                
+                // Запазваме днешната дата в localStorage, за да не го броим отново
+                localStorage.setItem(lastVisitKey, dateKey);
+            } else {
+                console.log("Повторно посещение за днес. Не броим.");
             }
-        });
+            
+            // 5. Показваме ОБЩИЯ брой зареждания на страницата на сайта
+            totalVisitsRef.on('value', (snapshot) => {
+                const count = snapshot.val() || 0;
+                if (visitorCounterElement) {
+                    visitorCounterElement.textContent = `Посещения: ${count}`;
+                }
+            });
+        }
+
+        // Извикваме функцията за проследяване
+        trackVisitor();
         
-        // --- КРАЙ НА ПОДОБРЕНИЯ КОД ЗА БРОЯЧ ---
+        // --- КРАЙ НА КОДА ЗА БРОЯЧ ---
 
         document.addEventListener('DOMContentLoaded', async function() {
             initializeFirebaseFunctionality();
@@ -380,6 +398,18 @@
             }
         });
 
+        // ... Останалата част от JavaScript кода си остава същата ...
+        function initializeFunMode() { /* ... */ }
+        function renderLatestCommands(orderedCommandKeys, commandDetailsMap) { /* ... */ }
+        function initializeLatestCommandsInteraction() { /* ... */ }
+        function initializeFirebaseFunctionality() { /* ... */ }
+        function parseLispFileImproved(content, config) { /* ... */ }
+        function renderAllCommands(data, container, filterContainer, counterEl, commandCount, config) { /* ... */ }
+        function initializeFiltersAndAccordions() { /* ... */ }
+
+    </script>
+    <script>
+        // Поставям останалите функции тук за прегледност, но те са същите като във вашия файл
         function initializeFunMode() {
             const funToggleButton = document.getElementById('fun-toggle-btn');
             const canvas = document.getElementById('cursor-canvas');
@@ -547,7 +577,6 @@
                 funCursor.start();
             }
         }
-        
         function renderLatestCommands(orderedCommandKeys, commandDetailsMap) {
             const listContainer = document.getElementById('latest-commands-list');
             if (!listContainer) return;
@@ -576,7 +605,6 @@
             listContainer.innerHTML = '';
             listContainer.appendChild(ul);
         }
-        
         function initializeLatestCommandsInteraction() {
             const latestCommandsList = document.getElementById('latest-commands-list');
             if (!latestCommandsList) return;
@@ -613,7 +641,6 @@
                 }
             });
         }
-
         function initializeFirebaseFunctionality() {
             const isAdmin = () => new URLSearchParams(window.location.search).get('admin') === 'true'; const adminMode = isAdmin();
             const addSuggestionBtn = document.getElementById('add-suggestion-btn'); const viewSuggestionsBtn = document.getElementById('view-suggestions-btn'); const suggestionFormModal = document.getElementById('suggestion-form-modal'); const suggestionsListModal = document.getElementById('suggestions-list-modal'); const suggestionForm = document.getElementById('suggestion-form'); const suggestionsListDiv = document.getElementById('suggestions-list'); const suggestionCountSpan = document.getElementById('suggestion-count'); const closeButtons = document.querySelectorAll('.close-button');
@@ -764,7 +791,6 @@
             });
             suggestionsListDiv.addEventListener('blur', (e) => { if (e.target.tagName === 'INPUT' && e.target.closest('.new-command-section') && adminMode) { const id = e.target.dataset.id; const newName = e.target.value.trim(); suggestionsRef.child(id).update({ newCommandName: newName }).catch(error => console.error("Грешка:", error)); } }, true);
         }
-        
         function parseLispFileImproved(content, config) {
             const categorizedData = {};
             const commandDetailsMap = {}; 
@@ -825,7 +851,6 @@
                 commandDetailsMap: commandDetailsMap
             };
         }
-        
         function renderAllCommands(data, container, filterContainer, counterEl, commandCount, config) {
             container.innerHTML = ''; filterContainer.innerHTML = '<button class="category-filter-button active" data-filter="all">ВСИЧКИ СЕКЦИИ</button>';
             for (const categoryId in data) {
@@ -855,7 +880,6 @@
             }
             counterEl.textContent = `Намерени общо ${commandCount} уникални команди, разпределени в категории`;
         }
-
         function initializeFiltersAndAccordions() {
             const searchBar = document.getElementById('search-bar');
             const categoryFilter = document.getElementById('category-filter');
