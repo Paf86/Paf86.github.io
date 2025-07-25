@@ -61,6 +61,36 @@
         .header-btn:hover { background-color: #a8202b; }
         #suggestion-count { background-color: white; color: #e63946; border-radius: 50%; padding: 0px 6px; font-size: 12px; margin-left: 5px; }
         
+        /* --- CSS ЗА АДМИН ИЗВЕСТИЯ --- */
+        @keyframes pulse-animation {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(230, 57, 70, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 10px 15px rgba(230, 57, 70, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(230, 57, 70, 0); }
+        }
+
+        .new-suggestion-alert {
+            animation: pulse-animation 1.5s infinite;
+            position: relative; /* Нужно за позициониране на брояча */
+        }
+
+        #new-suggestion-indicator {
+            display: none; /* Скрито по подразбиране */
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: #e63946; /* Същият червен цвят */
+            color: white;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 13px;
+            font-weight: bold;
+            text-align: center;
+            line-height: 22px;
+            border: 2px solid white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
         .modal { 
             display: none; 
             position: fixed; 
@@ -283,7 +313,14 @@
 
     <div class="container">
         <button id="fun-toggle-btn">FUN</button>
-        <div class="header-buttons"><button id="add-suggestion-btn" class="header-btn">Предложение</button><button id="view-suggestions-btn" class="header-btn">Виж предложенията<span id="suggestion-count">0</span></button></div>
+        <div class="header-buttons">
+            <button id="add-suggestion-btn" class="header-btn">Предложение</button>
+            <button id="view-suggestions-btn" class="header-btn">
+                Виж предложенията
+                <span id="suggestion-count">0</span>
+                <span id="new-suggestion-indicator"></span>
+            </button>
+        </div>
         <h1>PAF's PROGRAMS SUITE</h1><h3 class="main-subtitle">Интерактивен списък на AutoLISP команди</h3><h3 id="command-counter">Зареждане на командите...</h3>
         <div class="search-container"><input type="text" id="search-bar" placeholder="Търсене по име или описание..."></div>
         <div class="filters-container"><div id="category-filter"></div><div id="alphabet-filter"><button class="filter-button active" data-filter="all">ВСИЧКИ БУКВИ</button><script>document.write(Array.from(Array(26)).map((e, i) => `<button class="filter-button" data-filter="${String.fromCharCode(i + 65)}">${String.fromCharCode(i + 65)}</button>`).join(''));</script></div></div>
@@ -301,7 +338,6 @@
     <div id="suggestion-form-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2>Направи предложение</h2><form id="suggestion-form"><label for="suggester-name">Твоето име:</label><input type="text" id="suggester-name" required><label for="suggestion-text">Предложи нова LISP команда:</label><textarea id="suggestion-text" required></textarea><button type="submit">Изпрати</button></form></div></div>
     <div id="suggestions-list-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2>Списък с предложения</h2><div id="suggestions-list"></div></div></div>
     
-    <!-- --- HTML ЕЛЕМЕНТ ЗА БРОЯЧА --- -->
     <div id="visitor-counter">Зареждане...</div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -315,66 +351,41 @@
         const db = firebase.database();
         const suggestionsRef = db.ref("suggestions");
 
-        // --- НАЧАЛО НА КОДА ЗА БРОЯЧ С УНИКАЛНИ ПОСЕТИТЕЛИ НА 1 ЧАС ---
-        
+        // --- БРОЯЧ С УНИКАЛНИ ПОСЕТИТЕЛИ НА 1 ЧАС ---
         function trackVisitor() {
-            // 1. Създаваме референция към брояча в Firebase.
-            // Може да го кръстим по-описателно, за да знаем, че е на база час.
             const hourlyUniqueVisitorsRef = db.ref('analytics/unique_visitors_hourly');
             const visitorCounterElement = document.getElementById('visitor-counter');
-
-            // 2. Дефинираме ключа за localStorage и колко е 1 час в милисекунди
             const storageKey = 'paf-suite-last-visit-timestamp';
             const ONE_HOUR_IN_MS = 60 * 60 * 1000;
             const now = Date.now();
-
-            // 3. Вземаме последния записан timestamp
             const lastVisitTimestamp = localStorage.getItem(storageKey);
-
             let isUniqueVisit = false;
 
             if (!lastVisitTimestamp) {
-                // Случай 1: Потребителят никога не е посещавал сайта.
                 isUniqueVisit = true;
             } else {
-                // Случай 2: Потребителят е бил тук. Проверяваме кога.
                 const timeDifference = now - parseInt(lastVisitTimestamp, 10);
                 if (timeDifference > ONE_HOUR_IN_MS) {
-                    // Изминал е повече от час.
                     isUniqueVisit = true;
                 }
             }
             
-            // 4. Ако посещението е уникално (по нашите правила), действаме.
             if (isUniqueVisit) {
-                console.log("Уникално посещение (на база 1 час). Броим го.");
-                
-                // Увеличаваме брояча в Firebase
                 hourlyUniqueVisitorsRef.transaction(currentValue => (currentValue || 0) + 1);
-                
-                // Запазваме ТЕКУЩИЯ час в localStorage
                 localStorage.setItem(storageKey, now.toString());
-            } else {
-                console.log("Повторно посещение в рамките на 1 час. Не броим.");
             }
             
-            // 5. Показваме стойността на този брояч на екрана
             hourlyUniqueVisitorsRef.on('value', (snapshot) => {
                 const count = snapshot.val() || 0;
                 if (visitorCounterElement) {
-                    visitorCounterElement.textContent = `Посетители (1ч): ${count}`;
+                    visitorCounterElement.textContent = `Посетители: ${count}`;
                 }
             });
         }
-
-        // Извикваме функцията за проследяване
         trackVisitor();
-        
-        // --- КРАЙ НА КОДА ЗА БРОЯЧ ---
 
         document.addEventListener('DOMContentLoaded', async function() {
             initializeFirebaseFunctionality();
-            
             initializeFunMode();
 
             const COMMANDS_FILE_URL = "https://raw.githubusercontent.com/PafApps/lisp/main/HELP_LISP.lsp";
@@ -389,14 +400,11 @@
                 const response = await fetch(COMMANDS_FILE_URL);
                 if (!response.ok) throw new Error(`HTTP грешка! Статус: ${response.status}`);
                 const lispContent = await response.text();
-                
                 const parsedResult = parseLispFileImproved(lispContent, categoryConfig);
-
                 renderAllCommands(parsedResult.categorizedData, commandsContainer, categoryFilterContainer, commandCounter, parsedResult.commandCount, categoryConfig);
                 renderLatestCommands(parsedResult.orderedCommandKeys, parsedResult.commandDetailsMap);
                 initializeFiltersAndAccordions();
                 initializeLatestCommandsInteraction();
-
             } catch (error) {
                 console.error("Грешка при зареждане:", error);
                 commandsContainer.innerHTML = `<p style="color: red; text-align: center;">Възникна грешка. Проверете конзолата.</p>`;
@@ -404,7 +412,198 @@
             }
         });
 
-        // ... Останалата част от JavaScript кода си остава същата ...
+        // --- ФУНКЦИЯ ЗА ПРЕДЛОЖЕНИЯ И АДМИН ИЗВЕСТИЯ ---
+        function initializeFirebaseFunctionality() {
+            const isAdmin = () => new URLSearchParams(window.location.search).get('admin') === 'true';
+            const adminMode = isAdmin();
+
+            const addSuggestionBtn = document.getElementById('add-suggestion-btn');
+            const viewSuggestionsBtn = document.getElementById('view-suggestions-btn');
+            const suggestionFormModal = document.getElementById('suggestion-form-modal');
+            const suggestionsListModal = document.getElementById('suggestions-list-modal');
+            const suggestionForm = document.getElementById('suggestion-form');
+            const suggestionsListDiv = document.getElementById('suggestions-list');
+            const suggestionCountSpan = document.getElementById('suggestion-count');
+            const closeButtons = document.querySelectorAll('.close-button');
+            const newSuggestionIndicator = document.getElementById('new-suggestion-indicator');
+            const storageKeyForAdmin = 'admin_last_seen_suggestions_count';
+
+            const updateAdminNotification = (totalSuggestions) => {
+                if (!adminMode) return;
+                const lastSeenCount = parseInt(localStorage.getItem(storageKeyForAdmin) || '0', 10);
+                const newCount = totalSuggestions - lastSeenCount;
+                if (newCount > 0) {
+                    newSuggestionIndicator.textContent = newCount;
+                    newSuggestionIndicator.style.display = 'block';
+                    viewSuggestionsBtn.classList.add('new-suggestion-alert');
+                } else {
+                    newSuggestionIndicator.style.display = 'none';
+                    viewSuggestionsBtn.classList.remove('new-suggestion-alert');
+                }
+            };
+
+            const renderSuggestions = (snapshot) => {
+                suggestionsListDiv.innerHTML = '';
+                const suggestionsArray = [];
+                snapshot.forEach(childSnapshot => {
+                    suggestionsArray.push({ key: childSnapshot.key, ...childSnapshot.val() });
+                });
+                
+                const totalSuggestionCount = suggestionsArray.length;
+                suggestionCountSpan.textContent = totalSuggestionCount;
+                updateAdminNotification(totalSuggestionCount);
+                suggestionsArray.reverse();
+
+                if (totalSuggestionCount === 0) {
+                    suggestionsListDiv.innerHTML = '<p>Все още няма подадени предложения.</p>';
+                    return;
+                }
+
+                suggestionsArray.forEach((suggestion, index) => {
+                    const key = suggestion.key;
+                    const item = document.createElement('div');
+                    item.className = 'suggestion-item';
+                    const leftCol = document.createElement('div');
+                    leftCol.className = 'suggestion-content-left';
+                    const numberDiv = document.createElement('div');
+                    numberDiv.className = 'suggestion-number';
+                    numberDiv.textContent = `${index + 1}.`;
+                    leftCol.appendChild(numberDiv);
+                    const detailsDiv = document.createElement('div');
+                    detailsDiv.className = 'suggestion-details';
+                    detailsDiv.innerHTML = `
+                        <p class="suggester-info">
+                            <span class="suggested-by-label">Предложил:</span>
+                            <span class="suggester-name">${suggestion.name || 'Анонимен'}</span>
+                        </p>
+                        <p class="suggestion-text">${suggestion.text}</p>
+                    `;
+                    leftCol.appendChild(detailsDiv);
+                    const rightCol = document.createElement('div');
+                    rightCol.className = 'actions-container';
+                    const statusContainer = document.createElement('div');
+                    statusContainer.className = 'status-container';
+                    const statusBtn = document.createElement('button');
+                    statusBtn.className = 'status-toggle';
+                    statusBtn.dataset.id = key;
+                    if (suggestion.status === 'done') {
+                        statusBtn.textContent = '✅ Направено';
+                        statusBtn.classList.add('is-done');
+                        const newCommandDiv = document.createElement('div');
+                        newCommandDiv.className = 'new-command-section';
+                        newCommandDiv.innerHTML = `<p class="label">Нова команда:</p>`;
+                        if (adminMode) {
+                            const commandInput = document.createElement('input');
+                            commandInput.type = 'text';
+                            commandInput.value = suggestion.newCommandName || '';
+                            commandInput.placeholder = 'Въведете името';
+                            commandInput.dataset.id = key;
+                            newCommandDiv.appendChild(commandInput);
+                        } else {
+                            const commandDisplay = document.createElement('p');
+                            commandDisplay.className = 'command-name';
+                            commandDisplay.textContent = suggestion.newCommandName || '(няма зададена)';
+                            newCommandDiv.appendChild(commandDisplay);
+                        }
+                        statusContainer.appendChild(statusBtn);
+                        statusContainer.appendChild(newCommandDiv);
+                    } else {
+                        statusBtn.textContent = '❌ Не е направено';
+                        statusBtn.classList.add('is-pending');
+                        statusContainer.appendChild(statusBtn);
+                    }
+                    if (adminMode) statusBtn.classList.add('admin-enabled');
+                    rightCol.appendChild(statusContainer);
+                    if (adminMode) {
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'delete-suggestion-btn';
+                        deleteBtn.innerHTML = '';
+                        deleteBtn.title = 'Изтрий предложението';
+                        deleteBtn.dataset.id = key;
+                        rightCol.appendChild(deleteBtn);
+                    }
+                    item.appendChild(leftCol);
+                    item.appendChild(rightCol);
+                    suggestionsListDiv.appendChild(item);
+                });
+            };
+
+            suggestionsRef.on("value", renderSuggestions);
+
+            const openModal = (modal) => {
+                modal.style.display = 'flex';
+                document.body.classList.add('modal-open');
+            };
+            const closeModal = (modal) => {
+                modal.style.display = 'none';
+                document.body.classList.remove('modal-open');
+            };
+            addSuggestionBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openModal(suggestionFormModal);
+            });
+            viewSuggestionsBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openModal(suggestionsListModal);
+                if (adminMode) {
+                    const currentTotal = parseInt(suggestionCountSpan.textContent, 10);
+                    localStorage.setItem(storageKeyForAdmin, currentTotal.toString());
+                    updateAdminNotification(currentTotal);
+                }
+            });
+            closeButtons.forEach(btn => btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeModal(suggestionFormModal);
+                closeModal(suggestionsListModal);
+            }));
+            window.addEventListener('click', (event) => {
+                if (event.target == suggestionFormModal) closeModal(suggestionFormModal);
+                if (event.target == suggestionsListModal) closeModal(suggestionsListModal);
+            });
+            suggestionForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const name = document.getElementById('suggester-name').value;
+                const text = document.getElementById('suggestion-text').value;
+                if (!text.trim()) { alert('Моля, въведете текст.'); return; }
+                suggestionsRef.push({
+                    name: name.trim() || 'Анонимен',
+                    text: text.trim(),
+                    status: 'pending',
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                }).then(() => {
+                    suggestionForm.reset();
+                    closeModal(suggestionFormModal);
+                    alert('Благодарим за предложението!');
+                }).catch((error) => console.error("Грешка: ", error));
+            });
+            suggestionsListDiv.addEventListener('click', (e) => {
+                if (e.target.classList.contains('status-toggle') && adminMode) {
+                    const id = e.target.dataset.id;
+                    const docRef = suggestionsRef.child(id);
+                    docRef.get().then((snapshot) => {
+                        if (snapshot.exists()) {
+                            const newStatus = snapshot.val().status === 'pending' ? 'done' : 'pending';
+                            docRef.update({ status: newStatus });
+                        }
+                    });
+                }
+                if (e.target.classList.contains('delete-suggestion-btn') && adminMode) {
+                    const id = e.target.dataset.id;
+                    if (confirm('Наистина ли искате да изтриете това?')) {
+                        suggestionsRef.child(id).remove().catch(error => console.error("Грешка: ", error));
+                    }
+                }
+            });
+            suggestionsListDiv.addEventListener('blur', (e) => {
+                if (e.target.tagName === 'INPUT' && e.target.closest('.new-command-section') && adminMode) {
+                    const id = e.target.dataset.id;
+                    const newName = e.target.value.trim();
+                    suggestionsRef.child(id).update({ newCommandName: newName }).catch(error => console.error("Грешка:", error));
+                }
+            }, true);
+        }
+
+        // --- ОСТАНАЛИТЕ ФУНКЦИИ ---
         function initializeFunMode() {
             const funToggleButton = document.getElementById('fun-toggle-btn');
             const canvas = document.getElementById('cursor-canvas');
@@ -564,7 +763,6 @@
             };
             
             funToggleButton.addEventListener('click', toggleFunMode);
-            // Initial state based on button's class
             isFunModeActive = funToggleButton.classList.contains('active');
             document.body.classList.toggle('fun-mode-on', isFunModeActive);
             canvas.style.display = isFunModeActive ? 'block' : 'none';
@@ -575,20 +773,16 @@
         function renderLatestCommands(orderedCommandKeys, commandDetailsMap) {
             const listContainer = document.getElementById('latest-commands-list');
             if (!listContainer) return;
-
             const latestCommandKeys = orderedCommandKeys.slice(-5).reverse();
             if (latestCommandKeys.length === 0) {
                 listContainer.innerHTML = '<p style="padding: 10px 0;">Няма намерени команди.</p>';
                 return;
             }
-
             const ul = document.createElement('ul');
             latestCommandKeys.forEach(commandName => {
                 const li = document.createElement('li');
                 li.className = 'latest-command-item';
-                
                 const details = commandDetailsMap[commandName] || { description: '(Няма описание)', categoryName: 'Неизвестна', categoryId: null };
-                
                 li.innerHTML = `
                     <button class="latest-command-button" data-command="${commandName}">${commandName}</button>
                     <span class="latest-command-item-desc">${details.description}</span>
@@ -596,39 +790,31 @@
                 `;
                 ul.appendChild(li);
             });
-
             listContainer.innerHTML = '';
             listContainer.appendChild(ul);
         }
         function initializeLatestCommandsInteraction() {
             const latestCommandsList = document.getElementById('latest-commands-list');
             if (!latestCommandsList) return;
-
             latestCommandsList.addEventListener('click', function(e) {
                 const commandButton = e.target.closest('.latest-command-button');
                 const categoryButton = e.target.closest('.latest-command-category-btn');
-
                 if (commandButton) {
                     const commandText = commandButton.dataset.command;
                     navigator.clipboard.writeText(commandText).then(() => {
                         const existingFeedback = latestCommandsList.querySelector('.copy-feedback-latest');
                         if (existingFeedback) { existingFeedback.remove(); }
-
                         const feedbackElement = document.createElement('div');
                         feedbackElement.className = 'copy-feedback-latest';
                         feedbackElement.textContent = `Командата "${commandText}" е копирана!`;
-                        
                         const commandItem = commandButton.closest('.latest-command-item');
                         commandItem.appendChild(feedbackElement);
-
                         setTimeout(() => { feedbackElement.remove(); }, 3500);
                     }).catch(err => { console.error('Грешка при копиране: ', err); });
                 } else if (categoryButton) {
                     const categoryId = categoryButton.dataset.categoryId;
                     if (!categoryId || categoryId === 'null') return;
-
                     const mainFilterButton = document.querySelector(`.category-filter-button[data-filter="${categoryId}"]`);
-                    
                     if (mainFilterButton) {
                         mainFilterButton.click();
                         mainFilterButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -636,185 +822,28 @@
                 }
             });
         }
-        function initializeFirebaseFunctionality() {
-            const isAdmin = () => new URLSearchParams(window.location.search).get('admin') === 'true'; const adminMode = isAdmin();
-            const addSuggestionBtn = document.getElementById('add-suggestion-btn'); const viewSuggestionsBtn = document.getElementById('view-suggestions-btn'); const suggestionFormModal = document.getElementById('suggestion-form-modal'); const suggestionsListModal = document.getElementById('suggestions-list-modal'); const suggestionForm = document.getElementById('suggestion-form'); const suggestionsListDiv = document.getElementById('suggestions-list'); const suggestionCountSpan = document.getElementById('suggestion-count'); const closeButtons = document.querySelectorAll('.close-button');
-            
-            const renderSuggestions = (snapshot) => {
-                suggestionsListDiv.innerHTML = ''; 
-                const suggestionsArray = [];
-                snapshot.forEach(childSnapshot => {
-                    suggestionsArray.push({ key: childSnapshot.key, ...childSnapshot.val() });
-                });
-                
-                suggestionsArray.reverse();
-                suggestionCountSpan.textContent = suggestionsArray.length;
-
-                if (suggestionsArray.length === 0) { 
-                    suggestionsListDiv.innerHTML = '<p>Все още няма подадени предложения.</p>'; 
-                    return; 
-                }
-
-                suggestionsArray.forEach((suggestion, index) => {
-                    const key = suggestion.key;
-                    const item = document.createElement('div');
-                    item.className = 'suggestion-item';
-
-                    // --- Лява колона (Номер, Предложил, Текст) ---
-                    const leftCol = document.createElement('div');
-                    leftCol.className = 'suggestion-content-left';
-
-                    const numberDiv = document.createElement('div');
-                    numberDiv.className = 'suggestion-number';
-                    numberDiv.textContent = `${index + 1}.`;
-                    leftCol.appendChild(numberDiv);
-
-                    const detailsDiv = document.createElement('div');
-                    detailsDiv.className = 'suggestion-details';
-                    detailsDiv.innerHTML = `
-                        <p class="suggester-info">
-                            <span class="suggested-by-label">Предложил:</span>
-                            <span class="suggester-name">${suggestion.name || 'Анонимен'}</span>
-                        </p>
-                        <p class="suggestion-text">${suggestion.text}</p>
-                    `;
-                    leftCol.appendChild(detailsDiv);
-
-                    // --- Дясна колона (Статус, Изтриване) ---
-                    const rightCol = document.createElement('div');
-                    rightCol.className = 'actions-container';
-                    
-                    const statusContainer = document.createElement('div');
-                    statusContainer.className = 'status-container';
-                    const statusBtn = document.createElement('button');
-                    statusBtn.className = 'status-toggle';
-                    statusBtn.dataset.id = key;
-
-                    if (suggestion.status === 'done') {
-                        statusBtn.textContent = '✅ Направено';
-                        statusBtn.classList.add('is-done');
-                        const newCommandDiv = document.createElement('div');
-                        newCommandDiv.className = 'new-command-section';
-                        newCommandDiv.innerHTML = `<p class="label">Нова команда:</p>`;
-                        if (adminMode) {
-                            const commandInput = document.createElement('input');
-                            commandInput.type = 'text';
-                            commandInput.value = suggestion.newCommandName || '';
-                            commandInput.placeholder = 'Въведете името';
-                            commandInput.dataset.id = key;
-                            newCommandDiv.appendChild(commandInput);
-                        } else {
-                            const commandDisplay = document.createElement('p');
-                            commandDisplay.className = 'command-name';
-                            commandDisplay.textContent = suggestion.newCommandName || '(няма зададена)';
-                            newCommandDiv.appendChild(commandDisplay);
-                        }
-                        statusContainer.appendChild(statusBtn);
-                        statusContainer.appendChild(newCommandDiv);
-                    } else {
-                        statusBtn.textContent = '❌ Не е направено';
-                        statusBtn.classList.add('is-pending');
-                        statusContainer.appendChild(statusBtn);
-                    }
-                    if (adminMode) statusBtn.classList.add('admin-enabled');
-                    rightCol.appendChild(statusContainer);
-
-                    if(adminMode){
-                        const deleteBtn = document.createElement('button');
-                        deleteBtn.className = 'delete-suggestion-btn';
-                        deleteBtn.innerHTML = '';
-                        deleteBtn.title = 'Изтрий предложението';
-                        deleteBtn.dataset.id = key;
-                        rightCol.appendChild(deleteBtn);
-                    }
-                    
-                    // --- Сглобяване ---
-                    item.appendChild(leftCol);
-                    item.appendChild(rightCol);
-                    suggestionsListDiv.appendChild(item);
-                });
-            };
-            
-            suggestionsRef.on("value", renderSuggestions);
-
-            const openModal = (modal) => {
-                modal.style.display = 'flex';
-                document.body.classList.add('modal-open');
-            };
-
-            const closeModal = (modal) => {
-                modal.style.display = 'none';
-                document.body.classList.remove('modal-open');
-            };
-
-            addSuggestionBtn.addEventListener('click', (e) => { 
-                e.stopPropagation(); 
-                openModal(suggestionFormModal);
-            });
-
-            viewSuggestionsBtn.addEventListener('click', (e) => { 
-                e.stopPropagation(); 
-                openModal(suggestionsListModal);
-            });
-            
-            closeButtons.forEach(btn => btn.addEventListener('click', (e) => { 
-                e.stopPropagation(); 
-                closeModal(suggestionFormModal);
-                closeModal(suggestionsListModal);
-            }));
-            
-            window.addEventListener('click', (event) => { 
-                if (event.target == suggestionFormModal) {
-                    closeModal(suggestionFormModal);
-                }
-                if (event.target == suggestionsListModal) {
-                    closeModal(suggestionsListModal);
-                }
-            });
-
-            suggestionForm.addEventListener('submit', (e) => {
-                e.preventDefault(); const name = document.getElementById('suggester-name').value; const text = document.getElementById('suggestion-text').value; if (!text.trim()) { alert('Моля, въведете текст.'); return; }
-                suggestionsRef.push({ name: name.trim() || 'Анонимен', text: text.trim(), status: 'pending', timestamp: firebase.database.ServerValue.TIMESTAMP }).then(() => { 
-                    suggestionForm.reset(); 
-                    closeModal(suggestionFormModal);
-                    alert('Благодарим за предложението!'); 
-                }).catch((error) => console.error("Грешка: ", error));
-            });
-            suggestionsListDiv.addEventListener('click', (e) => {
-                if (e.target.classList.contains('status-toggle') && adminMode) { const id = e.target.dataset.id; const docRef = suggestionsRef.child(id); docRef.get().then((snapshot) => { if (snapshot.exists()) { const newStatus = snapshot.val().status === 'pending' ? 'done' : 'pending'; docRef.update({ status: newStatus }); } }); }
-                if (e.target.classList.contains('delete-suggestion-btn') && adminMode) { const id = e.target.dataset.id; if(confirm('Наистина ли искате да изтриете това?')) { suggestionsRef.child(id).remove().catch(error => console.error("Грешка: ", error)); } }
-            });
-            suggestionsListDiv.addEventListener('blur', (e) => { if (e.target.tagName === 'INPUT' && e.target.closest('.new-command-section') && adminMode) { const id = e.target.dataset.id; const newName = e.target.value.trim(); suggestionsRef.child(id).update({ newCommandName: newName }).catch(error => console.error("Грешка:", error)); } }, true);
-        }
         function parseLispFileImproved(content, config) {
             const categorizedData = {};
             const commandDetailsMap = {}; 
             Object.values(config).forEach(c => categorizedData[c.id] = []);
-            
             const lispNameToIdMap = {};
             for (const key in config) { lispNameToIdMap[key] = config[key].id; }
-            
             const functionBlocks = content.split(/defun create_dclhelplisp/);
             functionBlocks.forEach(block => {
                 const categoryMatch = block.match(/^([^\s(]+)/); if (!categoryMatch) return;
                 const lispCategoryName = categoryMatch[1];
                 const categoryId = lispNameToIdMap[lispCategoryName]; if (!categoryId) return;
-                
                 const categoryInfo = Object.values(config).find(c => c.id === categoryId);
                 if (!categoryInfo) return;
-                
                 const itemsMatch = block.match(/\(setq\s+(?:command_items|menu_items)\s+'\(([\s\S]+?)\)\)/); if (!itemsMatch) return;
-                
                 const itemsContent = itemsMatch[1];
                 const commandRegex = /\(\s*"([^"]*)"\s+"([^"]*)"\s+"([\s\S]*?)"\s*\)/g;
                 let match;
                 while ((match = commandRegex.exec(itemsContent)) !== null) {
                     const commandName = match[2].trim();
                     if (commandName.startsWith("---") || commandName === "") continue;
-                    
                     let fullDescription = match[3].replace(/^- /, '').replace(/\\t/g, ' ').replace(/\s+/g, ' ').trim();
                     const commandObject = { name: commandName, description: fullDescription };
-                    
                     categorizedData[categoryId].push(commandObject);
                     commandDetailsMap[commandName] = { 
                         description: fullDescription, 
@@ -823,11 +852,9 @@
                     };
                 }
             });
-
             const orderedCommandKeys = [];
             const commandMapRegex = /\(\s*"([^"]+)"\s*\.\s*"[^"]*"\s*\)/g;
             const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
-            
             if (commandMapSectionMatch) {
                 const mapContent = commandMapSectionMatch[1];
                 let match;
@@ -838,7 +865,6 @@
                     }
                 }
             }
-
             return {
                 categorizedData: categorizedData,
                 commandCount: orderedCommandKeys.length,
@@ -855,7 +881,6 @@
                     const filterButton = document.createElement('button'); filterButton.className = 'category-filter-button'; filterButton.dataset.filter = categoryId; filterButton.textContent = categoryInfo.filterName; filterContainer.appendChild(filterButton);
                     const detailsElement = document.createElement('details'); detailsElement.className = 'category'; detailsElement.dataset.category = categoryId;
                     const summaryElement = document.createElement('summary'); summaryElement.innerHTML = `<h2>${categoryInfo.title}</h2>`; detailsElement.appendChild(summaryElement);
-                    
                     commands.forEach(command => {
                         const commandEntry = document.createElement('div');
                         commandEntry.className = 'command-entry';
@@ -881,7 +906,6 @@
             const alphabetFilter = document.getElementById('alphabet-filter');
             const commandsContainer = document.getElementById('commands-container');
             let activeCategory = 'all'; let activeLetter = 'all'; 
-
             function escapeRegex(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
             function highlightText(originalText, searchTerm) {
                 if (!searchTerm) { return originalText; }
@@ -889,7 +913,6 @@
                 const regex = new RegExp(escapedSearchTerm, 'gi');
                 return originalText.replace(regex, (match) => `<mark>${match}</mark>`);
             }
-
             function resetFiltersToAll() {
                 activeCategory = 'all'; activeLetter = 'all';
                 if (categoryFilter.querySelector('.active')) { categoryFilter.querySelector('.active').classList.remove('active'); }
@@ -897,12 +920,10 @@
                 if (alphabetFilter.querySelector('.active')) { alphabetFilter.querySelector('.active').classList.remove('active'); }
                 alphabetFilter.querySelector('[data-filter="all"]').classList.add('active');
             }
-
             searchBar.addEventListener('input', () => {
                 const searchTerm = searchBar.value;
                 const searchTermLower = searchTerm.toLowerCase();
                 if (searchTerm.length > 0) { resetFiltersToAll(); }
-                
                 const allCategories = commandsContainer.querySelectorAll('details.category');
                 allCategories.forEach(category => {
                     const allCommands = category.querySelectorAll('.command-entry');
@@ -928,7 +949,6 @@
                     else { category.removeAttribute('open'); }
                 });
             });
-
             function applyFilters() {
                 const categories = commandsContainer.querySelectorAll('details.category');
                 categories.forEach(category => {
@@ -950,7 +970,6 @@
                 if (isAnyFilterActive) { visibleCategories.forEach(cat => cat.setAttribute('open', '')); } 
                 else { categories.forEach(cat => cat.removeAttribute('open')); }
             }
-
             function clearHighlights() {
                 const allCommands = commandsContainer.querySelectorAll('.command-entry');
                 allCommands.forEach(entry => {
@@ -960,7 +979,6 @@
                     descriptionSpan.innerHTML = descriptionSpan.dataset.originalText;
                 });
             }
-
             categoryFilter.addEventListener('click', function(e) {
                 const button = e.target.closest('.category-filter-button'); if (!button) return;
                 searchBar.value = ''; clearHighlights();
@@ -968,7 +986,6 @@
                 if (categoryFilter.querySelector('.active')) { categoryFilter.querySelector('.active').classList.remove('active'); }
                 button.classList.add('active'); applyFilters();
             });
-
             alphabetFilter.addEventListener('click', function(e) {
                 const button = e.target.closest('.filter-button'); if (!button) return;
                 searchBar.value = ''; clearHighlights();
@@ -976,7 +993,6 @@
                 if (alphabetFilter.querySelector('.active')) { alphabetFilter.querySelector('.active').classList.remove('active'); }
                 button.classList.add('active'); applyFilters();
             });
-
             commandsContainer.addEventListener('click', function(e) {
                 const commandButton = e.target.closest('.command-button');
                 if (!commandButton) return;
