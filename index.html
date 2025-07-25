@@ -428,7 +428,7 @@
             const newSuggestionIndicator = document.getElementById('new-suggestion-indicator');
 
             const updateAdminNotification = (allSuggestions) => {
-                if (!adminMode) return; // Функцията работи само за админ
+
 
                 // Филтрираме и броим само неизпълнените предложения
                 const pendingSuggestions = allSuggestions.filter(s => s.status === 'pending');
