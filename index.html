@@ -426,14 +426,16 @@
             const suggestionCountSpan = document.getElementById('suggestion-count');
             const closeButtons = document.querySelectorAll('.close-button');
             const newSuggestionIndicator = document.getElementById('new-suggestion-indicator');
-            const storageKeyForAdmin = 'admin_last_seen_suggestions_count';
 
-            const updateAdminNotification = (totalSuggestions) => {
-                if (!adminMode) return;
-                const lastSeenCount = parseInt(localStorage.getItem(storageKeyForAdmin) || '0', 10);
-                const newCount = totalSuggestions - lastSeenCount;
-                if (newCount > 0) {
-                    newSuggestionIndicator.textContent = newCount;
+            const updateAdminNotification = (allSuggestions) => {
+                if (!adminMode) return; // Функцията работи само за админ
+
+                // Филтрираме и броим само неизпълнените предложения
+                const pendingSuggestions = allSuggestions.filter(s => s.status === 'pending');
+                const pendingCount = pendingSuggestions.length;
+
+                if (pendingCount > 0) {
+                    newSuggestionIndicator.textContent = pendingCount;
                     newSuggestionIndicator.style.display = 'block';
                     viewSuggestionsBtn.classList.add('new-suggestion-alert');
                 } else {
@@ -449,12 +451,15 @@
                     suggestionsArray.push({ key: childSnapshot.key, ...childSnapshot.val() });
                 });
                 
-                const totalSuggestionCount = suggestionsArray.length;
-                suggestionCountSpan.textContent = totalSuggestionCount;
-                updateAdminNotification(totalSuggestionCount);
+                // Показваме общия брой на всички
+                suggestionCountSpan.textContent = suggestionsArray.length;
+
+                // Проверяваме за неизпълнени и обновяваме известието за админа
+                updateAdminNotification(suggestionsArray);
+                
                 suggestionsArray.reverse();
 
-                if (totalSuggestionCount === 0) {
+                if (suggestionsArray.length === 0) {
                     suggestionsListDiv.innerHTML = '<p>Все още няма подадени предложения.</p>';
                     return;
                 }
@@ -545,11 +550,7 @@
             viewSuggestionsBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 openModal(suggestionsListModal);
-                if (adminMode) {
-                    const currentTotal = parseInt(suggestionCountSpan.textContent, 10);
-                    localStorage.setItem(storageKeyForAdmin, currentTotal.toString());
-                    updateAdminNotification(currentTotal);
-                }
+                // Вече не правим нищо тук за известието
             });
             closeButtons.forEach(btn => btn.addEventListener('click', (e) => {
                 e.stopPropagation();
