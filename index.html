@@ -302,7 +302,7 @@
     <div id="suggestions-list-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2>Списък с предложения</h2><div id="suggestions-list"></div></div></div>
     
     <!-- --- HTML ЕЛЕМЕНТ ЗА БРОЯЧА --- -->
-    <div id="visitor-counter">Зареждане на посещенията...</div>
+    <div id="visitor-counter">Зареждане...</div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -315,48 +315,54 @@
         const db = firebase.database();
         const suggestionsRef = db.ref("suggestions");
 
-        // --- НАЧАЛО НА КОДА ЗА БРОЯЧ С УНИКАЛНИ ПОСЕТИТЕЛИ ---
+        // --- НАЧАЛО НА КОДА ЗА БРОЯЧ С УНИКАЛНИ ПОСЕТИТЕЛИ НА 1 ЧАС ---
         
         function trackVisitor() {
-            // 1. Вземаме днешната дата в удобен за базата данни формат (ГГГГ-ММ-ДД)
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
-            const dateKey = `${year}-${month}-${day}`;
-
-            // 2. Създаваме референции към местата в базата данни
-            const totalVisitsRef = db.ref('analytics/total_visits');
-            const dailyPageLoadsRef = db.ref(`analytics/visits_by_day/${dateKey}`);
-            const uniqueDailyVisitsRef = db.ref(`analytics/unique_visits_by_day/${dateKey}`); // <-- Ново
+            // 1. Създаваме референция към брояча в Firebase.
+            // Може да го кръстим по-описателно, за да знаем, че е на база час.
+            const hourlyUniqueVisitorsRef = db.ref('analytics/unique_visitors_hourly');
             const visitorCounterElement = document.getElementById('visitor-counter');
 
-            // 3. Винаги увеличаваме броя на зарежданията на страницата (page loads)
-            totalVisitsRef.transaction(currentValue => (currentValue || 0) + 1);
-            dailyPageLoadsRef.transaction(currentValue => (currentValue || 0) + 1);
+            // 2. Дефинираме ключа за localStorage и колко е 1 час в милисекунди
+            const storageKey = 'paf-suite-last-visit-timestamp';
+            const ONE_HOUR_IN_MS = 60 * 60 * 1000;
+            const now = Date.now();
 
-            // 4. Проверяваме дали потребителят е "уникален" за днес
-            const lastVisitKey = 'lastVisitDate';
-            const lastVisit = localStorage.getItem(lastVisitKey);
-            
-            if (lastVisit !== dateKey) {
-                // Ако датата е различна (или не съществува), това е уникален посетител за днес
-                console.log("Уникален посетител за днес! Броим го.");
-                
-                // Увеличаваме брояча за уникални посетители за днес
-                uniqueDailyVisitsRef.transaction(currentValue => (currentValue || 0) + 1);
-                
-                // Запазваме днешната дата в localStorage, за да не го броим отново
-                localStorage.setItem(lastVisitKey, dateKey);
+            // 3. Вземаме последния записан timestamp
+            const lastVisitTimestamp = localStorage.getItem(storageKey);
+
+            let isUniqueVisit = false;
+
+            if (!lastVisitTimestamp) {
+                // Случай 1: Потребителят никога не е посещавал сайта.
+                isUniqueVisit = true;
             } else {
-                console.log("Повторно посещение за днес. Не броим.");
+                // Случай 2: Потребителят е бил тук. Проверяваме кога.
+                const timeDifference = now - parseInt(lastVisitTimestamp, 10);
+                if (timeDifference > ONE_HOUR_IN_MS) {
+                    // Изминал е повече от час.
+                    isUniqueVisit = true;
+                }
             }
             
-            // 5. Показваме ОБЩИЯ брой зареждания на страницата на сайта
-            totalVisitsRef.on('value', (snapshot) => {
+            // 4. Ако посещението е уникално (по нашите правила), действаме.
+            if (isUniqueVisit) {
+                console.log("Уникално посещение (на база 1 час). Броим го.");
+                
+                // Увеличаваме брояча в Firebase
+                hourlyUniqueVisitorsRef.transaction(currentValue => (currentValue || 0) + 1);
+                
+                // Запазваме ТЕКУЩИЯ час в localStorage
+                localStorage.setItem(storageKey, now.toString());
+            } else {
+                console.log("Повторно посещение в рамките на 1 час. Не броим.");
+            }
+            
+            // 5. Показваме стойността на този брояч на екрана
+            hourlyUniqueVisitorsRef.on('value', (snapshot) => {
                 const count = snapshot.val() || 0;
                 if (visitorCounterElement) {
-                    visitorCounterElement.textContent = `Посещения: ${count}`;
+                    visitorCounterElement.textContent = `Посетители (1ч): ${count}`;
                 }
             });
         }
@@ -399,17 +405,6 @@
         });
 
         // ... Останалата част от JavaScript кода си остава същата ...
-        function initializeFunMode() { /* ... */ }
-        function renderLatestCommands(orderedCommandKeys, commandDetailsMap) { /* ... */ }
-        function initializeLatestCommandsInteraction() { /* ... */ }
-        function initializeFirebaseFunctionality() { /* ... */ }
-        function parseLispFileImproved(content, config) { /* ... */ }
-        function renderAllCommands(data, container, filterContainer, counterEl, commandCount, config) { /* ... */ }
-        function initializeFiltersAndAccordions() { /* ... */ }
-
-    </script>
-    <script>
-        // Поставям останалите функции тук за прегледност, но те са същите като във вашия файл
         function initializeFunMode() {
             const funToggleButton = document.getElementById('fun-toggle-btn');
             const canvas = document.getElementById('cursor-canvas');
