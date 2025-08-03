@@ -61,6 +61,7 @@
         .header-btn:hover { background-color: #a8202b; }
         #suggestion-count { background-color: white; color: #e63946; border-radius: 50%; padding: 0px 6px; font-size: 12px; margin-left: 5px; }
         
+        /* --- CSS ЗА АДМИН ИЗВЕСТИЯ --- */
         @keyframes pulse-animation {
             0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(230, 57, 70, 0.7); }
             70% { transform: scale(1.05); box-shadow: 0 0 10px 15px rgba(230, 57, 70, 0); }
@@ -69,15 +70,15 @@
 
         .new-suggestion-alert {
             animation: pulse-animation 1.5s infinite;
-            position: relative;
+            position: relative; /* Нужно за позициониране на брояча */
         }
 
         #new-suggestion-indicator {
-            display: none;
+            display: none; /* Скрито по подразбиране */
             position: absolute;
             top: -8px;
             right: -8px;
-            background-color: #e63946;
+            background-color: #e63946; /* Същият червен цвят */
             color: white;
             border-radius: 50%;
             width: 22px;
@@ -91,22 +92,51 @@
         }
 
         .modal { 
-            display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0; top: 0; 
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.5); 
+            align-items: center;
+            justify-content: center;
         }
         .modal-content { 
-            background-color: #fefefe; margin: 0; padding: 20px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 8px; position: relative; 
+            background-color: #fefefe; 
+            margin: 0;
+            padding: 20px; 
+            border: 1px solid #888; 
+            width: 80%; 
+            max-width: 600px; 
+            border-radius: 8px; 
+            position: relative; 
         }
 
         #suggestions-list-modal .modal-content {
-            width: 90%; max-width: 900px; height: 85vh; display: flex; flex-direction: column; padding: 20px 25px;
+            width: 90%;
+            max-width: 900px;
+            height: 85vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 25px;
         }
         
         #suggestions-list-modal h2 {
-            text-align: center; font-size: 1.8em; color: #1d3557; margin: 0 0 15px 0; padding-bottom: 15px; border-bottom: 1px solid #ddd; flex-shrink: 0;
+            text-align: center;
+            font-size: 1.8em;
+            color: #1d3557;
+            margin: 0 0 15px 0;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+            flex-shrink: 0;
         }
         
         #suggestions-list {
-            flex-grow: 1; overflow-y: auto; padding-right: 15px;
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-right: 15px;
         }
 
         .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
@@ -116,35 +146,98 @@
         #suggestion-form button { background-color: #457b9d; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin-top: 15px; font-size: 16px; }
         
         #suggestions-list .suggestion-item {
-            display: flex; align-items: flex-start; gap: 15px; padding: 15px 5px; border-bottom: 3px double #eee;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            padding: 15px 5px;
+            border-bottom: 3px double #eee;
         }
         
         .suggestion-content-left {
-            flex: 1; min-width: 0; display: flex; align-items: flex-start; gap: 10px;
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
         }
 
         .suggestion-number {
-            font-size: 1.1em; font-weight: bold; color: #e63946; min-width: 25px; text-align: right;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #e63946;
+            min-width: 25px;
+            text-align: right;
         }
 
         .suggestion-details {
-             flex: 1; min-width: 0;
+             flex: 1;
+             min-width: 0;
         }
 
-        .suggester-info { margin: 0; padding: 0; }
-        .suggested-by-label { font-size: 0.9em; color: #555; }
-        #suggestions-list .suggester-name { font-weight: bold; color: #1d3557; }
-        #suggestions-list .suggestion-text { margin-top: 5px; white-space: pre-wrap; overflow-wrap: break-word; }
-        #suggestions-list .actions-container { display: flex; align-items: flex-start; min-width: 170px; }
+        .suggester-info {
+            margin: 0;
+            padding: 0;
+        }
+
+        .suggested-by-label { 
+            font-size: 0.9em; 
+            color: #555;
+        }
+
+        #suggestions-list .suggester-name { 
+            font-weight: bold; 
+            color: #1d3557; 
+        }
+        
+        #suggestions-list .suggestion-text {
+            margin-top: 5px;
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+        }
+        
+        #suggestions-list .actions-container {
+            display: flex;
+            align-items: flex-start;
+            min-width: 170px;
+        }
+        
         #suggestions-list .status-container { display: flex; flex-direction: column; align-items: flex-end; width: 100%;}
         #suggestions-list .status-toggle { border: none; background: none; font-size: 16px; padding: 5px 10px; border-radius: 5px; transition: background-color 0.3s; width: 100%; text-align: left; }
         #suggestions-list .status-toggle.is-pending { background-color: #fce8e6; color: #a50e0e; }
         #suggestions-list .status-toggle.is-done { background-color: #e6f4ea; color: #137333; }
         
-        .new-command-section { margin-top: 2px; padding-top: 5px; border-top: 1px solid #e9ecef; width: 100%; }
-        .new-command-section .label { color: #555; font-size: 14px; text-align: left; margin: 0; line-height: 1.2; }
-        .new-command-section input[type="text"] { width: 95%; padding: 6px; border-radius: 4px; border: 1px solid #ccc; margin-top: 2px; }
-        .new-command-section .command-name { font-weight: bold; font-size: 1.1em; color: #1d3557; margin-top: 2px; text-align: left; line-height: 1.2; }
+        .new-command-section {
+            margin-top: 2px;
+            padding-top: 5px;
+            border-top: 1px solid #e9ecef;
+            width: 100%;
+        }
+
+        .new-command-section .label {
+            color: #555;
+            font-size: 14px;
+            text-align: left;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .new-command-section input[type="text"] {
+            width: 95%;
+            padding: 6px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            margin-top: 2px;
+        }
+
+        .new-command-section .command-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #1d3557;
+            margin-top: 2px;
+            text-align: left;
+            line-height: 1.2;
+        }
+
         .delete-suggestion-btn { background-color: transparent; border: none; color: #e63946; font-size: 18px; padding: 5px; margin-left: 10px; opacity: 0.6; transition: opacity 0.3s; }
         .delete-suggestion-btn:hover { opacity: 1; }
 
@@ -157,25 +250,6 @@
         .filter-button, .category-filter-button { background-color: #a8dadc; color: #1d3557; border: none; border-radius: 5px; padding: 8px 14px; font-size: 15px; font-weight: bold; transition: background-color 0.3s, transform 0.2s; }
         .filter-button:hover, .category-filter-button:hover { background-color: #457b9d; color: white; transform: translateY(-2px); }
         .filter-button.active, .category-filter-button.active { background-color: #1d3557; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        
-        #sort-filter-container { text-align: center; margin-top: 15px; }
-        #sort-by-date-btn {
-            background-color: #f1faee; color: #1d3557; border: 2px solid #a8dadc; border-radius: 8px; padding: 10px 20px; font-size: 16px; font-weight: bold; transition: all 0.3s;
-        }
-        #sort-by-date-btn:hover { background-color: #a8dadc; border-color: #457b9d; }
-        #sort-by-date-btn.active { background-color: #e63946; color: white; border-color: #e63946; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-
-        .sorted-command-item {
-            display: flex; gap: 15px; align-items: flex-start; padding: 12px 10px; border-bottom: 1px solid #e9ecef;
-        }
-        .sorted-command-item:last-child { border-bottom: none; }
-        .sorted-command-item .command-button { flex-shrink: 0; }
-        .sorted-command-details { flex-grow: 1; }
-        .sorted-command-details p { margin: 0; padding: 0; }
-        .sorted-command-description { font-size: 15px; color: #333; }
-        .sorted-command-category { font-size: 13px; color: #555; margin-top: 4px; }
-        .sorted-command-category .label { font-weight: bold; color: #e63946; }
-
         details.hidden, .command-entry.hidden { display: none; }
         
         .command-entry { margin-bottom: 8px; border-radius: 6px; overflow: hidden; border: 1px solid #e9ecef; transition: box-shadow 0.3s; margin-left: 15px; margin-right: 15px; }
@@ -207,7 +281,13 @@
         .latest-commands-widget summary::-webkit-details-marker { display: none; }
         .latest-commands-widget summary::after { content: '▼'; font-size: 12px; transition: transform 0.3s; }
         .latest-commands-widget details[open] > summary::after { transform: rotate(180deg); }
-        #latest-commands-list { padding: 0 15px 15px 15px; max-height: 60vh; overflow-y: auto; }
+        
+        #latest-commands-list { 
+            padding: 0 15px 15px 15px; 
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
         #latest-commands-list ul { list-style: none; padding: 0; margin: 0; }
         .latest-command-item { padding: 10px 0; border-bottom: 1px solid #eee; }
         .latest-command-item:last-child { border-bottom: none; }
@@ -219,7 +299,17 @@
         .copy-feedback-latest { padding: 6px 10px; margin-top: 8px; background-color: #e6f4ea; color: #137333; border-radius: 4px; text-align: center; font-size: 13px; font-weight: 500; animation: fadeInOut 3.5s ease-in-out forwards; }
     
         #visitor-counter {
-            position: fixed; bottom: 15px; left: 15px; background-color: rgba(29, 53, 87, 0.9); color: white; padding: 8px 15px; border-radius: 8px; font-size: 14px; font-weight: bold; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            position: fixed;
+            bottom: 15px;
+            left: 15px;
+            background-color: rgba(29, 53, 87, 0.9);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
         }
     </style>
 </head>
@@ -238,20 +328,8 @@
         </div>
         <h1>PAF's PROGRAMS SUITE</h1><h3 class="main-subtitle">Интерактивен списък на AutoLISP команди</h3><h3 id="command-counter">Зареждане на командите...</h3>
         <div class="search-container"><input type="text" id="search-bar" placeholder="Търсене по име или описание..."></div>
-        
-        <div class="filters-container">
-            <div id="category-filter"></div>
-            <div id="alphabet-filter">
-                <button class="filter-button active" data-filter="all">ВСИЧКИ БУКВИ</button>
-                <script>document.write(Array.from(Array(26)).map((e, i) => `<button class="filter-button" data-filter="${String.fromCharCode(i + 65)}">${String.fromCharCode(i + 65)}</button>`).join(''));</script>
-            </div>
-            <div id="sort-filter-container">
-                <button id="sort-by-date-btn">Подреди по дата на добавяне</button>
-            </div>
-        </div>
-
+        <div class="filters-container"><div id="category-filter"></div><div id="alphabet-filter"><button class="filter-button active" data-filter="all">ВСИЧКИ БУКВИ</button><script>document.write(Array.from(Array(26)).map((e, i) => `<button class="filter-button" data-filter="${String.fromCharCode(i + 65)}">${String.fromCharCode(i + 65)}</button>`).join(''));</script></div></div>
         <div id="commands-container"></div>
-        <div id="sorted-commands-container" style="display: none;"></div>
     </div> 
 
     <div class="latest-commands-widget">
@@ -307,43 +385,22 @@
             const commandsContainer = document.getElementById('commands-container');
             const categoryFilterContainer = document.getElementById('category-filter');
             const commandCounter = document.getElementById('command-counter');
-            const sortedCommandsContainer = document.getElementById('sorted-commands-container');
 
             try {
                 const response = await fetch(COMMANDS_FILE_URL);
                 if (!response.ok) throw new Error(`HTTP грешка! Статус: ${response.status}`);
                 const lispContent = await response.text();
-                const parsedResult = parseLispFileCorrectly(lispContent, categoryConfig);
-                
+                const parsedResult = parseLispFileImproved(lispContent, categoryConfig);
                 renderAllCommands(parsedResult.categorizedData, commandsContainer, categoryFilterContainer, commandCounter, parsedResult.commandCount, categoryConfig);
-                renderSortedByDate(parsedResult.allCommandsInOrder, sortedCommandsContainer);
-                renderLatestCommands(parsedResult.allCommandsInOrder);
-                
+                renderLatestCommands(parsedResult.orderedCommandKeys, parsedResult.commandDetailsMap);
                 initializeFiltersAndAccordions();
+                initializeLatestCommandsInteraction();
             } catch (error) {
                 console.error("Грешка при зареждане:", error);
                 commandsContainer.innerHTML = `<p style="color: red; text-align: center;">Възникна грешка. Проверете конзолата.</p>`;
                 commandCounter.textContent = 'Грешка при зареждане';
             }
         });
-        
-        function renderSortedByDate(allCommandsInOrder, container) {
-            container.innerHTML = '';
-            const reversedCommands = [...allCommandsInOrder].reverse(); 
-            
-            reversedCommands.forEach(command => {
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'sorted-command-item';
-                const fullDescription = command.description ? (command.description.charAt(0).toUpperCase() + command.description.slice(1)) : '(Няма описание)';
-                itemDiv.innerHTML = `
-                    <button class="command-button">${command.name}</button>
-                    <div class="sorted-command-details">
-                        <p class="sorted-command-description">${fullDescription}</p>
-                        <p class="sorted-command-category"><span class="label">Категория:</span> ${command.categoryName}</p>
-                    </div>`;
-                container.appendChild(itemDiv);
-            });
-        }
 
         function initializeFirebaseFunctionality() {
             const isAdmin = () => new URLSearchParams(window.location.search).get('admin') === 'true';
@@ -467,32 +524,38 @@
             funToggleButton.addEventListener('click', toggleFunMode);
             isFunModeActive = funToggleButton.classList.contains('active'); document.body.classList.toggle('fun-mode-on', isFunModeActive); canvas.style.display = isFunModeActive ? 'block' : 'none'; if (isFunModeActive) { funCursor.start(); }
         }
-
-        function renderLatestCommands(allCommandsInOrder) {
+        
+        function renderLatestCommands(orderedCommandKeys, commandDetailsMap) {
             const listContainer = document.getElementById('latest-commands-list');
             if (!listContainer) return;
-            const latestCommands = [...allCommandsInOrder].reverse().slice(0, 5);
-            if (latestCommands.length === 0) { listContainer.innerHTML = '<p style="padding: 10px 0;">Няма намерени команди.</p>'; return; }
+            const latestCommandKeys = orderedCommandKeys.slice(-5).reverse();
+            if (latestCommandKeys.length === 0) {
+                listContainer.innerHTML = '<p style="padding: 10px 0;">Няма намерени команди.</p>';
+                return;
+            }
             const ul = document.createElement('ul');
-            latestCommands.forEach(command => {
-                const li = document.createElement('li'); li.className = 'latest-command-item';
-                const description = command.description || '(Няма описание)';
-                li.innerHTML = `<button class="latest-command-button" data-command="${command.name}">${command.name}</button><span class="latest-command-item-desc">${description}</span><button class="latest-command-category-btn" data-category-id="${command.categoryId}">Категория: ${command.categoryName}</button>`;
+            latestCommandKeys.forEach(commandName => {
+                const li = document.createElement('li');
+                li.className = 'latest-command-item';
+                const details = commandDetailsMap[commandName] || { description: '(Няма описание)', categoryName: 'Неизвестна', categoryId: null };
+                li.innerHTML = `
+                    <button class="latest-command-button" data-command="${commandName}">${commandName}</button>
+                    <span class="latest-command-item-desc">${details.description}</span>
+                    <button class="latest-command-category-btn" data-category-id="${details.categoryId}">Категория: ${details.categoryName}</button>
+                `;
                 ul.appendChild(li);
             });
-            listContainer.innerHTML = ''; listContainer.appendChild(ul);
+            listContainer.innerHTML = '';
+            listContainer.appendChild(ul);
         }
 
-        // --- КОРЕКТНА И ФИНАЛНА ВЕРСИЯ НА ПАРСЪРА ---
-        function parseLispFileCorrectly(content, config) {
-            const commandDetailsDatabase = {}; 
-            const categorizedData = {}; 
-            const chronologicalKeys = []; 
-            
+        // --- ФУНКЦИЯ ЗА ПАРСВАНЕ (ВРЪЩАМЕ СТАБИЛНАТА ВЕРСИЯ) ---
+        function parseLispFileImproved(content, config) {
+            const categorizedData = {};
+            const commandDetailsMap = {}; 
             Object.values(config).forEach(c => categorizedData[c.id] = []);
             const lispNameToIdMap = {};
             for (const key in config) { lispNameToIdMap[key] = config[key].id; }
-
             const functionBlocks = content.split(/defun create_dclhelplisp/);
             functionBlocks.forEach(block => {
                 const categoryMatch = block.match(/^([^\s(]+)/); if (!categoryMatch) return;
@@ -500,51 +563,41 @@
                 const categoryId = lispNameToIdMap[lispCategoryName]; if (!categoryId) return;
                 const categoryInfo = Object.values(config).find(c => c.id === categoryId);
                 if (!categoryInfo) return;
-
-                const itemsMatch = block.match(/\(setq\s+(?:command_items|menu_items)\s+'\(([\s\S]+?)\)\)/);
-                if (!itemsMatch) return;
-                
+                const itemsMatch = block.match(/\(setq\s+(?:command_items|menu_items)\s+'\(([\s\S]+?)\)\)/); if (!itemsMatch) return;
                 const itemsContent = itemsMatch[1];
-                const commandRegex = /\(\s*"(?:[^"]*)"\s+"([^"]*)"\s+"([\s\S]*?)"\s*\)/g; // Променен Regex
+                const commandRegex = /\(\s*"([^"]*)"\s+"([^"]*)"\s+"([\s\S]*?)"\s*\)/g;
                 let match;
                 while ((match = commandRegex.exec(itemsContent)) !== null) {
-                    const commandName = match[1] ? match[1].trim() : ""; // Командата е винаги в група 1
+                    const commandName = match[2].trim();
                     if (commandName.startsWith("---") || commandName === "") continue;
-
-                    const fullDescription = match[2] ? match[2].replace(/^- /, '').replace(/\\t/g, ' ').replace(/\s+/g, ' ').trim() : "";
-                    
-                    categorizedData[categoryId].push({ name: commandName, description: fullDescription });
-                    
-                    commandDetailsDatabase[commandName] = {
-                        description: fullDescription,
+                    let fullDescription = match[3].replace(/^- /, '').replace(/\\t/g, ' ').replace(/\s+/g, ' ').trim();
+                    const commandObject = { name: commandName, description: fullDescription };
+                    categorizedData[categoryId].push(commandObject);
+                    commandDetailsMap[commandName] = { 
+                        description: fullDescription, 
                         categoryName: categoryInfo.filterName,
                         categoryId: categoryInfo.id
                     };
                 }
             });
-
+            const orderedCommandKeys = [];
+            const commandMapRegex = /\(\s*"([^"]+)"\s*\.\s*"[^"]*"\s*\)/g;
             const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
             if (commandMapSectionMatch) {
                 const mapContent = commandMapSectionMatch[1];
-                const commandMapRegex = /\(\s*"([^"]+)"\s*\.\s*"[^"]*"\s*\)/g;
                 let match;
                 while ((match = commandMapRegex.exec(mapContent)) !== null) {
-                     const key = match[1];
-                     if (!config[key] && key !== 'back' && key !== 'pps_back' && !/^[А-Я]/.test(key)) {
-                        chronologicalKeys.push(key);
-                     }
+                    const key = match[1];
+                    if (!config[key] && key !== 'back' && key !== 'pps_back' && !/^[А-Я]/.test(key)) {
+                        orderedCommandKeys.push(key);
+                    }
                 }
             }
-
-            const allCommandsInOrder = chronologicalKeys.map(commandName => {
-                const details = commandDetailsDatabase[commandName] || { description: '(Няма описание)', categoryName: 'Неизвестна', categoryId: null };
-                return { name: commandName, ...details };
-            });
-
             return {
                 categorizedData: categorizedData,
-                commandCount: allCommandsInOrder.length,
-                allCommandsInOrder: allCommandsInOrder
+                commandCount: orderedCommandKeys.length,
+                orderedCommandKeys: orderedCommandKeys,
+                commandDetailsMap: commandDetailsMap
             };
         }
 
@@ -576,84 +629,61 @@
             }
             counterEl.textContent = `Намерени общо ${commandCount} уникални команди, разпределени в категории`;
         }
-
+        
         function initializeFiltersAndAccordions() {
             const searchBar = document.getElementById('search-bar');
             const categoryFilter = document.getElementById('category-filter');
             const alphabetFilter = document.getElementById('alphabet-filter');
-            const sortByDateBtn = document.getElementById('sort-by-date-btn');
             const commandsContainer = document.getElementById('commands-container');
-            const sortedCommandsContainer = document.getElementById('sorted-commands-container');
-            
             let activeCategory = 'all'; let activeLetter = 'all'; 
-
             function escapeRegex(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
             function highlightText(originalText, searchTerm) {
-                if (!searchTerm) return originalText;
+                if (!searchTerm) { return originalText; }
                 const escapedSearchTerm = escapeRegex(searchTerm);
                 const regex = new RegExp(escapedSearchTerm, 'gi');
                 return originalText.replace(regex, (match) => `<mark>${match}</mark>`);
             }
-
-            function switchToCategoryView() {
-                commandsContainer.style.display = 'block';
-                sortedCommandsContainer.style.display = 'none';
-                sortByDateBtn.classList.remove('active');
-            }
-
-            function switchToSortedView() {
+            function resetFiltersToAll() {
                 activeCategory = 'all'; activeLetter = 'all';
-                if (categoryFilter.querySelector('.active')) categoryFilter.querySelector('.active').classList.remove('active');
+                if (categoryFilter.querySelector('.active')) { categoryFilter.querySelector('.active').classList.remove('active'); }
                 categoryFilter.querySelector('[data-filter="all"]').classList.add('active');
-                if (alphabetFilter.querySelector('.active')) alphabetFilter.querySelector('.active').classList.remove('active');
+                if (alphabetFilter.querySelector('.active')) { alphabetFilter.querySelector('.active').classList.remove('active'); }
                 alphabetFilter.querySelector('[data-filter="all"]').classList.add('active');
-                searchBar.value = '';
-                clearHighlights();
-                commandsContainer.style.display = 'none';
-                sortedCommandsContainer.style.display = 'block';
-                sortByDateBtn.classList.add('active');
             }
-            
             searchBar.addEventListener('input', () => {
-                switchToCategoryView();
-                const searchTerm = searchBar.value.toLowerCase();
-                activeCategory = 'all'; activeLetter = 'all';
-                if (categoryFilter.querySelector('.active')) categoryFilter.querySelector('.active').classList.remove('active');
-                categoryFilter.querySelector('[data-filter="all"]').classList.add('active');
-                if (alphabetFilter.querySelector('.active')) alphabetFilter.querySelector('.active').classList.remove('active');
-                alphabetFilter.querySelector('[data-filter="all"]').classList.add('active');
-                
+                const searchTerm = searchBar.value;
+                const searchTermLower = searchTerm.toLowerCase();
+                if (searchTerm.length > 0) { resetFiltersToAll(); }
                 const allCategories = commandsContainer.querySelectorAll('details.category');
                 allCategories.forEach(category => {
-                    let hasVisibleChildren = false;
                     const allCommands = category.querySelectorAll('.command-entry');
+                    let hasVisibleChildren = false;
                     allCommands.forEach(entry => {
                         const commandButton = entry.querySelector('.command-button');
                         const descriptionSpan = entry.querySelector('.short-description');
                         const originalCommandName = commandButton.dataset.originalText;
                         const originalDescription = descriptionSpan.dataset.originalText;
-                        const isMatch = originalCommandName.toLowerCase().includes(searchTerm) || originalDescription.toLowerCase().includes(searchTerm);
+                        const isMatch = originalCommandName.toLowerCase().includes(searchTermLower) || originalDescription.toLowerCase().includes(searchTermLower);
                         entry.classList.toggle('hidden', !isMatch);
                         if (isMatch) {
                             hasVisibleChildren = true;
-                            commandButton.innerHTML = highlightText(originalCommandName, searchBar.value);
-                            descriptionSpan.innerHTML = highlightText(originalDescription, searchBar.value);
+                            commandButton.innerHTML = highlightText(originalCommandName, searchTerm);
+                            descriptionSpan.innerHTML = highlightText(originalDescription, searchTerm);
                         } else {
                             commandButton.innerHTML = originalCommandName;
                             descriptionSpan.innerHTML = originalDescription;
                         }
                     });
                     category.classList.toggle('hidden', !hasVisibleChildren);
-                    if (hasVisibleChildren && searchBar.value) { category.setAttribute('open', ''); } 
-                    else if (!isAnyFilterActive()) { category.removeAttribute('open'); }
+                    if (hasVisibleChildren && searchTerm) { category.setAttribute('open', ''); } 
+                    else { category.removeAttribute('open'); }
                 });
             });
-
             function applyFilters() {
                 const categories = commandsContainer.querySelectorAll('details.category');
                 categories.forEach(category => {
-                    let hasVisibleChildren = false;
                     const commandEntries = category.querySelectorAll('.command-entry');
+                    let hasVisibleChildren = false;
                     commandEntries.forEach(entry => {
                         const catId = entry.closest('details.category').dataset.category;
                         const letter = entry.dataset.letter.toUpperCase();
@@ -665,97 +695,72 @@
                     });
                     category.classList.toggle('hidden', !hasVisibleChildren);
                 });
-                if (isAnyFilterActive()) { 
-                    const visibleCategories = commandsContainer.querySelectorAll('details.category:not(.hidden)');
-                    visibleCategories.forEach(cat => cat.setAttribute('open', '')); 
-                } else { 
-                    categories.forEach(cat => cat.removeAttribute('open')); 
-                }
+                const isAnyFilterActive = activeCategory !== 'all' || activeLetter.toUpperCase() !== 'ALL';
+                const visibleCategories = commandsContainer.querySelectorAll('details.category:not(.hidden)');
+                if (isAnyFilterActive) { visibleCategories.forEach(cat => cat.setAttribute('open', '')); } 
+                else { categories.forEach(cat => cat.removeAttribute('open')); }
             }
-
-            function isAnyFilterActive() {
-                 return activeCategory !== 'all' || activeLetter.toUpperCase() !== 'ALL';
-            }
-
             function clearHighlights() {
-                document.querySelectorAll('.command-entry, .sorted-command-item').forEach(entry => {
+                const allCommands = commandsContainer.querySelectorAll('.command-entry');
+                allCommands.forEach(entry => {
                     const commandButton = entry.querySelector('.command-button');
-                    const descriptionSpan = entry.querySelector('.short-description, .sorted-command-description');
-                    if (commandButton && commandButton.dataset.originalText) {
-                        commandButton.innerHTML = commandButton.dataset.originalText;
-                    } else if (commandButton) {
-                        commandButton.innerHTML = commandButton.textContent;
-                    }
-                    if (descriptionSpan && descriptionSpan.dataset.originalText) {
-                        descriptionSpan.innerHTML = descriptionSpan.dataset.originalText;
-                    } else if (descriptionSpan) {
-                         descriptionSpan.innerHTML = descriptionSpan.textContent;
-                    }
+                    const descriptionSpan = entry.querySelector('.short-description');
+                    commandButton.innerHTML = commandButton.dataset.originalText;
+                    descriptionSpan.innerHTML = descriptionSpan.dataset.originalText;
                 });
             }
-
             categoryFilter.addEventListener('click', function(e) {
                 const button = e.target.closest('.category-filter-button'); if (!button) return;
-                switchToCategoryView();
                 searchBar.value = ''; clearHighlights();
                 activeCategory = button.dataset.filter;
                 if (categoryFilter.querySelector('.active')) { categoryFilter.querySelector('.active').classList.remove('active'); }
                 button.classList.add('active'); applyFilters();
             });
-
             alphabetFilter.addEventListener('click', function(e) {
                 const button = e.target.closest('.filter-button'); if (!button) return;
-                switchToCategoryView();
                 searchBar.value = ''; clearHighlights();
                 activeLetter = button.dataset.filter;
                 if (alphabetFilter.querySelector('.active')) { alphabetFilter.querySelector('.active').classList.remove('active'); }
                 button.classList.add('active'); applyFilters();
             });
-
-            sortByDateBtn.addEventListener('click', function() {
-                switchToSortedView();
-            });
-
-            // Обединен Event Listener за копиране
-            const mainContainer = document.querySelector('.container');
-            const latestCommandsWidget = document.querySelector('.latest-commands-widget');
-
-            const copyHandler = function(e) {
-                const commandButton = e.target.closest('.command-button, .latest-command-button');
+            commandsContainer.addEventListener('click', function(e) {
+                const commandButton = e.target.closest('.command-button');
                 if (!commandButton) return;
-                
-                const commandText = commandButton.dataset.command || commandButton.textContent;
+                const commandText = commandButton.textContent;
                 navigator.clipboard.writeText(commandText).then(() => {
-                    document.querySelectorAll('.copy-feedback, .copy-feedback-latest').forEach(el => el.remove());
-                    
-                    const isLatestWidget = commandButton.classList.contains('latest-command-button');
+                    const existingFeedback = document.querySelector('.copy-feedback');
+                    if (existingFeedback) { existingFeedback.remove(); }
                     const feedbackElement = document.createElement('div');
-                    feedbackElement.className = isLatestWidget ? 'copy-feedback-latest' : 'copy-feedback';
-                    feedbackElement.textContent = `Командата "${commandText}" е копирана!`;
-
-                    const parentEntry = commandButton.closest('.command-entry, .sorted-command-item, .latest-command-item');
-                    if (parentEntry) { 
-                        if (isLatestWidget) parentEntry.appendChild(feedbackElement);
-                        else parentEntry.after(feedbackElement);
-                    }
-                    
+                    feedbackElement.className = 'copy-feedback';
+                    feedbackElement.textContent = `Командата "${commandText}" е копирана! Може да я пейстнете в AutoCAD.`;
+                    const commandEntry = commandButton.closest('.command-entry');
+                    commandEntry.insertAdjacentElement('afterend', feedbackElement);
                     setTimeout(() => { feedbackElement.remove(); }, 3500);
-                }).catch(err => console.error('Грешка при копиране: ', err));
-            };
-
-            mainContainer.addEventListener('click', copyHandler);
-            latestCommandsWidget.addEventListener('click', copyHandler);
-
-            latestCommandsWidget.addEventListener('click', function(e) {
+                }).catch(err => { console.error('Грешка при копиране: ', err); });
+            });
+        }
+        
+        function initializeLatestCommandsInteraction() {
+            const latestCommandsList = document.getElementById('latest-commands-list');
+            if (!latestCommandsList) return;
+            latestCommandsList.addEventListener('click', function(e) {
+                const commandButton = e.target.closest('.latest-command-button');
                 const categoryButton = e.target.closest('.latest-command-category-btn');
-                if (categoryButton) {
+                if (commandButton) {
+                    navigator.clipboard.writeText(commandButton.dataset.command).then(() => {
+                        const existingFeedback = latestCommandsList.querySelector('.copy-feedback-latest');
+                        if (existingFeedback) existingFeedback.remove();
+                        const feedbackElement = document.createElement('div');
+                        feedbackElement.className = 'copy-feedback-latest';
+                        feedbackElement.textContent = `Командата "${commandButton.dataset.command}" е копирана!`;
+                        commandButton.closest('.latest-command-item').appendChild(feedbackElement);
+                        setTimeout(() => { feedbackElement.remove(); }, 3500);
+                    }).catch(err => console.error('Грешка при копиране: ', err));
+                } else if (categoryButton) {
                     const categoryId = categoryButton.dataset.categoryId;
                     if (!categoryId || categoryId === 'null') return;
                     const mainFilterButton = document.querySelector(`.category-filter-button[data-filter="${categoryId}"]`);
-                    if (mainFilterButton) { 
-                        mainFilterButton.click(); 
-                        mainFilterButton.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
-                    }
+                    if (mainFilterButton) { mainFilterButton.click(); mainFilterButton.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
                 }
             });
         }
