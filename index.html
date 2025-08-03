@@ -274,7 +274,7 @@
                 initializeLatestCommandsInteraction();
             } catch (error) {
                 console.error("Грешка при зареждане:", error);
-                commandsContainer.innerHTML = `<p style="color: red; text-align: center;">Възникна грешка. Проверете конзолата.</p>`;
+                commandsContainer.innerHTML = `<p style="color: red; text-align: center;">Възникна грешка при обработка на данните. Проверете конзолата.</p>`;
                 commandCounter.textContent = 'Грешка при зареждане';
             }
         });
@@ -490,44 +490,47 @@
             });
         }
 
-        // --- ОБНОВЕНА И КОРИГИРАНА ФУНКЦИЯ ---
+        // --- ЦЯЛОСТНО ОБНОВЕНА ФУНКЦИЯ ЗА ПАРСВАНЕ ---
         function parseLispFileImproved(content, config) {
             const categorizedData = {};
-            const commandDetailsMap = {}; 
-            Object.values(config).forEach(c => categorizedData[c.id] = []);
+            const commandDetailsMap = {};
+            const allCommandsDataMap = {}; // Карта на всички команди за бързо търсене
+            const orderedCommandKeys = [];
+
+            Object.values(config).forEach(c => {
+                categorizedData[c.id] = [];
+            });
             const lispNameToIdMap = {};
-            for (const key in config) { lispNameToIdMap[key] = config[key].id; }
-            
+            for (const key in config) {
+                lispNameToIdMap[key] = config[key].id;
+            }
+
+            // Стъпка 1: Обхождаме всички категории и създаваме карта на всички команди
             const functionBlocks = content.split(/defun create_dclhelplisp/);
-            
             functionBlocks.forEach(block => {
-                const categoryMatch = block.match(/^([^\s(]+)/); if (!categoryMatch) return;
+                const categoryMatch = block.match(/^([^\s(]+)/);
+                if (!categoryMatch) return;
+                
                 const lispCategoryName = categoryMatch[1];
-                const categoryId = lispNameToIdMap[lispCategoryName]; if (!categoryId) return;
+                const categoryId = lispNameToIdMap[lispCategoryName];
+                if (!categoryId) return;
+                
                 const categoryInfo = Object.values(config).find(c => c.id === categoryId);
                 if (!categoryInfo) return;
 
-                // --- КОРИГИРАНА ЛОГИКА ЗА ПАРСВАНЕ ---
-                // Заменяме неработещия regex с по-надежден метод, който брои скоби.
-                const itemsMatchStartIndex = block.search(/\(setq\s+(?:command_items|menu_items)\s+'\(/);
-                if (itemsMatchStartIndex === -1) return;
-
-                const listStartIndex = block.indexOf("'(", itemsMatchStartIndex);
-                if (listStartIndex === -1) return; 
+                const listStartIndex = block.indexOf("'(", block.search(/\(setq\s+(?:command_items|menu_items)\s+'\(/));
+                if (listStartIndex === -1) return;
 
                 let openParenCount = 1;
                 let currentIndex = listStartIndex + 2;
                 let itemsContent = "";
-
                 while (currentIndex < block.length && openParenCount > 0) {
                     const char = block[currentIndex];
                     if (char === '(') openParenCount++;
                     else if (char === ')') openParenCount--;
-                    
                     if (openParenCount > 0) itemsContent += char;
                     currentIndex++;
                 }
-                // --- КРАЙ НА КОРЕКЦИЯТА ---
 
                 if (!itemsContent) return;
 
@@ -536,25 +539,29 @@
                 while ((match = commandRegex.exec(itemsContent)) !== null) {
                     const commandName = match[2].trim();
                     if (commandName.startsWith("---") || commandName === "") continue;
-                    
-                    let fullDescription = match[3].replace(/^- /, '').replace(/\\t/g, ' ').replace(/\\n/g, ' ').replace(/\s+/g, ' ').trim();
-                    if (!fullDescription) fullDescription = '(Няма описание)';
 
-                    const commandObject = { name: commandName, description: fullDescription };
-                    categorizedData[categoryId].push(commandObject);
-                    commandDetailsMap[commandName] = { 
-                        description: fullDescription, 
+                    let fullDescription = match[3]
+                        .replace(/^- /, '')
+                        .replace(/\\t/g, ' ')
+                        .replace(/\\n/g, ' ')
+                        .replace(/\s+/g, ' ')
+                        .trim();
+                    if (!fullDescription) fullDescription = '(Няма описание)';
+                    
+                    // Пълним картата с детайли за всяка команда
+                    allCommandsDataMap[commandName] = {
+                        description: fullDescription,
                         categoryName: categoryInfo.filterName,
                         categoryId: categoryInfo.id
                     };
                 }
             });
 
-            const orderedCommandKeys = [];
-            const commandMapRegex = /\(\s*"([^"]+)"\s*\.\s*"[^"]*"\s*\)/g;
+            // Стъпка 2: Взимаме точния ред на командите от command_map
             const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
             if (commandMapSectionMatch) {
                 const mapContent = commandMapSectionMatch[1];
+                const commandMapRegex = /\(\s*"([^"]+)"\s*\.\s*"[^"]*"\s*\)/g;
                 let match;
                 while ((match = commandMapRegex.exec(mapContent)) !== null) {
                     const key = match[1];
@@ -563,6 +570,29 @@
                     }
                 }
             }
+
+            // Стъпка 3: Итерираме през подредения списък и попълваме финалните структури
+            orderedCommandKeys.forEach(commandKey => {
+                const commandDetails = allCommandsDataMap[commandKey];
+                
+                if (commandDetails) {
+                    // Попълваме commandDetailsMap за "Последни 5" и хронологичния изглед
+                    commandDetailsMap[commandKey] = commandDetails;
+                    
+                    // Попълваме categorizedData за основния изглед по категории
+                    const commandObject = {
+                        name: commandKey,
+                        description: commandDetails.description
+                    };
+                    
+                    if (categorizedData[commandDetails.categoryId]) {
+                         categorizedData[commandDetails.categoryId].push(commandObject);
+                    }
+                } else {
+                     console.warn(`Командата "${commandKey}" от command_map не беше намерена в нито един command_items списък.`);
+                }
+            });
+
             return {
                 categorizedData: categorizedData,
                 commandCount: orderedCommandKeys.length,
@@ -585,7 +615,9 @@
                         const commandEntry = document.createElement('div');
                         commandEntry.className = 'command-entry';
                         commandEntry.dataset.letter = command.name.charAt(0).toUpperCase();
-                        const fullDescription = command.description.charAt(0).toUpperCase() + command.description.slice(1);
+                        // Коригирано, за да се избегне грешка, ако описанието липсва
+                        const desc = command.description || '(Няма описание)';
+                        const fullDescription = desc.charAt(0).toUpperCase() + desc.slice(1);
                         commandEntry.innerHTML = `<div class="command-header"><button class="command-button">${command.name}</button><span class="short-description">${fullDescription}</span></div>`;
                         commandEntry.querySelector('.command-button').dataset.originalText = command.name;
                         commandEntry.querySelector('.short-description').dataset.originalText = fullDescription; 
@@ -604,7 +636,8 @@
                 const details = commandDetailsMap[commandName] || { description: '(Няма описание)', categoryName: 'Неизвестна' };
                 const commandEntry = document.createElement('div');
                 commandEntry.className = 'command-entry';
-                const fullDescription = details.description.charAt(0).toUpperCase() + details.description.slice(1);
+                const desc = details.description || '(Няма описание)';
+                const fullDescription = desc.charAt(0).toUpperCase() + desc.slice(1);
                 commandEntry.innerHTML = `<div class="command-header"><button class="command-button">${commandName}</button><span class="short-description">${fullDescription}</span></div><div style="padding: 0 15px 10px 15px; background-color: #f8f9fa; font-size: 13px; color: #777; margin-top: -8px;"><i>Категория: ${details.categoryName}</i></div>`;
                 commandEntry.querySelector('.command-button').dataset.originalText = commandName;
                 commandEntry.querySelector('.short-description').dataset.originalText = fullDescription;
@@ -758,4 +791,4 @@
         }
     </script>
 </body>
-</html>```
+</html>
