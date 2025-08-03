@@ -490,7 +490,6 @@
             });
         }
         
-        // --- ФИНАЛНА КОРИГИРАНА ФУНКЦИЯ ЗА ПАРСВАНЕ ---
         function parseLispFileImproved(content, config) {
             const categorizedData = {};
             const commandDetailsMap = {};
@@ -532,25 +531,33 @@
                 }
 
                 if (!itemsContent) return;
-
-                const commandRegex = /\(\s*"[^"]*"\s+"([^"]*)"\s+"([\s\S]*?)"\s*\)/g;
+                
+                // --- ФИНАЛНА КОРЕКЦИЯ НА РЕГУЛЯРНИЯ ИЗРАЗ ---
+                const commandRegex = /\(\s*"[^"]*"\s+"([^"]*)"\s*([\s\S]*?)\s*\)/g;
                 let match;
                 while ((match = commandRegex.exec(itemsContent)) !== null) {
-                    // --- КЛЮЧОВА ПРОВЕРКА ЗА ВАЛИДНОСТ ---
-                    if (!match || typeof match[3] === 'undefined') {
+                    // Валидация за съществуващи групи
+                    if (!match || typeof match[1] === 'undefined' || typeof match[2] === 'undefined') {
                         console.warn(`Пропускане на невалиден запис в категория '${lispCategoryName}':`, match ? match[0] : 'няма съвпадение');
                         continue;
                     }
 
-                    const commandName = match[2].trim();
+                    const commandName = match[1].trim();
                     if (commandName.startsWith("---") || commandName === "") continue;
 
-                    let fullDescription = match[3]
+                    // Описанието е всичко останало, след което премахваме кавичките
+                    let fullDescription = match[2].trim();
+                    if (fullDescription.startsWith('"') && fullDescription.endsWith('"')) {
+                        fullDescription = fullDescription.substring(1, fullDescription.length - 1);
+                    }
+                    
+                    fullDescription = fullDescription
                         .replace(/^- /, '')
                         .replace(/\\t/g, ' ')
                         .replace(/\\n/g, ' ')
                         .replace(/\s+/g, ' ')
                         .trim();
+                        
                     if (!fullDescription) fullDescription = '(Няма описание)';
                     
                     allCommandsDataMap[commandName] = {
@@ -766,7 +773,7 @@
                 } else {
                     switchToCategorizedView();
                     activeLetter = filter;
-                    if (alphabetFilter.querySelector('.active')) { alphabetFilter.querySelector('.active').classList.remove('active'); }
+                    if (alphabetFilter.querySelector('.active')) alphabetFilter.querySelector('.active').classList.remove('active'); }
                     button.classList.add('active');
                     applyCategorizedFilters();
                 }
