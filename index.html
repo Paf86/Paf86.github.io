@@ -483,23 +483,16 @@
             listContainer.innerHTML = ''; listContainer.appendChild(ul);
         }
 
-        function initializeLatestCommandsInteraction() {
-            // Тази функция беше обединена в initializeFiltersAndAccordions, за да се избегне дублиране.
-            // Запазваме я празна за съвместимост, ако бъде извикана отнякъде.
-        }
-        
         // --- КОРЕКТНА И ФИНАЛНА ВЕРСИЯ НА ПАРСЪРА ---
         function parseLispFileCorrectly(content, config) {
             const commandDetailsDatabase = {}; // База данни с детайли за ВСИЧКИ команди
             const categorizedData = {}; // Структура за изгледа по категории
             const chronologicalKeys = []; // Списък с имената на командите в правилния ред
             
-            // 1. Инициализация
             Object.values(config).forEach(c => categorizedData[c.id] = []);
             const lispNameToIdMap = {};
             for (const key in config) { lispNameToIdMap[key] = config[key].id; }
 
-            // 2. Създаване на пълна база данни с детайлите на всички команди от категориите
             const functionBlocks = content.split(/defun create_dclhelplisp/);
             functionBlocks.forEach(block => {
                 const categoryMatch = block.match(/^([^\s(]+)/); if (!categoryMatch) return;
@@ -507,15 +500,18 @@
                 const categoryId = lispNameToIdMap[lispCategoryName]; if (!categoryId) return;
                 const categoryInfo = Object.values(config).find(c => c.id === categoryId);
                 if (!categoryInfo) return;
+
                 const itemsMatch = block.match(/\(setq\s+(?:command_items|menu_items)\s+'\(([\s\S]+?)\)\)/);
                 if (!itemsMatch) return;
+                
                 const itemsContent = itemsMatch[1];
                 const commandRegex = /\(\s*"[^"]*"\s+"([^"]*)"\s+"([\s\S]*?)"\s*\)/g;
                 let match;
                 while ((match = commandRegex.exec(itemsContent)) !== null) {
-                    const commandName = match[2].trim();
+                    const commandName = match[1].trim(); // **КОРЕКЦИЯ: ИНДЕКС 1**
                     if (commandName.startsWith("---") || commandName === "") continue;
-                    let fullDescription = match[3].replace(/^- /, '').replace(/\\t/g, ' ').replace(/\s+/g, ' ').trim();
+
+                    const fullDescription = match[2] ? match[2].replace(/^- /, '').replace(/\\t/g, ' ').replace(/\s+/g, ' ').trim() : ""; // **КОРЕКЦИЯ: ИНДЕКС 2 И ПРОВЕРКА**
                     
                     categorizedData[categoryId].push({ name: commandName, description: fullDescription });
                     
@@ -527,7 +523,6 @@
                 }
             });
 
-            // 3. Извличане на правилния хронологичен ред от COMMAND MAP
             const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
             if (commandMapSectionMatch) {
                 const mapContent = commandMapSectionMatch[1];
@@ -541,7 +536,6 @@
                 }
             }
 
-            // 4. Сглобяване на финалния, унифициран и правилно подреден списък
             const allCommandsInOrder = chronologicalKeys.map(commandName => {
                 const details = commandDetailsDatabase[commandName] || { description: '(Няма описание)', categoryName: 'Неизвестна', categoryId: null };
                 return { name: commandName, ...details };
@@ -752,7 +746,6 @@
             mainContainer.addEventListener('click', copyHandler);
             latestCommandsWidget.addEventListener('click', copyHandler);
 
-            // Добавяме и навигацията от "Последни 5" към правилната категория
             latestCommandsWidget.addEventListener('click', function(e) {
                 const categoryButton = e.target.closest('.latest-command-category-btn');
                 if (categoryButton) {
