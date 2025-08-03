@@ -532,11 +532,10 @@
 
                 if (!itemsContent) return;
                 
-                // --- ФИНАЛНА КОРЕКЦИЯ НА РЕГУЛЯРНИЯ ИЗРАЗ ---
-                const commandRegex = /\(\s*"[^"]*"\s+"([^"]*)"\s*([\s\S]*?)\s*\)/g;
+                // --- КОРИГИРАН REGEX ЗА ПО-ГОЛЯМА ТОЛЕРАНТНОСТ ---
+                const commandRegex = /\(\s*"[^"]*"\s*"([^"]*)"\s*([\s\S]*?)\s*\)/g;
                 let match;
                 while ((match = commandRegex.exec(itemsContent)) !== null) {
-                    // Валидация за съществуващи групи
                     if (!match || typeof match[1] === 'undefined' || typeof match[2] === 'undefined') {
                         console.warn(`Пропускане на невалиден запис в категория '${lispCategoryName}':`, match ? match[0] : 'няма съвпадение');
                         continue;
@@ -545,7 +544,6 @@
                     const commandName = match[1].trim();
                     if (commandName.startsWith("---") || commandName === "") continue;
 
-                    // Описанието е всичко останало, след което премахваме кавичките
                     let fullDescription = match[2].trim();
                     if (fullDescription.startsWith('"') && fullDescription.endsWith('"')) {
                         fullDescription = fullDescription.substring(1, fullDescription.length - 1);
@@ -766,14 +764,16 @@
                 if (filter === 'chronological') {
                     commandsContainer.style.display = 'none';
                     chronoContainer.style.display = 'block';
-                    if (alphabetFilter.querySelector('.active')) alphabetFilter.querySelector('.active').classList.remove('active');
-                    if (categoryFilter.querySelector('.active')) categoryFilter.querySelector('.active').classList.remove('active');
+                    if (alphabetFilter.querySelector('.active')) { alphabetFilter.querySelector('.active').classList.remove('active'); }
+                    if (categoryFilter.querySelector('.active')) { categoryFilter.querySelector('.active').classList.remove('active'); }
                     button.classList.add('active');
                     categoryFilter.querySelector('[data-filter="all"]').classList.add('active');
                 } else {
                     switchToCategorizedView();
                     activeLetter = filter;
-                    if (alphabetFilter.querySelector('.active')) alphabetFilter.querySelector('.active').classList.remove('active'); }
+                    if (alphabetFilter.querySelector('.active')) { 
+                        alphabetFilter.querySelector('.active').classList.remove('active'); 
+                    }
                     button.classList.add('active');
                     applyCategorizedFilters();
                 }
