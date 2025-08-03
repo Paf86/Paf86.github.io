@@ -313,7 +313,7 @@
                 const response = await fetch(COMMANDS_FILE_URL);
                 if (!response.ok) throw new Error(`HTTP грешка! Статус: ${response.status}`);
                 const lispContent = await response.text();
-                const parsedResult = parseLispFileUnified(lispContent, categoryConfig);
+                const parsedResult = parseLispFileCorrectly(lispContent, categoryConfig);
                 
                 renderAllCommands(parsedResult.categorizedData, commandsContainer, categoryFilterContainer, commandCounter, parsedResult.commandCount, categoryConfig);
                 renderSortedByDate(parsedResult.allCommandsInOrder, sortedCommandsContainer);
@@ -484,41 +484,22 @@
         }
 
         function initializeLatestCommandsInteraction() {
-            const latestCommandsList = document.getElementById('latest-commands-list');
-            if (!latestCommandsList) return;
-            latestCommandsList.addEventListener('click', function(e) {
-                const commandButton = e.target.closest('.latest-command-button');
-                const categoryButton = e.target.closest('.latest-command-category-btn');
-                if (commandButton) {
-                    navigator.clipboard.writeText(commandButton.dataset.command).then(() => {
-                        const existingFeedback = latestCommandsList.querySelector('.copy-feedback-latest');
-                        if (existingFeedback) existingFeedback.remove();
-                        const feedbackElement = document.createElement('div'); feedbackElement.className = 'copy-feedback-latest';
-                        feedbackElement.textContent = `Командата "${commandButton.dataset.command}" е копирана!`;
-                        commandButton.closest('.latest-command-item').appendChild(feedbackElement);
-                        setTimeout(() => { feedbackElement.remove(); }, 3500);
-                    }).catch(err => console.error('Грешка при копиране: ', err));
-                } else if (categoryButton) {
-                    const categoryId = categoryButton.dataset.categoryId;
-                    if (!categoryId || categoryId === 'null') return;
-                    const mainFilterButton = document.querySelector(`.category-filter-button[data-filter="${categoryId}"]`);
-                    if (mainFilterButton) { mainFilterButton.click(); mainFilterButton.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-                }
-            });
+            // Тази функция беше обединена в initializeFiltersAndAccordions, за да се избегне дублиране.
+            // Запазваме я празна за съвместимост, ако бъде извикана отнякъде.
         }
         
-        // --- ИЗЦЯЛО ПРЕРАБОТЕНА И УНИФИЦИРАНА ФУНКЦИЯ ЗА ПАРСВАНЕ ---
-        function parseLispFileUnified(content, config) {
-            const categorizedData = {};
-            const commandDetailsMap = {}; // Карта с детайли за ВСИЧКИ команди
-            const orderedCommandKeys = []; // Списък с имената на командите в правилния ред
-
-            // 1. Инициализираме структурите
+        // --- КОРЕКТНА И ФИНАЛНА ВЕРСИЯ НА ПАРСЪРА ---
+        function parseLispFileCorrectly(content, config) {
+            const commandDetailsDatabase = {}; // База данни с детайли за ВСИЧКИ команди
+            const categorizedData = {}; // Структура за изгледа по категории
+            const chronologicalKeys = []; // Списък с имената на командите в правилния ред
+            
+            // 1. Инициализация
             Object.values(config).forEach(c => categorizedData[c.id] = []);
             const lispNameToIdMap = {};
             for (const key in config) { lispNameToIdMap[key] = config[key].id; }
 
-            // 2. Създаваме пълна карта с детайлите на всички команди от категориите
+            // 2. Създаване на пълна база данни с детайлите на всички команди от категориите
             const functionBlocks = content.split(/defun create_dclhelplisp/);
             functionBlocks.forEach(block => {
                 const categoryMatch = block.match(/^([^\s(]+)/); if (!categoryMatch) return;
@@ -526,24 +507,19 @@
                 const categoryId = lispNameToIdMap[lispCategoryName]; if (!categoryId) return;
                 const categoryInfo = Object.values(config).find(c => c.id === categoryId);
                 if (!categoryInfo) return;
-
                 const itemsMatch = block.match(/\(setq\s+(?:command_items|menu_items)\s+'\(([\s\S]+?)\)\)/);
                 if (!itemsMatch) return;
-
                 const itemsContent = itemsMatch[1];
                 const commandRegex = /\(\s*"[^"]*"\s+"([^"]*)"\s+"([\s\S]*?)"\s*\)/g;
                 let match;
                 while ((match = commandRegex.exec(itemsContent)) !== null) {
                     const commandName = match[2].trim();
                     if (commandName.startsWith("---") || commandName === "") continue;
-
                     let fullDescription = match[3].replace(/^- /, '').replace(/\\t/g, ' ').replace(/\s+/g, ' ').trim();
                     
-                    // Пълним категоризираните данни (за стандартния изглед)
                     categorizedData[categoryId].push({ name: commandName, description: fullDescription });
                     
-                    // Пълним и картата с детайли
-                    commandDetailsMap[commandName] = {
+                    commandDetailsDatabase[commandName] = {
                         description: fullDescription,
                         categoryName: categoryInfo.filterName,
                         categoryId: categoryInfo.id
@@ -551,7 +527,7 @@
                 }
             });
 
-            // 3. Извличаме правилния хронологичен ред от COMMAND MAP
+            // 3. Извличане на правилния хронологичен ред от COMMAND MAP
             const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
             if (commandMapSectionMatch) {
                 const mapContent = commandMapSectionMatch[1];
@@ -559,20 +535,16 @@
                 let match;
                 while ((match = commandMapRegex.exec(mapContent)) !== null) {
                      const key = match[1];
-                     // Добавяме само истински команди, не навигационни елементи
                      if (!config[key] && key !== 'back' && key !== 'pps_back' && !/^[А-Я]/.test(key)) {
-                        orderedCommandKeys.push(key);
+                        chronologicalKeys.push(key);
                      }
                 }
             }
 
-            // 4. Създаваме финалния, унифициран и правилно подреден списък с всички команди
-            const allCommandsInOrder = orderedCommandKeys.map(commandName => {
-                const details = commandDetailsMap[commandName] || { description: '(Няма описание)', categoryName: 'Неизвестна', categoryId: null };
-                return {
-                    name: commandName,
-                    ...details
-                };
+            // 4. Сглобяване на финалния, унифициран и правилно подреден списък
+            const allCommandsInOrder = chronologicalKeys.map(commandName => {
+                const details = commandDetailsDatabase[commandName] || { description: '(Няма описание)', categoryName: 'Неизвестна', categoryId: null };
+                return { name: commandName, ...details };
             });
 
             return {
@@ -581,7 +553,6 @@
                 allCommandsInOrder: allCommandsInOrder
             };
         }
-
 
         function renderAllCommands(data, container, filterContainer, counterEl, commandCount, config) {
             container.innerHTML = ''; filterContainer.innerHTML = '<button class="category-filter-button active" data-filter="all">ВСИЧКИ СЕКЦИИ</button>';
@@ -719,18 +690,15 @@
                     if (commandButton && commandButton.dataset.originalText) {
                         commandButton.innerHTML = commandButton.dataset.originalText;
                     } else if (commandButton) {
-                        // За сортирания изглед, където няма originalText
                         commandButton.innerHTML = commandButton.textContent;
                     }
                     if (descriptionSpan && descriptionSpan.dataset.originalText) {
                         descriptionSpan.innerHTML = descriptionSpan.dataset.originalText;
                     } else if (descriptionSpan) {
-                         // За сортирания изглед
                          descriptionSpan.innerHTML = descriptionSpan.textContent;
                     }
                 });
             }
-
 
             categoryFilter.addEventListener('click', function(e) {
                 const button = e.target.closest('.category-filter-button'); if (!button) return;
@@ -754,21 +722,48 @@
                 switchToSortedView();
             });
 
-            document.querySelector('.container').addEventListener('click', function(e) {
-                const commandButton = e.target.closest('.command-button');
+            // Обединен Event Listener за копиране
+            const mainContainer = document.querySelector('.container');
+            const latestCommandsWidget = document.querySelector('.latest-commands-widget');
+
+            const copyHandler = function(e) {
+                const commandButton = e.target.closest('.command-button, .latest-command-button');
                 if (!commandButton) return;
                 
-                const commandText = commandButton.textContent;
+                const commandText = commandButton.dataset.command || commandButton.textContent;
                 navigator.clipboard.writeText(commandText).then(() => {
-                    document.querySelectorAll('.copy-feedback').forEach(el => el.remove());
+                    document.querySelectorAll('.copy-feedback, .copy-feedback-latest').forEach(el => el.remove());
+                    
+                    const isLatestWidget = commandButton.classList.contains('latest-command-button');
                     const feedbackElement = document.createElement('div');
-                    feedbackElement.className = 'copy-feedback';
-                    feedbackElement.textContent = `Командата "${commandText}" е копирана! Може да я пейстнете в AutoCAD.`;
-                    const parentEntry = commandButton.closest('.command-entry, .sorted-command-item');
-                    if (parentEntry) { parentEntry.after(feedbackElement); }
+                    feedbackElement.className = isLatestWidget ? 'copy-feedback-latest' : 'copy-feedback';
+                    feedbackElement.textContent = `Командата "${commandText}" е копирана!`;
+
+                    const parentEntry = commandButton.closest('.command-entry, .sorted-command-item, .latest-command-item');
+                    if (parentEntry) { 
+                        if (isLatestWidget) parentEntry.appendChild(feedbackElement);
+                        else parentEntry.after(feedbackElement);
+                    }
                     
                     setTimeout(() => { feedbackElement.remove(); }, 3500);
-                }).catch(err => { console.error('Грешка при копиране: ', err); });
+                }).catch(err => console.error('Грешка при копиране: ', err));
+            };
+
+            mainContainer.addEventListener('click', copyHandler);
+            latestCommandsWidget.addEventListener('click', copyHandler);
+
+            // Добавяме и навигацията от "Последни 5" към правилната категория
+            latestCommandsWidget.addEventListener('click', function(e) {
+                const categoryButton = e.target.closest('.latest-command-category-btn');
+                if (categoryButton) {
+                    const categoryId = categoryButton.dataset.categoryId;
+                    if (!categoryId || categoryId === 'null') return;
+                    const mainFilterButton = document.querySelector(`.category-filter-button[data-filter="${categoryId}"]`);
+                    if (mainFilterButton) { 
+                        mainFilterButton.click(); 
+                        mainFilterButton.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+                    }
+                }
             });
         }
     </script>
