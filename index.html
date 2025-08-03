@@ -282,14 +282,12 @@
         .latest-commands-widget summary::after { content: '▼'; font-size: 12px; transition: transform 0.3s; }
         .latest-commands-widget details[open] > summary::after { transform: rotate(180deg); }
         
-        /* --- КОРЕКЦИЯТА Е ТУК --- */
         #latest-commands-list { 
             padding: 0 15px 15px 15px; 
-            max-height: 60vh; /* Ограничава височината до 60% от тази на прозореца */
-            overflow-y: auto; /* Добавя вертикален скрол, САМО ако е необходимо */
+            max-height: 60vh;
+            overflow-y: auto;
         }
-        /* --- КРАЙ НА КОРЕКЦИЯТА --- */
-
+        
         #latest-commands-list ul { list-style: none; padding: 0; margin: 0; }
         .latest-command-item { padding: 10px 0; border-bottom: 1px solid #eee; }
         .latest-command-item:last-child { border-bottom: none; }
@@ -331,8 +329,18 @@
         </div>
         <h1>PAF's PROGRAMS SUITE</h1><h3 class="main-subtitle">Интерактивен списък на AutoLISP команди</h3><h3 id="command-counter">Зареждане на командите...</h3>
         <div class="search-container"><input type="text" id="search-bar" placeholder="Търсене по име или описание..."></div>
-        <div class="filters-container"><div id="category-filter"></div><div id="alphabet-filter"><button class="filter-button active" data-filter="all">ВСИЧКИ БУКВИ</button><script>document.write(Array.from(Array(26)).map((e, i) => `<button class="filter-button" data-filter="${String.fromCharCode(i + 65)}">${String.fromCharCode(i + 65)}</button>`).join(''));</script></div></div>
+        <div class="filters-container">
+            <div id="category-filter"></div>
+            <div id="alphabet-filter">
+                <!-- НОВИЯТ ФИЛТЪР Е ДОБАВЕН ТУК -->
+                <button class="filter-button" data-filter="chronological">ПО РЕД НА ДОБАВЯНЕ</button>
+                <button class="filter-button active" data-filter="all">ВСИЧКИ БУКВИ</button>
+                <script>document.write(Array.from(Array(26)).map((e, i) => `<button class="filter-button" data-filter="${String.fromCharCode(i + 65)}">${String.fromCharCode(i + 65)}</button>`).join(''));</script>
+            </div>
+        </div>
         <div id="commands-container"></div>
+        <!-- НОВ КОНТЕЙНЕР ЗА ХРОНОЛОГИЧНИЯ ИЗГЛЕД -->
+        <div id="chronological-commands-container" style="display: none;"></div>
     </div> 
 
     <div class="latest-commands-widget">
@@ -393,6 +401,8 @@
         trackVisitor();
 
         document.addEventListener('DOMContentLoaded', async function() {
+            let parsedResult; // Запазваме резултата в по-висок скоуп
+            
             initializeFirebaseFunctionality();
             initializeFunMode();
 
@@ -401,6 +411,7 @@
                 "СИТУАЦИЯ": { id: "situation", title: "Команди за Ситуация", filterName: "Ситуация" }, "НАДЛЪЖНИ": { id: "longitudinal-profiles", title: "Команди за Надлъжни профили", filterName: "Надлъжни" }, "НАПРЕЧНИ": { id: "cross-sections", title: "Команди за Напречни профили", filterName: "Напречни" }, "БЛОКОВЕ": { id: "blocks", title: "Команди за Блокове", filterName: "Блокове" }, "ЛЕЙАУТИ": { id: "layouts", title: "Команди за Layouts", filterName: "Layouts" }, "СИВИЛ": { id: "civil", title: "Команди за Civil 3D", filterName: "Civil 3D" }, "РЕГИСТРИ": { id: "registers", title: "Команди за Регистри (Civil 3D)", filterName: "Регистри (Civil)" }, "ДРУГИ": { id: "other", title: "Други команди", filterName: "Други" },
             };
             const commandsContainer = document.getElementById('commands-container');
+            const chronoContainer = document.getElementById('chronological-commands-container');
             const categoryFilterContainer = document.getElementById('category-filter');
             const commandCounter = document.getElementById('command-counter');
 
@@ -408,10 +419,15 @@
                 const response = await fetch(COMMANDS_FILE_URL);
                 if (!response.ok) throw new Error(`HTTP грешка! Статус: ${response.status}`);
                 const lispContent = await response.text();
-                const parsedResult = parseLispFileImproved(lispContent, categoryConfig);
+                parsedResult = parseLispFileImproved(lispContent, categoryConfig);
+                
                 renderAllCommands(parsedResult.categorizedData, commandsContainer, categoryFilterContainer, commandCounter, parsedResult.commandCount, categoryConfig);
                 renderLatestCommands(parsedResult.orderedCommandKeys, parsedResult.commandDetailsMap);
-                initializeFiltersAndAccordions();
+
+                // --- НОВО: Предварително рендираме и хронологичния изглед (скрит)
+                renderChronologicalView(parsedResult.orderedCommandKeys.slice().reverse(), parsedResult.commandDetailsMap, chronoContainer);
+                
+                initializeFiltersAndAccordions(parsedResult); // Предаваме данните към филтрите
                 initializeLatestCommandsInteraction();
             } catch (error) {
                 console.error("Грешка при зареждане:", error);
@@ -909,31 +925,68 @@
             }
             counterEl.textContent = `Намерени общо ${commandCount} уникални команди, разпределени в категории`;
         }
+        
+        // --- НОВА ФУНКЦИЯ ЗА РЕНДИРАНЕ НА ХРОНОЛОГИЧНИЯ ИЗГЛЕД ---
+        function renderChronologicalView(orderedKeys, commandDetailsMap, container) {
+            container.innerHTML = '';
+            if (orderedKeys.length === 0) {
+                container.innerHTML = '<p>Няма команди за показване.</p>';
+                return;
+            }
+            orderedKeys.forEach(commandName => {
+                const details = commandDetailsMap[commandName] || { description: '(Няма описание)', categoryName: 'Неизвестна' };
+                const commandEntry = document.createElement('div');
+                commandEntry.className = 'command-entry';
+                const fullDescription = details.description.charAt(0).toUpperCase() + details.description.slice(1);
+
+                commandEntry.innerHTML = `
+                    <div class="command-header">
+                        <button class="command-button">${commandName}</button>
+                        <span class="short-description">${fullDescription}</span>
+                    </div>
+                    <div style="padding: 0 15px 10px 15px; background-color: #f8f9fa; font-size: 13px; color: #777; margin-top: -8px;">
+                        <i>Категория: ${details.categoryName}</i>
+                    </div>`;
+                commandEntry.querySelector('.command-button').dataset.originalText = commandName;
+                commandEntry.querySelector('.short-description').dataset.originalText = fullDescription;
+                container.appendChild(commandEntry);
+            });
+        }
+
+
+        // --- ОБНОВЕНА ФУНКЦИЯ ЗА ФИЛТРИ И АКОРДЕОНИ ---
         function initializeFiltersAndAccordions() {
             const searchBar = document.getElementById('search-bar');
             const categoryFilter = document.getElementById('category-filter');
             const alphabetFilter = document.getElementById('alphabet-filter');
             const commandsContainer = document.getElementById('commands-container');
-            let activeCategory = 'all'; let activeLetter = 'all'; 
+            const chronoContainer = document.getElementById('chronological-commands-container');
+            
+            let activeCategory = 'all'; 
+            let activeLetter = 'all'; 
+
             function escapeRegex(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+            
             function highlightText(originalText, searchTerm) {
                 if (!searchTerm) { return originalText; }
                 const escapedSearchTerm = escapeRegex(searchTerm);
                 const regex = new RegExp(escapedSearchTerm, 'gi');
                 return originalText.replace(regex, (match) => `<mark>${match}</mark>`);
             }
-            function resetFiltersToAll() {
-                activeCategory = 'all'; activeLetter = 'all';
-                if (categoryFilter.querySelector('.active')) { categoryFilter.querySelector('.active').classList.remove('active'); }
-                categoryFilter.querySelector('[data-filter="all"]').classList.add('active');
-                if (alphabetFilter.querySelector('.active')) { alphabetFilter.querySelector('.active').classList.remove('active'); }
-                alphabetFilter.querySelector('[data-filter="all"]').classList.add('active');
+
+            function clearHighlights() {
+                const allMarked = document.querySelectorAll('mark');
+                allMarked.forEach(mark => {
+                    const parent = mark.parentNode;
+                    parent.replaceChild(document.createTextNode(mark.textContent), mark);
+                    parent.normalize(); // Слива съседни текстови възли
+                });
             }
-            searchBar.addEventListener('input', () => {
-                const searchTerm = searchBar.value;
+
+            function applyCategorizedSearch(searchTerm) {
                 const searchTermLower = searchTerm.toLowerCase();
-                if (searchTerm.length > 0) { resetFiltersToAll(); }
                 const allCategories = commandsContainer.querySelectorAll('details.category');
+                
                 allCategories.forEach(category => {
                     const allCommands = category.querySelectorAll('.command-entry');
                     let hasVisibleChildren = false;
@@ -942,23 +995,73 @@
                         const descriptionSpan = entry.querySelector('.short-description');
                         const originalCommandName = commandButton.dataset.originalText;
                         const originalDescription = descriptionSpan.dataset.originalText;
+
+                        // Първо изчистваме старите <mark> тагове
+                        commandButton.innerHTML = originalCommandName;
+                        descriptionSpan.innerHTML = originalDescription;
+
                         const isMatch = originalCommandName.toLowerCase().includes(searchTermLower) || originalDescription.toLowerCase().includes(searchTermLower);
                         entry.classList.toggle('hidden', !isMatch);
                         if (isMatch) {
                             hasVisibleChildren = true;
-                            commandButton.innerHTML = highlightText(originalCommandName, searchTerm);
-                            descriptionSpan.innerHTML = highlightText(originalDescription, searchTerm);
-                        } else {
-                            commandButton.innerHTML = originalCommandName;
-                            descriptionSpan.innerHTML = originalDescription;
+                            if(searchTerm){
+                                commandButton.innerHTML = highlightText(originalCommandName, searchTerm);
+                                descriptionSpan.innerHTML = highlightText(originalDescription, searchTerm);
+                            }
                         }
                     });
                     category.classList.toggle('hidden', !hasVisibleChildren);
                     if (hasVisibleChildren && searchTerm) { category.setAttribute('open', ''); } 
-                    else { category.removeAttribute('open'); }
+                    else if (!searchTerm) { category.removeAttribute('open'); }
                 });
+            }
+
+            function applyChronologicalSearch(searchTerm) {
+                const searchTermLower = searchTerm.toLowerCase();
+                 const allCommands = chronoContainer.querySelectorAll('.command-entry');
+                 allCommands.forEach(entry => {
+                    const commandButton = entry.querySelector('.command-button');
+                    const descriptionSpan = entry.querySelector('.short-description');
+                    const originalCommandName = commandButton.dataset.originalText;
+                    const originalDescription = descriptionSpan.dataset.originalText;
+                    
+                    commandButton.innerHTML = originalCommandName;
+                    descriptionSpan.innerHTML = originalDescription;
+
+                    const isMatch = originalCommandName.toLowerCase().includes(searchTermLower) || originalDescription.toLowerCase().includes(searchTermLower);
+                    entry.classList.toggle('hidden', !isMatch);
+
+                     if (isMatch && searchTerm) {
+                        commandButton.innerHTML = highlightText(originalCommandName, searchTerm);
+                        descriptionSpan.innerHTML = highlightText(originalDescription, searchTerm);
+                    }
+                 });
+            }
+
+            searchBar.addEventListener('input', () => {
+                const searchTerm = searchBar.value;
+                const isChronoViewActive = chronoContainer.style.display !== 'none';
+                
+                // Деактивираме филтрите, когато се търси
+                if (searchTerm.length > 0) {
+                     if (categoryFilter.querySelector('.active')) categoryFilter.querySelector('.active').classList.remove('active');
+                     if (alphabetFilter.querySelector('.active')) alphabetFilter.querySelector('.active').classList.remove('active');
+                     categoryFilter.querySelector('[data-filter="all"]').classList.add('active');
+                     if (!isChronoViewActive) {
+                        alphabetFilter.querySelector('[data-filter="all"]').classList.add('active');
+                     } else {
+                        alphabetFilter.querySelector('[data-filter="chronological"]').classList.add('active');
+                     }
+                }
+
+                if (isChronoViewActive) {
+                    applyChronologicalSearch(searchTerm);
+                } else {
+                    applyCategorizedSearch(searchTerm);
+                }
             });
-            function applyFilters() {
+
+            function applyCategorizedFilters() {
                 const categories = commandsContainer.querySelectorAll('details.category');
                 categories.forEach(category => {
                     const commandEntries = category.querySelectorAll('.command-entry');
@@ -979,45 +1082,81 @@
                 if (isAnyFilterActive) { visibleCategories.forEach(cat => cat.setAttribute('open', '')); } 
                 else { categories.forEach(cat => cat.removeAttribute('open')); }
             }
-            function clearHighlights() {
-                const allCommands = commandsContainer.querySelectorAll('.command-entry');
-                allCommands.forEach(entry => {
-                    const commandButton = entry.querySelector('.command-button');
-                    const descriptionSpan = entry.querySelector('.short-description');
-                    commandButton.innerHTML = commandButton.dataset.originalText;
-                    descriptionSpan.innerHTML = descriptionSpan.dataset.originalText;
-                });
+            
+            function switchToCategorizedView() {
+                commandsContainer.style.display = 'block';
+                chronoContainer.style.display = 'none';
+                const chronoBtn = alphabetFilter.querySelector('[data-filter="chronological"]');
+                if (chronoBtn) chronoBtn.classList.remove('active');
             }
+
             categoryFilter.addEventListener('click', function(e) {
                 const button = e.target.closest('.category-filter-button'); if (!button) return;
                 searchBar.value = ''; clearHighlights();
+                
+                switchToCategorizedView();
+
                 activeCategory = button.dataset.filter;
                 if (categoryFilter.querySelector('.active')) { categoryFilter.querySelector('.active').classList.remove('active'); }
-                button.classList.add('active'); applyFilters();
+                button.classList.add('active');
+
+                // Връщаме филтъра по букви на "ВСИЧКИ"
+                activeLetter = 'all';
+                if (alphabetFilter.querySelector('.active')) { alphabetFilter.querySelector('.active').classList.remove('active'); }
+                alphabetFilter.querySelector('[data-filter="all"]').classList.add('active');
+
+                applyCategorizedFilters();
             });
+
             alphabetFilter.addEventListener('click', function(e) {
                 const button = e.target.closest('.filter-button'); if (!button) return;
                 searchBar.value = ''; clearHighlights();
-                activeLetter = button.dataset.filter;
-                if (alphabetFilter.querySelector('.active')) { alphabetFilter.querySelector('.active').classList.remove('active'); }
-                button.classList.add('active'); applyFilters();
+                
+                const filter = button.dataset.filter;
+
+                if (filter === 'chronological') {
+                    commandsContainer.style.display = 'none';
+                    chronoContainer.style.display = 'block';
+                    
+                    if (alphabetFilter.querySelector('.active')) alphabetFilter.querySelector('.active').classList.remove('active');
+                    if (categoryFilter.querySelector('.active')) categoryFilter.querySelector('.active').classList.remove('active');
+                    button.classList.add('active');
+                    categoryFilter.querySelector('[data-filter="all"]').classList.add('active');
+
+                } else {
+                    switchToCategorizedView();
+                    activeLetter = filter;
+                    if (alphabetFilter.querySelector('.active')) alphabetFilter.querySelector('.active').classList.remove('active');
+                    button.classList.add('active');
+                    applyCategorizedFilters();
+                }
             });
-            commandsContainer.addEventListener('click', function(e) {
+
+            // Общ event listener за копиране, който работи и за двата контейнера
+            document.querySelector('.container').addEventListener('click', function(e) {
                 const commandButton = e.target.closest('.command-button');
                 if (!commandButton) return;
-                const commandText = commandButton.textContent;
+                
+                const commandText = commandButton.dataset.originalText || commandButton.textContent;
                 navigator.clipboard.writeText(commandText).then(() => {
                     const existingFeedback = document.querySelector('.copy-feedback');
                     if (existingFeedback) { existingFeedback.remove(); }
+                    
                     const feedbackElement = document.createElement('div');
                     feedbackElement.className = 'copy-feedback';
-                    feedbackElement.textContent = `Командата "${commandText}" е копирана! Може да я пейстнете в AutoCAD.`;
+                    feedbackElement.textContent = `Командата "${commandText}" е копирана!`;
+                    
                     const commandEntry = commandButton.closest('.command-entry');
                     commandEntry.insertAdjacentElement('afterend', feedbackElement);
-                    setTimeout(() => { feedbackElement.remove(); }, 3500);
-                }).catch(err => { console.error('Грешка при копиране: ', err); });
+                    
+                    setTimeout(() => { 
+                         if (feedbackElement) feedbackElement.remove(); 
+                    }, 3500);
+                }).catch(err => { 
+                    console.error('Грешка при копиране: ', err); 
+                });
             });
         }
     </script>
 </body>
-</html>```
+</html>
