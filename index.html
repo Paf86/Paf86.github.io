@@ -504,6 +504,53 @@
                 lispNameToIdMap[key] = config[key].id;
             }
 
+            // --- НОВ, ПО-НАДЕЖДЕН МЕТОД ЗА ПАРСВАНЕ ---
+            function parseLispList(listContent) {
+                const items = [];
+                let currentPos = 0;
+                
+                while(currentPos < listContent.length) {
+                    // Пропускане на празни места
+                    while(currentPos < listContent.length && /\s/.test(listContent[currentPos])) {
+                        currentPos++;
+                    }
+                    if (currentPos >= listContent.length) break;
+
+                    if (listContent[currentPos] === '(') {
+                        let parenLevel = 1;
+                        let itemStart = currentPos + 1;
+                        currentPos++;
+                        while(currentPos < listContent.length && parenLevel > 0) {
+                            if (listContent[currentPos] === '(') parenLevel++;
+                            if (listContent[currentPos] === ')') parenLevel--;
+                            currentPos++;
+                        }
+                        const itemContent = listContent.substring(itemStart, currentPos - 1);
+                        const parts = parseLispList(itemContent);
+                        if (parts.length > 0) items.push(parts);
+
+                    } else if (listContent[currentPos] === '"') {
+                        let inString = true;
+                        let itemStart = currentPos + 1;
+                        currentPos++;
+                        let str = "";
+                        while(currentPos < listContent.length && inString) {
+                            if (listContent[currentPos] === '"' && listContent[currentPos-1] !== '\\') {
+                                inString = false;
+                            } else {
+                                str += listContent[currentPos];
+                            }
+                            currentPos++;
+                        }
+                        items.push(str);
+                    } else {
+                       // За други типове, които не са ни нужни
+                       currentPos++;
+                    }
+                }
+                return items;
+            }
+
             const functionBlocks = content.split(/defun create_dclhelplisp/);
             functionBlocks.forEach(block => {
                 const categoryMatch = block.match(/^([^\s(]+)/);
@@ -532,39 +579,32 @@
 
                 if (!itemsContent) return;
                 
-                const commandRegex = /\(\s*"([^"]*)"\s*"([^"]*)"\s*([\s\S]*?)\s*\)/g;
-                let match;
-                while ((match = commandRegex.exec(itemsContent)) !== null) {
-                    if (!match || typeof match[1] === 'undefined' || typeof match[2] === 'undefined' || typeof match[3] === 'undefined') {
-                        console.warn(`Пропускане на невалиден запис в категория '${lispCategoryName}':`, match ? match[0] : 'няма съвпадение');
-                        continue;
-                    }
-
-                    const internalKey = match[1].trim();
-                    const displayName = match[2].trim();
-                    if (internalKey.startsWith("---") || displayName === "") continue;
-
-                    let fullDescription = match[3].trim();
-                    if (fullDescription.startsWith('"') && fullDescription.endsWith('"')) {
-                        fullDescription = fullDescription.substring(1, fullDescription.length - 1);
-                    }
-                    
-                    fullDescription = fullDescription
-                        .replace(/^- /, '')
-                        .replace(/\\t/g, ' ')
-                        .replace(/\\n/g, ' ')
-                        .replace(/\s+/g, ' ')
-                        .trim();
+                const commands = parseLispList(itemsContent);
+                commands.forEach(cmd => {
+                    if (Array.isArray(cmd) && cmd.length >= 3) {
+                        const internalKey = (cmd[0] || "").trim();
+                        const displayName = (cmd[1] || "").trim();
+                        let fullDescription = (cmd[2] || "").trim();
                         
-                    if (!fullDescription) fullDescription = '(Няма описание)';
-                    
-                    allCommandsDataMap[internalKey] = {
-                        displayName: displayName,
-                        description: fullDescription,
-                        categoryName: categoryInfo.filterName,
-                        categoryId: categoryInfo.id
-                    };
-                }
+                        if (internalKey.startsWith("---") || displayName === "") return;
+
+                        fullDescription = fullDescription
+                            .replace(/^- /, '')
+                            .replace(/\\t/g, ' ')
+                            .replace(/\\n/g, ' ')
+                            .replace(/\s+/g, ' ')
+                            .trim();
+
+                        if (!fullDescription) fullDescription = '(Няма описание)';
+                        
+                        allCommandsDataMap[internalKey] = {
+                            displayName: displayName,
+                            description: fullDescription,
+                            categoryName: categoryInfo.filterName,
+                            categoryId: categoryInfo.id
+                        };
+                    }
+                });
             });
 
             const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
@@ -587,7 +627,7 @@
                     commandDetailsMap[commandKey] = commandDetails;
                     
                     const commandObject = {
-                        name: commandDetails.displayName, // Използваме името за показване
+                        name: commandDetails.displayName,
                         internalKey: commandKey,
                         description: commandDetails.description
                     };
@@ -607,6 +647,7 @@
                 commandDetailsMap: commandDetailsMap
             };
         }
+
 
         function renderAllCommands(data, container, filterContainer, counterEl, commandCount, config) {
             container.innerHTML = ''; 
@@ -800,4 +841,4 @@
         }
     </script>
 </body>
-</html>
+</html>```
