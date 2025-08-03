@@ -456,7 +456,7 @@
                 const li = document.createElement('li');
                 li.className = 'latest-command-item';
                 const details = commandDetailsMap[commandName] || { description: '(Няма описание)', categoryName: 'Неизвестна', categoryId: null };
-                li.innerHTML = `<button class="latest-command-button" data-command="${commandName}">${commandName}</button><span class="latest-command-item-desc">${details.description}</span><button class="latest-command-category-btn" data-category-id="${details.categoryId}">Категория: ${details.categoryName}</button>`;
+                li.innerHTML = `<button class="latest-command-button" data-command="${details.displayName || commandName}">${details.displayName || commandName}</button><span class="latest-command-item-desc">${details.description}</span><button class="latest-command-category-btn" data-category-id="${details.categoryId}">Категория: ${details.categoryName}</button>`;
                 ul.appendChild(li);
             });
             listContainer.innerHTML = '';
@@ -532,19 +532,19 @@
 
                 if (!itemsContent) return;
                 
-                // --- КОРИГИРАН REGEX ЗА ПО-ГОЛЯМА ТОЛЕРАНТНОСТ ---
-                const commandRegex = /\(\s*"[^"]*"\s*"([^"]*)"\s*([\s\S]*?)\s*\)/g;
+                const commandRegex = /\(\s*"([^"]*)"\s*"([^"]*)"\s*([\s\S]*?)\s*\)/g;
                 let match;
                 while ((match = commandRegex.exec(itemsContent)) !== null) {
-                    if (!match || typeof match[1] === 'undefined' || typeof match[2] === 'undefined') {
+                    if (!match || typeof match[1] === 'undefined' || typeof match[2] === 'undefined' || typeof match[3] === 'undefined') {
                         console.warn(`Пропускане на невалиден запис в категория '${lispCategoryName}':`, match ? match[0] : 'няма съвпадение');
                         continue;
                     }
 
-                    const commandName = match[1].trim();
-                    if (commandName.startsWith("---") || commandName === "") continue;
+                    const internalKey = match[1].trim();
+                    const displayName = match[2].trim();
+                    if (internalKey.startsWith("---") || displayName === "") continue;
 
-                    let fullDescription = match[2].trim();
+                    let fullDescription = match[3].trim();
                     if (fullDescription.startsWith('"') && fullDescription.endsWith('"')) {
                         fullDescription = fullDescription.substring(1, fullDescription.length - 1);
                     }
@@ -558,7 +558,8 @@
                         
                     if (!fullDescription) fullDescription = '(Няма описание)';
                     
-                    allCommandsDataMap[commandName] = {
+                    allCommandsDataMap[internalKey] = {
+                        displayName: displayName,
                         description: fullDescription,
                         categoryName: categoryInfo.filterName,
                         categoryId: categoryInfo.id
@@ -586,7 +587,8 @@
                     commandDetailsMap[commandKey] = commandDetails;
                     
                     const commandObject = {
-                        name: commandKey,
+                        name: commandDetails.displayName, // Използваме името за показване
+                        internalKey: commandKey,
                         description: commandDetails.description
                     };
                     
@@ -622,7 +624,7 @@
                         commandEntry.dataset.letter = command.name.charAt(0).toUpperCase();
                         const desc = command.description || '(Няма описание)';
                         const fullDescription = desc.charAt(0).toUpperCase() + desc.slice(1);
-                        commandEntry.innerHTML = `<div class="command-header"><button class="command-button">${command.name}</button><span class="short-description">${fullDescription}</span></div>`;
+                        commandEntry.innerHTML = `<div class="command-header"><button class="command-button" data-command="${command.name}">${command.name}</button><span class="short-description">${fullDescription}</span></div>`;
                         commandEntry.querySelector('.command-button').dataset.originalText = command.name;
                         commandEntry.querySelector('.short-description').dataset.originalText = fullDescription; 
                         detailsElement.appendChild(commandEntry);
@@ -637,13 +639,14 @@
             container.innerHTML = '';
             if (orderedKeys.length === 0) { container.innerHTML = '<p>Няма команди за показване.</p>'; return; }
             orderedKeys.forEach(commandName => {
-                const details = commandDetailsMap[commandName] || { description: '(Няма описание)', categoryName: 'Неизвестна' };
+                const details = commandDetailsMap[commandName] || { displayName: commandName, description: '(Няма описание)', categoryName: 'Неизвестна' };
                 const commandEntry = document.createElement('div');
                 commandEntry.className = 'command-entry';
                 const desc = details.description || '(Няма описание)';
+                const displayName = details.displayName || commandName;
                 const fullDescription = desc.charAt(0).toUpperCase() + desc.slice(1);
-                commandEntry.innerHTML = `<div class="command-header"><button class="command-button">${commandName}</button><span class="short-description">${fullDescription}</span></div><div style="padding: 0 15px 10px 15px; background-color: #f8f9fa; font-size: 13px; color: #777; margin-top: -8px;"><i>Категория: ${details.categoryName}</i></div>`;
-                commandEntry.querySelector('.command-button').dataset.originalText = commandName;
+                commandEntry.innerHTML = `<div class="command-header"><button class="command-button" data-command="${displayName}">${displayName}</button><span class="short-description">${fullDescription}</span></div><div style="padding: 0 15px 10px 15px; background-color: #f8f9fa; font-size: 13px; color: #777; margin-top: -8px;"><i>Категория: ${details.categoryName}</i></div>`;
+                commandEntry.querySelector('.command-button').dataset.originalText = displayName;
                 commandEntry.querySelector('.short-description').dataset.originalText = fullDescription;
                 container.appendChild(commandEntry);
             });
@@ -782,7 +785,7 @@
             document.querySelector('.container').addEventListener('click', function(e) {
                 const commandButton = e.target.closest('.command-button');
                 if (!commandButton) return;
-                const commandText = commandButton.dataset.originalText || commandButton.textContent;
+                const commandText = commandButton.dataset.command || commandButton.dataset.originalText;
                 navigator.clipboard.writeText(commandText).then(() => {
                     const existingFeedback = document.querySelector('.copy-feedback');
                     if (existingFeedback) { existingFeedback.remove(); }
