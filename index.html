@@ -57,7 +57,7 @@
         }
 
         .header-buttons { position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; }
-        .header-btn { background-color: #e63946; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; transition: background-color 0.3s; }
+        .header-btn { background-color: #e63946; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; transition: background-color: 0.3s; }
         .header-btn:hover { background-color: #a8202b; }
         #suggestion-count { background-color: white; color: #e63946; border-radius: 50%; padding: 0px 6px; font-size: 12px; margin-left: 5px; }
         
@@ -110,7 +110,7 @@
         #suggestions-list .suggestion-text { margin-top: 5px; white-space: pre-wrap; overflow-wrap: break-word; }
         #suggestions-list .actions-container { display: flex; align-items: flex-start; min-width: 170px; }
         #suggestions-list .status-container { display: flex; flex-direction: column; align-items: flex-end; width: 100%;}
-        #suggestions-list .status-toggle { border: none; background: none; font-size: 16px; padding: 5px 10px; border-radius: 5px; transition: background-color 0.3s; width: 100%; text-align: left; }
+        #suggestions-list .status-toggle { border: none; background: none; font-size: 16px; padding: 5px 10px; border-radius: 5px; transition: background-color: 0.3s; width: 100%; text-align: left; }
         #suggestions-list .status-toggle.is-pending { background-color: #fce8e6; color: #a50e0e; }
         #suggestions-list .status-toggle.is-done { background-color: #e6f4ea; color: #137333; }
         .new-command-section { margin-top: 2px; padding-top: 5px; border-top: 1px solid #e9ecef; width: 100%; }
@@ -123,7 +123,8 @@
         #search-bar { width: 100%; padding: 12px 15px; font-size: 16px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; transition: border-color 0.3s, box-shadow 0.3s; }
         #search-bar:focus { outline: none; border-color: #457b9d; box-shadow: 0 0 0 3px rgba(69, 123, 157, 0.2); }
         .filters-container { display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #e1e1e1; }
-        #category-filter, #alphabet-filter { display: flex; justify-content: center; flex-wrap: wrap; gap: 5px; }
+        /* --- CSS КОРЕКЦИЯ --- */
+        #category-filter, #alphabet-filter, #chronological-filter { display: flex; justify-content: center; flex-wrap: wrap; gap: 5px; }
         .filter-button, .category-filter-button { background-color: #a8dadc; color: #1d3557; border: none; border-radius: 5px; padding: 8px 14px; font-size: 15px; font-weight: bold; transition: background-color 0.3s, transform 0.2s; }
         .filter-button:hover, .category-filter-button:hover { background-color: #457b9d; color: white; transform: translateY(-2px); }
         .filter-button.active, .category-filter-button.active { background-color: #1d3557; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
@@ -177,10 +178,13 @@
         </div>
         <h1>PAF's PROGRAMS SUITE</h1><h3 class="main-subtitle">Интерактивен списък на AutoLISP команди</h3><h3 id="command-counter">Зареждане на командите...</h3>
         <div class="search-container"><input type="text" id="search-bar" placeholder="Търсене по име или описание..."></div>
+        <!-- --- HTML КОРЕКЦИЯ --- -->
         <div class="filters-container">
             <div id="category-filter"></div>
+            <div id="chronological-filter">
+                <button class="filter-button" data-filter="chronological">ФИЛТЪР ПО НАЙ-НОВО ДОБАВЕНИ КОМАНДИ</button>
+            </div>
             <div id="alphabet-filter">
-                <button class="filter-button" data-filter="chronological">ПО РЕД НА ДОБАВЯНЕ</button>
                 <button class="filter-button active" data-filter="all">ВСИЧКИ БУКВИ</button>
                 <script>document.write(Array.from(Array(26)).map((e, i) => `<button class="filter-button" data-filter="${String.fromCharCode(i + 65)}">${String.fromCharCode(i + 65)}</button>`).join(''));</script>
             </div>
@@ -522,10 +526,10 @@
                         while(currentPos < listContent.length && parenLevel > 0) {
                             if (listContent[currentPos] === '(') parenLevel++;
                             if (listContent[currentPos] === ')') parenLevel--;
-                            if (parenLevel > 0) currentPos++; else currentPos; // Move pointer differently at the end
+                            if (parenLevel > 0) currentPos++; else currentPos; 
                         }
                         const itemContent = listContent.substring(itemStart, currentPos);
-                        currentPos++; // Move past the final parenthesis
+                        currentPos++;
                         const parts = parseLispList(itemContent);
                         if (parts.length > 0) items.push(parts);
 
@@ -540,8 +544,8 @@
                             str += listContent[currentPos];
                             currentPos++;
                         }
-                        currentPos++; // Move past the closing quote
-                        items.push(str.replace(/\\"/g, '"')); // Handle escaped quotes
+                        currentPos++;
+                        items.push(str.replace(/\\"/g, '"'));
                     } else {
                        currentPos++;
                     }
@@ -595,7 +599,6 @@
 
                         if (!fullDescription) fullDescription = '(Няма описание)';
                         
-                        // Попълваме главната карта с детайли
                         allCommandsDataMap[internalKey] = {
                             displayName: displayName,
                             description: fullDescription,
@@ -603,7 +606,6 @@
                             categoryId: categoryInfo.id
                         };
                         
-                        // Попълваме и данните, групирани по категории
                         if (categorizedData[categoryInfo.id]) {
                             categorizedData[categoryInfo.id].push({
                                 name: displayName,
@@ -628,7 +630,6 @@
                 }
             }
 
-            // Попълваме commandDetailsMap за хронологичния изглед
             orderedCommandKeys.forEach(commandKey => {
                 const commandDetails = allCommandsDataMap[commandKey];
                 if (commandDetails) {
@@ -693,6 +694,8 @@
         function initializeFiltersAndAccordions() {
             const searchBar = document.getElementById('search-bar');
             const categoryFilter = document.getElementById('category-filter');
+            // --- JS КОРЕКЦИЯ ---
+            const chronoFilter = document.getElementById('chronological-filter');
             const alphabetFilter = document.getElementById('alphabet-filter');
             const commandsContainer = document.getElementById('commands-container');
             const chronoContainer = document.getElementById('chronological-commands-container');
@@ -748,9 +751,15 @@
                 if (searchTerm.length > 0) {
                      if (categoryFilter.querySelector('.active')) categoryFilter.querySelector('.active').classList.remove('active');
                      if (alphabetFilter.querySelector('.active')) alphabetFilter.querySelector('.active').classList.remove('active');
+                     if (chronoFilter.querySelector('.active')) chronoFilter.querySelector('.active').classList.remove('active');
+                     
                      categoryFilter.querySelector('[data-filter="all"]').classList.add('active');
-                     if (!isChronoViewActive) { alphabetFilter.querySelector('[data-filter="all"]').classList.add('active'); } 
-                     else { alphabetFilter.querySelector('[data-filter="chronological"]').classList.add('active'); }
+
+                     if (isChronoViewActive) { 
+                        chronoFilter.querySelector('.filter-button').classList.add('active');
+                     } else {
+                        alphabetFilter.querySelector('[data-filter="all"]').classList.add('active');
+                     }
                 }
                 if (isChronoViewActive) { applyChronologicalSearch(searchTerm); } 
                 else { applyCategorizedSearch(searchTerm); }
@@ -781,7 +790,7 @@
             function switchToCategorizedView() {
                 commandsContainer.style.display = 'block';
                 chronoContainer.style.display = 'none';
-                const chronoBtn = alphabetFilter.querySelector('[data-filter="chronological"]');
+                const chronoBtn = chronoFilter.querySelector('[data-filter="chronological"]');
                 if (chronoBtn) chronoBtn.classList.remove('active');
             }
 
@@ -797,27 +806,34 @@
                 alphabetFilter.querySelector('[data-filter="all"]').classList.add('active');
                 applyCategorizedFilters();
             });
+            
+            chronoFilter.addEventListener('click', function(e) {
+                const button = e.target.closest('.filter-button');
+                if (!button) return;
+                searchBar.value = ''; clearHighlights();
+
+                commandsContainer.style.display = 'none';
+                chronoContainer.style.display = 'block';
+
+                if (alphabetFilter.querySelector('.active')) { alphabetFilter.querySelector('.active').classList.remove('active'); }
+                if (categoryFilter.querySelector('.active')) { categoryFilter.querySelector('.active').classList.remove('active'); }
+                if (chronoFilter.querySelector('.active')) { chronoFilter.querySelector('.active').classList.remove('active'); }
+
+                button.classList.add('active');
+                categoryFilter.querySelector('[data-filter="all"]').classList.add('active');
+            });
 
             alphabetFilter.addEventListener('click', function(e) {
                 const button = e.target.closest('.filter-button'); if (!button) return;
                 searchBar.value = ''; clearHighlights();
-                const filter = button.dataset.filter;
-                if (filter === 'chronological') {
-                    commandsContainer.style.display = 'none';
-                    chronoContainer.style.display = 'block';
-                    if (alphabetFilter.querySelector('.active')) { alphabetFilter.querySelector('.active').classList.remove('active'); }
-                    if (categoryFilter.querySelector('.active')) { categoryFilter.querySelector('.active').classList.remove('active'); }
-                    button.classList.add('active');
-                    categoryFilter.querySelector('[data-filter="all"]').classList.add('active');
-                } else {
-                    switchToCategorizedView();
-                    activeLetter = filter;
-                    if (alphabetFilter.querySelector('.active')) { 
-                        alphabetFilter.querySelector('.active').classList.remove('active'); 
-                    }
-                    button.classList.add('active');
-                    applyCategorizedFilters();
+                
+                switchToCategorizedView();
+                activeLetter = button.dataset.filter;
+                if (alphabetFilter.querySelector('.active')) { 
+                    alphabetFilter.querySelector('.active').classList.remove('active'); 
                 }
+                button.classList.add('active');
+                applyCategorizedFilters();
             });
 
             document.querySelector('.container').addEventListener('click', function(e) {
