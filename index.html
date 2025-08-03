@@ -61,7 +61,6 @@
         .header-btn:hover { background-color: #a8202b; }
         #suggestion-count { background-color: white; color: #e63946; border-radius: 50%; padding: 0px 6px; font-size: 12px; margin-left: 5px; }
         
-        /* --- CSS ЗА АДМИН ИЗВЕСТИЯ --- */
         @keyframes pulse-animation {
             0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(230, 57, 70, 0.7); }
             70% { transform: scale(1.05); box-shadow: 0 0 10px 15px rgba(230, 57, 70, 0); }
@@ -70,15 +69,15 @@
 
         .new-suggestion-alert {
             animation: pulse-animation 1.5s infinite;
-            position: relative; /* Нужно за позициониране на брояча */
+            position: relative;
         }
 
         #new-suggestion-indicator {
-            display: none; /* Скрито по подразбиране */
+            display: none;
             position: absolute;
             top: -8px;
             right: -8px;
-            background-color: #e63946; /* Същият червен цвят */
+            background-color: #e63946;
             color: white;
             border-radius: 50%;
             width: 22px;
@@ -92,51 +91,22 @@
         }
 
         .modal { 
-            display: none; 
-            position: fixed; 
-            z-index: 1000; 
-            left: 0; top: 0; 
-            width: 100%; 
-            height: 100%; 
-            overflow: auto; 
-            background-color: rgba(0,0,0,0.5); 
-            align-items: center;
-            justify-content: center;
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;
         }
         .modal-content { 
-            background-color: #fefefe; 
-            margin: 0;
-            padding: 20px; 
-            border: 1px solid #888; 
-            width: 80%; 
-            max-width: 600px; 
-            border-radius: 8px; 
-            position: relative; 
+            background-color: #fefefe; margin: 0; padding: 20px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 8px; position: relative; 
         }
 
         #suggestions-list-modal .modal-content {
-            width: 90%;
-            max-width: 900px;
-            height: 85vh;
-            display: flex;
-            flex-direction: column;
-            padding: 20px 25px;
+            width: 90%; max-width: 900px; height: 85vh; display: flex; flex-direction: column; padding: 20px 25px;
         }
         
         #suggestions-list-modal h2 {
-            text-align: center;
-            font-size: 1.8em;
-            color: #1d3557;
-            margin: 0 0 15px 0;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #ddd;
-            flex-shrink: 0;
+            text-align: center; font-size: 1.8em; color: #1d3557; margin: 0 0 15px 0; padding-bottom: 15px; border-bottom: 1px solid #ddd; flex-shrink: 0;
         }
         
         #suggestions-list {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding-right: 15px;
+            flex-grow: 1; overflow-y: auto; padding-right: 15px;
         }
 
         .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
@@ -146,98 +116,35 @@
         #suggestion-form button { background-color: #457b9d; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin-top: 15px; font-size: 16px; }
         
         #suggestions-list .suggestion-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 15px;
-            padding: 15px 5px;
-            border-bottom: 3px double #eee;
+            display: flex; align-items: flex-start; gap: 15px; padding: 15px 5px; border-bottom: 3px double #eee;
         }
         
         .suggestion-content-left {
-            flex: 1;
-            min-width: 0;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
+            flex: 1; min-width: 0; display: flex; align-items: flex-start; gap: 10px;
         }
 
         .suggestion-number {
-            font-size: 1.1em;
-            font-weight: bold;
-            color: #e63946;
-            min-width: 25px;
-            text-align: right;
+            font-size: 1.1em; font-weight: bold; color: #e63946; min-width: 25px; text-align: right;
         }
 
         .suggestion-details {
-             flex: 1;
-             min-width: 0;
+             flex: 1; min-width: 0;
         }
 
-        .suggester-info {
-            margin: 0;
-            padding: 0;
-        }
-
-        .suggested-by-label { 
-            font-size: 0.9em; 
-            color: #555;
-        }
-
-        #suggestions-list .suggester-name { 
-            font-weight: bold; 
-            color: #1d3557; 
-        }
-        
-        #suggestions-list .suggestion-text {
-            margin-top: 5px;
-            white-space: pre-wrap;
-            overflow-wrap: break-word;
-        }
-        
-        #suggestions-list .actions-container {
-            display: flex;
-            align-items: flex-start;
-            min-width: 170px;
-        }
-        
+        .suggester-info { margin: 0; padding: 0; }
+        .suggested-by-label { font-size: 0.9em; color: #555; }
+        #suggestions-list .suggester-name { font-weight: bold; color: #1d3557; }
+        #suggestions-list .suggestion-text { margin-top: 5px; white-space: pre-wrap; overflow-wrap: break-word; }
+        #suggestions-list .actions-container { display: flex; align-items: flex-start; min-width: 170px; }
         #suggestions-list .status-container { display: flex; flex-direction: column; align-items: flex-end; width: 100%;}
         #suggestions-list .status-toggle { border: none; background: none; font-size: 16px; padding: 5px 10px; border-radius: 5px; transition: background-color 0.3s; width: 100%; text-align: left; }
         #suggestions-list .status-toggle.is-pending { background-color: #fce8e6; color: #a50e0e; }
         #suggestions-list .status-toggle.is-done { background-color: #e6f4ea; color: #137333; }
         
-        .new-command-section {
-            margin-top: 2px;
-            padding-top: 5px;
-            border-top: 1px solid #e9ecef;
-            width: 100%;
-        }
-
-        .new-command-section .label {
-            color: #555;
-            font-size: 14px;
-            text-align: left;
-            margin: 0;
-            line-height: 1.2;
-        }
-
-        .new-command-section input[type="text"] {
-            width: 95%;
-            padding: 6px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            margin-top: 2px;
-        }
-
-        .new-command-section .command-name {
-            font-weight: bold;
-            font-size: 1.1em;
-            color: #1d3557;
-            margin-top: 2px;
-            text-align: left;
-            line-height: 1.2;
-        }
-
+        .new-command-section { margin-top: 2px; padding-top: 5px; border-top: 1px solid #e9ecef; width: 100%; }
+        .new-command-section .label { color: #555; font-size: 14px; text-align: left; margin: 0; line-height: 1.2; }
+        .new-command-section input[type="text"] { width: 95%; padding: 6px; border-radius: 4px; border: 1px solid #ccc; margin-top: 2px; }
+        .new-command-section .command-name { font-weight: bold; font-size: 1.1em; color: #1d3557; margin-top: 2px; text-align: left; line-height: 1.2; }
         .delete-suggestion-btn { background-color: transparent; border: none; color: #e63946; font-size: 18px; padding: 5px; margin-left: 10px; opacity: 0.6; transition: opacity 0.3s; }
         .delete-suggestion-btn:hover { opacity: 1; }
 
@@ -253,59 +160,21 @@
         
         #sort-filter-container { text-align: center; margin-top: 15px; }
         #sort-by-date-btn {
-            background-color: #f1faee;
-            color: #1d3557;
-            border: 2px solid #a8dadc;
-            border-radius: 8px;
-            padding: 10px 20px;
-            font-size: 16px;
-            font-weight: bold;
-            transition: all 0.3s;
+            background-color: #f1faee; color: #1d3557; border: 2px solid #a8dadc; border-radius: 8px; padding: 10px 20px; font-size: 16px; font-weight: bold; transition: all 0.3s;
         }
-        #sort-by-date-btn:hover {
-            background-color: #a8dadc;
-            border-color: #457b9d;
-        }
-        #sort-by-date-btn.active {
-            background-color: #e63946;
-            color: white;
-            border-color: #e63946;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
+        #sort-by-date-btn:hover { background-color: #a8dadc; border-color: #457b9d; }
+        #sort-by-date-btn.active { background-color: #e63946; color: white; border-color: #e63946; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
         .sorted-command-item {
-            display: flex;
-            gap: 15px;
-            align-items: flex-start;
-            padding: 12px 10px;
-            border-bottom: 1px solid #e9ecef;
+            display: flex; gap: 15px; align-items: flex-start; padding: 12px 10px; border-bottom: 1px solid #e9ecef;
         }
-        .sorted-command-item:last-child {
-            border-bottom: none;
-        }
-        .sorted-command-item .command-button {
-            flex-shrink: 0; 
-        }
-        .sorted-command-details {
-            flex-grow: 1;
-        }
-        .sorted-command-details p {
-            margin: 0;
-            padding: 0;
-        }
-        .sorted-command-description {
-            font-size: 15px;
-            color: #333;
-        }
-        .sorted-command-category {
-            font-size: 13px;
-            color: #555;
-            margin-top: 4px;
-        }
-        .sorted-command-category .label {
-            font-weight: bold;
-            color: #e63946;
-        }
+        .sorted-command-item:last-child { border-bottom: none; }
+        .sorted-command-item .command-button { flex-shrink: 0; }
+        .sorted-command-details { flex-grow: 1; }
+        .sorted-command-details p { margin: 0; padding: 0; }
+        .sorted-command-description { font-size: 15px; color: #333; }
+        .sorted-command-category { font-size: 13px; color: #555; margin-top: 4px; }
+        .sorted-command-category .label { font-weight: bold; color: #e63946; }
 
         details.hidden, .command-entry.hidden { display: none; }
         
@@ -349,19 +218,8 @@
         .latest-command-category-btn:hover { background: rgba(230, 57, 70, 0.2); border-color: rgba(230, 57, 70, 0.4); color: #a8202b; }
         .copy-feedback-latest { padding: 6px 10px; margin-top: 8px; background-color: #e6f4ea; color: #137333; border-radius: 4px; text-align: center; font-size: 13px; font-weight: 500; animation: fadeInOut 3.5s ease-in-out forwards; }
     
-        /* --- СТИЛ ЗА БРОЯЧА НА ПОСЕЩЕНИЯ --- */
         #visitor-counter {
-            position: fixed;
-            bottom: 15px;
-            left: 15px;
-            background-color: rgba(29, 53, 87, 0.9); /* #1d3557 с прозрачност */
-            color: white;
-            padding: 8px 15px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: bold;
-            z-index: 1000; /* За да е над всичко друго */
-            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            position: fixed; bottom: 15px; left: 15px; background-color: rgba(29, 53, 87, 0.9); color: white; padding: 8px 15px; border-radius: 8px; font-size: 14px; font-weight: bold; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.25);
         }
     </style>
 </head>
@@ -427,11 +285,7 @@
             const ONE_HOUR_IN_MS = 60 * 60 * 1000;
             const now = Date.now();
             const lastVisitTimestamp = localStorage.getItem(storageKey);
-            let isUniqueVisit = false;
             if (!lastVisitTimestamp || (now - parseInt(lastVisitTimestamp, 10)) > ONE_HOUR_IN_MS) {
-                isUniqueVisit = true;
-            }
-            if (isUniqueVisit) {
                 hourlyUniqueVisitorsRef.transaction(currentValue => (currentValue || 0) + 1);
                 localStorage.setItem(storageKey, now.toString());
             }
@@ -448,14 +302,7 @@
 
             const COMMANDS_FILE_URL = "https://raw.githubusercontent.com/PafApps/lisp/main/HELP_LISP.lsp";
             const categoryConfig = {
-                "СИТУАЦИЯ": { id: "situation", title: "Команди за Ситуация", filterName: "Ситуация" },
-                "НАДЛЪЖНИ": { id: "longitudinal-profiles", title: "Команди за Надлъжни профили", filterName: "Надлъжни" },
-                "НАПРЕЧНИ": { id: "cross-sections", title: "Команди за Напречни профили", filterName: "Напречни" },
-                "БЛОКОВЕ": { id: "blocks", title: "Команди за Блокове", filterName: "Блокове" },
-                "ЛЕЙАУТИ": { id: "layouts", title: "Команди за Layouts", filterName: "Layouts" },
-                "СИВИЛ": { id: "civil", title: "Команди за Civil 3D", filterName: "Civil 3D" },
-                "РЕГИСТРИ": { id: "registers", title: "Команди за Регистри (Civil 3D)", filterName: "Регистри (Civil)" },
-                "ДРУГИ": { id: "other", title: "Други команди", filterName: "Други" },
+                "СИТУАЦИЯ": { id: "situation", title: "Команди за Ситуация", filterName: "Ситуация" }, "НАДЛЪЖНИ": { id: "longitudinal-profiles", title: "Команди за Надлъжни профили", filterName: "Надлъжни" }, "НАПРЕЧНИ": { id: "cross-sections", title: "Команди за Напречни профили", filterName: "Напречни" }, "БЛОКОВЕ": { id: "blocks", title: "Команди за Блокове", filterName: "Блокове" }, "ЛЕЙАУТИ": { id: "layouts", title: "Команди за Layouts", filterName: "Layouts" }, "СИВИЛ": { id: "civil", title: "Команди за Civil 3D", filterName: "Civil 3D" }, "РЕГИСТРИ": { id: "registers", title: "Команди за Регистри (Civil 3D)", filterName: "Регистри (Civil)" }, "ДРУГИ": { id: "other", title: "Други команди", filterName: "Други" },
             };
             const commandsContainer = document.getElementById('commands-container');
             const categoryFilterContainer = document.getElementById('category-filter');
@@ -473,7 +320,6 @@
                 renderLatestCommands(parsedResult.allCommandsInOrder);
                 
                 initializeFiltersAndAccordions();
-                initializeLatestCommandsInteraction();
             } catch (error) {
                 console.error("Грешка при зареждане:", error);
                 commandsContainer.innerHTML = `<p style="color: red; text-align: center;">Възникна грешка. Проверете конзолата.</p>`;
@@ -488,16 +334,13 @@
             reversedCommands.forEach(command => {
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'sorted-command-item';
-                
-                const fullDescription = command.description.charAt(0).toUpperCase() + command.description.slice(1);
-
+                const fullDescription = command.description ? (command.description.charAt(0).toUpperCase() + command.description.slice(1)) : '(Няма описание)';
                 itemDiv.innerHTML = `
                     <button class="command-button">${command.name}</button>
                     <div class="sorted-command-details">
                         <p class="sorted-command-description">${fullDescription}</p>
                         <p class="sorted-command-category"><span class="label">Категория:</span> ${command.categoryName}</p>
-                    </div>
-                `;
+                    </div>`;
                 container.appendChild(itemDiv);
             });
         }
@@ -535,10 +378,7 @@
                 suggestionCountSpan.textContent = suggestionsArray.length;
                 updateAdminNotification(suggestionsArray);
                 suggestionsArray.reverse();
-                if (suggestionsArray.length === 0) {
-                    suggestionsListDiv.innerHTML = '<p>Все още няма подадени предложения.</p>';
-                    return;
-                }
+                if (suggestionsArray.length === 0) { suggestionsListDiv.innerHTML = '<p>Все още няма подадени предложения.</p>'; return; }
                 suggestionsArray.forEach((suggestion, index) => {
                     const item = document.createElement('div'); item.className = 'suggestion-item';
                     const leftCol = document.createElement('div'); leftCol.className = 'suggestion-content-left';
@@ -570,8 +410,7 @@
                         const deleteBtn = document.createElement('button'); deleteBtn.className = 'delete-suggestion-btn'; deleteBtn.innerHTML = ''; deleteBtn.title = 'Изтрий предложението'; deleteBtn.dataset.id = suggestion.key;
                         rightCol.appendChild(deleteBtn);
                     }
-                    item.appendChild(leftCol); item.appendChild(rightCol);
-                    suggestionsListDiv.appendChild(item);
+                    item.appendChild(leftCol); item.appendChild(rightCol); suggestionsListDiv.appendChild(item);
                 });
             };
             suggestionsRef.on("value", renderSuggestions);
@@ -583,17 +422,14 @@
             window.addEventListener('click', (event) => { if (event.target == suggestionFormModal) closeModal(suggestionFormModal); if (event.target == suggestionsListModal) closeModal(suggestionsListModal); });
             suggestionForm.addEventListener('submit', (e) => {
                 e.preventDefault();
-                const name = document.getElementById('suggester-name').value;
-                const text = document.getElementById('suggestion-text').value;
+                const name = document.getElementById('suggester-name').value; const text = document.getElementById('suggestion-text').value;
                 if (!text.trim()) { alert('Моля, въведете текст.'); return; }
                 suggestionsRef.push({ name: name.trim() || 'Анонимен', text: text.trim(), status: 'pending', timestamp: firebase.database.ServerValue.TIMESTAMP })
-                    .then(() => { suggestionForm.reset(); closeModal(suggestionFormModal); alert('Благодарим за предложението!'); })
-                    .catch((error) => console.error("Грешка: ", error));
+                    .then(() => { suggestionForm.reset(); closeModal(suggestionFormModal); alert('Благодарим за предложението!'); }).catch((error) => console.error("Грешка: ", error));
             });
             suggestionsListDiv.addEventListener('click', (e) => {
                 if (e.target.classList.contains('status-toggle') && adminMode) {
-                    const id = e.target.dataset.id;
-                    const docRef = suggestionsRef.child(id);
+                    const id = e.target.dataset.id; const docRef = suggestionsRef.child(id);
                     docRef.get().then((snapshot) => { if (snapshot.exists()) { docRef.update({ status: snapshot.val().status === 'pending' ? 'done' : 'pending' }); } });
                 }
                 if (e.target.classList.contains('delete-suggestion-btn') && adminMode) {
@@ -640,7 +476,8 @@
             const ul = document.createElement('ul');
             latestCommands.forEach(command => {
                 const li = document.createElement('li'); li.className = 'latest-command-item';
-                li.innerHTML = `<button class="latest-command-button" data-command="${command.name}">${command.name}</button><span class="latest-command-item-desc">${command.description}</span><button class="latest-command-category-btn" data-category-id="${command.categoryId}">Категория: ${command.categoryName}</button>`;
+                const description = command.description || '(Няма описание)';
+                li.innerHTML = `<button class="latest-command-button" data-command="${command.name}">${command.name}</button><span class="latest-command-item-desc">${description}</span><button class="latest-command-category-btn" data-category-id="${command.categoryId}">Категория: ${command.categoryName}</button>`;
                 ul.appendChild(li);
             });
             listContainer.innerHTML = ''; listContainer.appendChild(ul);
@@ -670,15 +507,18 @@
             });
         }
         
-        // --- ПРЕРАБОТЕНА И УНИФИЦИРАНА ФУНКЦИЯ ЗА ПАРСВАНЕ ---
+        // --- ИЗЦЯЛО ПРЕРАБОТЕНА И УНИФИЦИРАНА ФУНКЦИЯ ЗА ПАРСВАНЕ ---
         function parseLispFileUnified(content, config) {
             const categorizedData = {};
-            const allCommandsInOrder = [];
+            const commandDetailsMap = {}; // Карта с детайли за ВСИЧКИ команди
+            const orderedCommandKeys = []; // Списък с имената на командите в правилния ред
 
+            // 1. Инициализираме структурите
             Object.values(config).forEach(c => categorizedData[c.id] = []);
             const lispNameToIdMap = {};
             for (const key in config) { lispNameToIdMap[key] = config[key].id; }
 
+            // 2. Създаваме пълна карта с детайлите на всички команди от категориите
             const functionBlocks = content.split(/defun create_dclhelplisp/);
             functionBlocks.forEach(block => {
                 const categoryMatch = block.match(/^([^\s(]+)/); if (!categoryMatch) return;
@@ -691,33 +531,57 @@
                 if (!itemsMatch) return;
 
                 const itemsContent = itemsMatch[1];
-                const commandRegex = /\(\s*"([^"]*)"\s+"([^"]*)"\s+"([\s\S]*?)"\s*\)/g;
+                const commandRegex = /\(\s*"[^"]*"\s+"([^"]*)"\s+"([\s\S]*?)"\s*\)/g;
                 let match;
                 while ((match = commandRegex.exec(itemsContent)) !== null) {
                     const commandName = match[2].trim();
                     if (commandName.startsWith("---") || commandName === "") continue;
 
                     let fullDescription = match[3].replace(/^- /, '').replace(/\\t/g, ' ').replace(/\s+/g, ' ').trim();
-                    const commandObject = { name: commandName, description: fullDescription };
                     
-                    categorizedData[categoryId].push(commandObject);
+                    // Пълним категоризираните данни (за стандартния изглед)
+                    categorizedData[categoryId].push({ name: commandName, description: fullDescription });
                     
-                    // Добавяме към единния списък с пълна информация
-                    allCommandsInOrder.push({
-                        name: commandName,
+                    // Пълним и картата с детайли
+                    commandDetailsMap[commandName] = {
                         description: fullDescription,
                         categoryName: categoryInfo.filterName,
                         categoryId: categoryInfo.id
-                    });
+                    };
                 }
+            });
+
+            // 3. Извличаме правилния хронологичен ред от COMMAND MAP
+            const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
+            if (commandMapSectionMatch) {
+                const mapContent = commandMapSectionMatch[1];
+                const commandMapRegex = /\(\s*"([^"]+)"\s*\.\s*"[^"]*"\s*\)/g;
+                let match;
+                while ((match = commandMapRegex.exec(mapContent)) !== null) {
+                     const key = match[1];
+                     // Добавяме само истински команди, не навигационни елементи
+                     if (!config[key] && key !== 'back' && key !== 'pps_back' && !/^[А-Я]/.test(key)) {
+                        orderedCommandKeys.push(key);
+                     }
+                }
+            }
+
+            // 4. Създаваме финалния, унифициран и правилно подреден списък с всички команди
+            const allCommandsInOrder = orderedCommandKeys.map(commandName => {
+                const details = commandDetailsMap[commandName] || { description: '(Няма описание)', categoryName: 'Неизвестна', categoryId: null };
+                return {
+                    name: commandName,
+                    ...details
+                };
             });
 
             return {
                 categorizedData: categorizedData,
                 commandCount: allCommandsInOrder.length,
-                allCommandsInOrder: allCommandsInOrder // Подаваме новия унифициран списък
+                allCommandsInOrder: allCommandsInOrder
             };
         }
+
 
         function renderAllCommands(data, container, filterContainer, counterEl, commandCount, config) {
             container.innerHTML = ''; filterContainer.innerHTML = '<button class="category-filter-button active" data-filter="all">ВСИЧКИ СЕКЦИИ</button>';
@@ -787,8 +651,7 @@
             
             searchBar.addEventListener('input', () => {
                 switchToCategoryView();
-                const searchTerm = searchBar.value;
-                const searchTermLower = searchTerm.toLowerCase();
+                const searchTerm = searchBar.value.toLowerCase();
                 activeCategory = 'all'; activeLetter = 'all';
                 if (categoryFilter.querySelector('.active')) categoryFilter.querySelector('.active').classList.remove('active');
                 categoryFilter.querySelector('[data-filter="all"]').classList.add('active');
@@ -797,26 +660,26 @@
                 
                 const allCategories = commandsContainer.querySelectorAll('details.category');
                 allCategories.forEach(category => {
-                    const allCommands = category.querySelectorAll('.command-entry');
                     let hasVisibleChildren = false;
+                    const allCommands = category.querySelectorAll('.command-entry');
                     allCommands.forEach(entry => {
                         const commandButton = entry.querySelector('.command-button');
                         const descriptionSpan = entry.querySelector('.short-description');
                         const originalCommandName = commandButton.dataset.originalText;
                         const originalDescription = descriptionSpan.dataset.originalText;
-                        const isMatch = originalCommandName.toLowerCase().includes(searchTermLower) || originalDescription.toLowerCase().includes(searchTermLower);
+                        const isMatch = originalCommandName.toLowerCase().includes(searchTerm) || originalDescription.toLowerCase().includes(searchTerm);
                         entry.classList.toggle('hidden', !isMatch);
                         if (isMatch) {
                             hasVisibleChildren = true;
-                            commandButton.innerHTML = highlightText(originalCommandName, searchTerm);
-                            descriptionSpan.innerHTML = highlightText(originalDescription, searchTerm);
+                            commandButton.innerHTML = highlightText(originalCommandName, searchBar.value);
+                            descriptionSpan.innerHTML = highlightText(originalDescription, searchBar.value);
                         } else {
                             commandButton.innerHTML = originalCommandName;
                             descriptionSpan.innerHTML = originalDescription;
                         }
                     });
                     category.classList.toggle('hidden', !hasVisibleChildren);
-                    if (hasVisibleChildren && searchTerm) { category.setAttribute('open', ''); } 
+                    if (hasVisibleChildren && searchBar.value) { category.setAttribute('open', ''); } 
                     else if (!isAnyFilterActive()) { category.removeAttribute('open'); }
                 });
             });
@@ -824,8 +687,8 @@
             function applyFilters() {
                 const categories = commandsContainer.querySelectorAll('details.category');
                 categories.forEach(category => {
-                    const commandEntries = category.querySelectorAll('.command-entry');
                     let hasVisibleChildren = false;
+                    const commandEntries = category.querySelectorAll('.command-entry');
                     commandEntries.forEach(entry => {
                         const catId = entry.closest('details.category').dataset.category;
                         const letter = entry.dataset.letter.toUpperCase();
@@ -837,7 +700,6 @@
                     });
                     category.classList.toggle('hidden', !hasVisibleChildren);
                 });
-                
                 if (isAnyFilterActive()) { 
                     const visibleCategories = commandsContainer.querySelectorAll('details.category:not(.hidden)');
                     visibleCategories.forEach(cat => cat.setAttribute('open', '')); 
@@ -851,17 +713,24 @@
             }
 
             function clearHighlights() {
-                const allCommands = document.querySelectorAll('.command-entry, .sorted-command-item');
-                allCommands.forEach(entry => {
+                document.querySelectorAll('.command-entry, .sorted-command-item').forEach(entry => {
                     const commandButton = entry.querySelector('.command-button');
                     const descriptionSpan = entry.querySelector('.short-description, .sorted-command-description');
-                    const originalCommandName = commandButton.dataset.originalText;
-                    if(commandButton && originalCommandName) { commandButton.innerHTML = originalCommandName; }
-                    
-                    const originalDescription = descriptionSpan ? descriptionSpan.dataset.originalText : null;
-                    if (descriptionSpan && originalDescription) { descriptionSpan.innerHTML = originalDescription; }
+                    if (commandButton && commandButton.dataset.originalText) {
+                        commandButton.innerHTML = commandButton.dataset.originalText;
+                    } else if (commandButton) {
+                        // За сортирания изглед, където няма originalText
+                        commandButton.innerHTML = commandButton.textContent;
+                    }
+                    if (descriptionSpan && descriptionSpan.dataset.originalText) {
+                        descriptionSpan.innerHTML = descriptionSpan.dataset.originalText;
+                    } else if (descriptionSpan) {
+                         // За сортирания изглед
+                         descriptionSpan.innerHTML = descriptionSpan.textContent;
+                    }
                 });
             }
+
 
             categoryFilter.addEventListener('click', function(e) {
                 const button = e.target.closest('.category-filter-button'); if (!button) return;
