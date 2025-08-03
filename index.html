@@ -281,7 +281,15 @@
         .latest-commands-widget summary::-webkit-details-marker { display: none; }
         .latest-commands-widget summary::after { content: '▼'; font-size: 12px; transition: transform 0.3s; }
         .latest-commands-widget details[open] > summary::after { transform: rotate(180deg); }
-        #latest-commands-list { padding: 0 15px 15px 15px; }
+        
+        /* --- КОРЕКЦИЯТА Е ТУК --- */
+        #latest-commands-list { 
+            padding: 0 15px 15px 15px; 
+            max-height: 60vh; /* Ограничава височината до 60% от тази на прозореца */
+            overflow-y: auto; /* Добавя вертикален скрол, САМО ако е необходимо */
+        }
+        /* --- КРАЙ НА КОРЕКЦИЯТА --- */
+
         #latest-commands-list ul { list-style: none; padding: 0; margin: 0; }
         .latest-command-item { padding: 10px 0; border-bottom: 1px solid #eee; }
         .latest-command-item:last-child { border-bottom: none; }
@@ -1012,4 +1020,4 @@
         }
     </script>
 </body>
-</html>
+</html>```
