@@ -489,12 +489,12 @@
                 }
             });
         }
-
-        // --- ЦЯЛОСТНО ОБНОВЕНА ФУНКЦИЯ ЗА ПАРСВАНЕ ---
+        
+        // --- ФИНАЛНА КОРИГИРАНА ФУНКЦИЯ ЗА ПАРСВАНЕ ---
         function parseLispFileImproved(content, config) {
             const categorizedData = {};
             const commandDetailsMap = {};
-            const allCommandsDataMap = {}; // Карта на всички команди за бързо търсене
+            const allCommandsDataMap = {}; 
             const orderedCommandKeys = [];
 
             Object.values(config).forEach(c => {
@@ -505,7 +505,6 @@
                 lispNameToIdMap[key] = config[key].id;
             }
 
-            // Стъпка 1: Обхождаме всички категории и създаваме карта на всички команди
             const functionBlocks = content.split(/defun create_dclhelplisp/);
             functionBlocks.forEach(block => {
                 const categoryMatch = block.match(/^([^\s(]+)/);
@@ -537,6 +536,12 @@
                 const commandRegex = /\(\s*"[^"]*"\s+"([^"]*)"\s+"([\s\S]*?)"\s*\)/g;
                 let match;
                 while ((match = commandRegex.exec(itemsContent)) !== null) {
+                    // --- КЛЮЧОВА ПРОВЕРКА ЗА ВАЛИДНОСТ ---
+                    if (!match || typeof match[3] === 'undefined') {
+                        console.warn(`Пропускане на невалиден запис в категория '${lispCategoryName}':`, match ? match[0] : 'няма съвпадение');
+                        continue;
+                    }
+
                     const commandName = match[2].trim();
                     if (commandName.startsWith("---") || commandName === "") continue;
 
@@ -548,7 +553,6 @@
                         .trim();
                     if (!fullDescription) fullDescription = '(Няма описание)';
                     
-                    // Пълним картата с детайли за всяка команда
                     allCommandsDataMap[commandName] = {
                         description: fullDescription,
                         categoryName: categoryInfo.filterName,
@@ -557,7 +561,6 @@
                 }
             });
 
-            // Стъпка 2: Взимаме точния ред на командите от command_map
             const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
             if (commandMapSectionMatch) {
                 const mapContent = commandMapSectionMatch[1];
@@ -571,15 +574,12 @@
                 }
             }
 
-            // Стъпка 3: Итерираме през подредения списък и попълваме финалните структури
             orderedCommandKeys.forEach(commandKey => {
                 const commandDetails = allCommandsDataMap[commandKey];
                 
                 if (commandDetails) {
-                    // Попълваме commandDetailsMap за "Последни 5" и хронологичния изглед
                     commandDetailsMap[commandKey] = commandDetails;
                     
-                    // Попълваме categorizedData за основния изглед по категории
                     const commandObject = {
                         name: commandKey,
                         description: commandDetails.description
@@ -615,7 +615,6 @@
                         const commandEntry = document.createElement('div');
                         commandEntry.className = 'command-entry';
                         commandEntry.dataset.letter = command.name.charAt(0).toUpperCase();
-                        // Коригирано, за да се избегне грешка, ако описанието липсва
                         const desc = command.description || '(Няма описание)';
                         const fullDescription = desc.charAt(0).toUpperCase() + desc.slice(1);
                         commandEntry.innerHTML = `<div class="command-header"><button class="command-button">${command.name}</button><span class="short-description">${fullDescription}</span></div>`;
@@ -767,7 +766,7 @@
                 } else {
                     switchToCategorizedView();
                     activeLetter = filter;
-                    if (alphabetFilter.querySelector('.active')) alphabetFilter.querySelector('.active').classList.remove('active');
+                    if (alphabetFilter.querySelector('.active')) { alphabetFilter.querySelector('.active').classList.remove('active'); }
                     button.classList.add('active');
                     applyCategorizedFilters();
                 }
