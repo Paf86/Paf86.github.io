@@ -510,7 +510,6 @@
                 let currentPos = 0;
                 
                 while(currentPos < listContent.length) {
-                    // Пропускане на празни места
                     while(currentPos < listContent.length && /\s/.test(listContent[currentPos])) {
                         currentPos++;
                     }
@@ -523,28 +522,27 @@
                         while(currentPos < listContent.length && parenLevel > 0) {
                             if (listContent[currentPos] === '(') parenLevel++;
                             if (listContent[currentPos] === ')') parenLevel--;
-                            currentPos++;
+                            if (parenLevel > 0) currentPos++; else currentPos; // Move pointer differently at the end
                         }
-                        const itemContent = listContent.substring(itemStart, currentPos - 1);
+                        const itemContent = listContent.substring(itemStart, currentPos);
+                        currentPos++; // Move past the final parenthesis
                         const parts = parseLispList(itemContent);
                         if (parts.length > 0) items.push(parts);
 
                     } else if (listContent[currentPos] === '"') {
-                        let inString = true;
                         let itemStart = currentPos + 1;
                         currentPos++;
                         let str = "";
-                        while(currentPos < listContent.length && inString) {
+                        while(currentPos < listContent.length) {
                             if (listContent[currentPos] === '"' && listContent[currentPos-1] !== '\\') {
-                                inString = false;
-                            } else {
-                                str += listContent[currentPos];
+                                break;
                             }
+                            str += listContent[currentPos];
                             currentPos++;
                         }
-                        items.push(str);
+                        currentPos++; // Move past the closing quote
+                        items.push(str.replace(/\\"/g, '"')); // Handle escaped quotes
                     } else {
-                       // За други типове, които не са ни нужни
                        currentPos++;
                     }
                 }
@@ -597,12 +595,22 @@
 
                         if (!fullDescription) fullDescription = '(Няма описание)';
                         
+                        // Попълваме главната карта с детайли
                         allCommandsDataMap[internalKey] = {
                             displayName: displayName,
                             description: fullDescription,
                             categoryName: categoryInfo.filterName,
                             categoryId: categoryInfo.id
                         };
+                        
+                        // Попълваме и данните, групирани по категории
+                        if (categorizedData[categoryInfo.id]) {
+                            categorizedData[categoryInfo.id].push({
+                                name: displayName,
+                                internalKey: internalKey,
+                                description: fullDescription
+                            });
+                        }
                     }
                 });
             });
@@ -620,21 +628,11 @@
                 }
             }
 
+            // Попълваме commandDetailsMap за хронологичния изглед
             orderedCommandKeys.forEach(commandKey => {
                 const commandDetails = allCommandsDataMap[commandKey];
-                
                 if (commandDetails) {
                     commandDetailsMap[commandKey] = commandDetails;
-                    
-                    const commandObject = {
-                        name: commandDetails.displayName,
-                        internalKey: commandKey,
-                        description: commandDetails.description
-                    };
-                    
-                    if (categorizedData[commandDetails.categoryId]) {
-                         categorizedData[commandDetails.categoryId].push(commandObject);
-                    }
                 } else {
                      console.warn(`Командата "${commandKey}" от command_map не беше намерена в нито един command_items списък.`);
                 }
@@ -647,7 +645,6 @@
                 commandDetailsMap: commandDetailsMap
             };
         }
-
 
         function renderAllCommands(data, container, filterContainer, counterEl, commandCount, config) {
             container.innerHTML = ''; 
@@ -841,4 +838,4 @@
         }
     </script>
 </body>
-</html>```
+</html>
