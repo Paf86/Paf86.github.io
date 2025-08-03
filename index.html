@@ -485,9 +485,9 @@
 
         // --- КОРЕКТНА И ФИНАЛНА ВЕРСИЯ НА ПАРСЪРА ---
         function parseLispFileCorrectly(content, config) {
-            const commandDetailsDatabase = {}; // База данни с детайли за ВСИЧКИ команди
-            const categorizedData = {}; // Структура за изгледа по категории
-            const chronologicalKeys = []; // Списък с имената на командите в правилния ред
+            const commandDetailsDatabase = {}; 
+            const categorizedData = {}; 
+            const chronologicalKeys = []; 
             
             Object.values(config).forEach(c => categorizedData[c.id] = []);
             const lispNameToIdMap = {};
@@ -505,13 +505,13 @@
                 if (!itemsMatch) return;
                 
                 const itemsContent = itemsMatch[1];
-                const commandRegex = /\(\s*"[^"]*"\s+"([^"]*)"\s+"([\s\S]*?)"\s*\)/g;
+                const commandRegex = /\(\s*"(?:[^"]*)"\s+"([^"]*)"\s+"([\s\S]*?)"\s*\)/g; // Променен Regex
                 let match;
                 while ((match = commandRegex.exec(itemsContent)) !== null) {
-                    const commandName = match[1].trim(); // **КОРЕКЦИЯ: ИНДЕКС 1**
+                    const commandName = match[1] ? match[1].trim() : ""; // Командата е винаги в група 1
                     if (commandName.startsWith("---") || commandName === "") continue;
 
-                    const fullDescription = match[2] ? match[2].replace(/^- /, '').replace(/\\t/g, ' ').replace(/\s+/g, ' ').trim() : ""; // **КОРЕКЦИЯ: ИНДЕКС 2 И ПРОВЕРКА**
+                    const fullDescription = match[2] ? match[2].replace(/^- /, '').replace(/\\t/g, ' ').replace(/\s+/g, ' ').trim() : "";
                     
                     categorizedData[categoryId].push({ name: commandName, description: fullDescription });
                     
