@@ -253,7 +253,6 @@
             initializeFirebaseFunctionality();
             initializeFunMode();
 
-            // URL адресът остава същият, тъй като сте променили съдържанието на съществуващия файл.
             const COMMANDS_FILE_URL = "https://raw.githubusercontent.com/PafApps/lisp/main/HELP_LISP.lsp";
             
             const categoryConfig = {
@@ -276,7 +275,6 @@
                 if (!response.ok) throw new Error(`HTTP грешка! Статус: ${response.status}`);
                 const fileContent = await response.text();
                 
-                // --- ПРОМЯНА: Извикваме новата функция за парсване на C#-подобен синтаксис ---
                 parsedResult = parseCSharpSyntaxFile(fileContent, categoryConfig);
                 
                 renderAllCommands(parsedResult.categorizedData, commandsContainer, categoryFilterContainer, commandCounter, parsedResult.commandCount, categoryConfig);
@@ -469,7 +467,8 @@
                 const li = document.createElement('li');
                 li.className = 'latest-command-item';
                 const details = commandDetailsMap[commandName] || { description: '(Няма описание)', categoryName: 'Неизвестна', categoryId: null };
-                li.innerHTML = `<button class="latest-command-button" data-command="${details.displayName || commandName}">${details.displayName || commandName}</button><span class="latest-command-item-desc">${details.description}</span><button class="latest-command-category-btn" data-category-id="${details.categoryId}">Категория: ${details.categoryName}</button>`;
+                const displayName = details.displayName || commandName;
+                li.innerHTML = `<button class="latest-command-button" data-command="${displayName}">${displayName}</button><span class="latest-command-item-desc">${details.description}</span><button class="latest-command-category-btn" data-category-id="${details.categoryId}">Категория: ${details.categoryName}</button>`;
                 ul.appendChild(li);
             });
             listContainer.innerHTML = '';
@@ -503,13 +502,12 @@
             });
         }
         
-        // --- НОВА ФУНКЦИЯ ЗА ПАРСВАНЕ НА C#-ПОДОБЕН СИНТАКСИС ---
+        // --- НОВА, ПО-НАДЕЖДНА ФУНКЦИЯ ЗА ПАРСВАНЕ ---
         function parseCSharpSyntaxFile(content, config) {
             const categorizedData = {};
             const commandDetailsMap = {};
             const orderedCommandKeys = [];
 
-            // Инициализация на categorizedData
             Object.values(config).forEach(c => {
                 categorizedData[c.id] = [];
             });
@@ -520,30 +518,48 @@
             
             if (menusMatch && menusMatch[1]) {
                 const menusContent = menusMatch[1];
-                // Regex за всяка категория
                 const categoryRegex = /{\s*"([^"]+)",\s*new List<MenuItem>\s*{([\s\S]*?)}}\s*}/g;
                 let categoryMatch;
+                
                 while ((categoryMatch = categoryRegex.exec(menusContent)) !== null) {
                     const categoryNameCS = categoryMatch[1];
                     const itemsContent = categoryMatch[2];
-                    
                     const categoryInfo = config[categoryNameCS];
-                    if (!categoryInfo) continue; // Пропускаме, ако категорията не е в конфигурацията
+                    if (!categoryInfo) continue;
 
-                    // Regex за всеки MenuItem
-                    const itemRegex = /new MenuItem\s*{\s*Key\s*=\s*"([^"]*)",\s*Label\s*=\s*"([^"]*)",\s*Description\s*=\s*"([^"]*)",\s*AutoCADCommand\s*=\s*"([^"]*)"\s*}/g;
-                    let itemMatch;
-                    while ((itemMatch = itemRegex.exec(itemsContent)) !== null) {
-                        const internalKey = itemMatch[1].trim();
-                        const displayName = itemMatch[2].trim();
-                        let fullDescription = itemMatch[3].trim();
+                    // По-надежден regex, който намира всеки MenuItem блок
+                    const menuItemBlockRegex = /new MenuItem\s*{([\s\S]*?)}/g;
+                    let menuItemMatch;
+                    
+                    while((menuItemMatch = menuItemBlockRegex.exec(itemsContent)) !== null) {
+                        const propsContent = menuItemMatch[1];
+                        const itemProps = {};
                         
-                        if (internalKey.startsWith("---") || displayName === "") continue;
+                        // Regex, който намира всяко property (Key, Label, etc.) вътре в блока
+                        const propRegex = /(\w+)\s*=\s*(?:"([^"]*)"|(true|false))/g;
+                        let propMatch;
+                        
+                        while((propMatch = propRegex.exec(propsContent)) !== null) {
+                            const key = propMatch[1];
+                            const stringValue = propMatch[2]; // Стойност в кавички
+                            const boolValue = propMatch[3];   // Стойност true/false
+                            itemProps[key] = stringValue !== undefined ? stringValue : (boolValue === 'true');
+                        }
 
+                        if (itemProps.IsSeparator || itemProps.IsTextOnly) {
+                             // Може да се добави логика за разделители/текст, ако е нужно
+                             continue;
+                        }
+                        
+                        const internalKey = (itemProps.Key || "").trim();
+                        const displayName = (itemProps.Label || "").trim();
+                        let fullDescription = (itemProps.Description || "").trim();
+                        
+                        if (!internalKey || !displayName) continue;
+                        
                         fullDescription = fullDescription.replace(/^- /, '').trim();
                         if (!fullDescription) fullDescription = '(Няма описание)';
                         
-                        // Попълване на categorizedData за рендъринг по категории
                         if (categorizedData[categoryInfo.id]) {
                             categorizedData[categoryInfo.id].push({
                                 name: displayName,
@@ -552,7 +568,6 @@
                             });
                         }
                         
-                        // Попълване на commandDetailsMap за търсене и други функционалности
                         commandDetailsMap[internalKey] = {
                             displayName: displayName,
                             description: fullDescription,
@@ -568,13 +583,10 @@
             const commandMapMatch = content.match(commandMapRegex);
             if (commandMapMatch && commandMapMatch[1]) {
                 const commandMapContent = commandMapMatch[1];
-                // Regex за всеки ред в CommandMap
                 const mapEntryRegex = /{\s*"([^"]+)"\s*,\s*"[^"]*"\s*}/g;
                 let entryMatch;
                 while ((entryMatch = mapEntryRegex.exec(commandMapContent)) !== null) {
-                    const key = entryMatch[1];
-                    // Добавяме всички ключове, тъй като те дефинират реда
-                    orderedCommandKeys.push(key);
+                    orderedCommandKeys.push(entryMatch[1]);
                 }
             }
 
@@ -596,10 +608,17 @@
                     const filterButton = document.createElement('button'); filterButton.className = 'category-filter-button'; filterButton.dataset.filter = categoryId; filterButton.textContent = categoryInfo.filterName; filterContainer.appendChild(filterButton);
                     const detailsElement = document.createElement('details'); detailsElement.className = 'category'; detailsElement.dataset.category = categoryId;
                     const summaryElement = document.createElement('summary'); summaryElement.innerHTML = `<h2>${categoryInfo.title}</h2>`; detailsElement.appendChild(summaryElement);
+                    
+                    // Сортиране на командите по име (displayName) преди рендъринг
+                    commands.sort((a, b) => a.name.localeCompare(b.name));
+
                     commands.forEach(command => {
                         const commandEntry = document.createElement('div');
                         commandEntry.className = 'command-entry';
-                        commandEntry.dataset.letter = command.name.charAt(0).toUpperCase();
+                        // Уверяваме се, че има име, преди да вземем първата буква
+                        if (command.name) {
+                            commandEntry.dataset.letter = command.name.charAt(0).toUpperCase();
+                        }
                         const desc = command.description || '(Няма описание)';
                         const fullDescription = desc.charAt(0).toUpperCase() + desc.slice(1);
                         commandEntry.innerHTML = `<div class="command-header"><button class="command-button" data-command="${command.name}">${command.name}</button><span class="short-description">${fullDescription}</span></div>`;
@@ -617,7 +636,10 @@
             container.innerHTML = '';
             if (orderedKeys.length === 0) { container.innerHTML = '<p>Няма команди за показване.</p>'; return; }
             orderedKeys.forEach(commandName => {
-                const details = commandDetailsMap[commandName] || { displayName: commandName, description: '(Няма описание)', categoryName: 'Неизвестна' };
+                const details = commandDetailsMap[commandName];
+                // Пропускаме, ако командата от CommandMap не е намерена в Menus (например категориите)
+                if (!details) return;
+
                 const commandEntry = document.createElement('div');
                 commandEntry.className = 'command-entry';
                 const desc = details.description || '(Няма описание)';
@@ -710,9 +732,9 @@
                     let hasVisibleChildren = false;
                     commandEntries.forEach(entry => {
                         const catId = entry.closest('details.category').dataset.category;
-                        const letter = entry.dataset.letter.toUpperCase();
+                        const letter = entry.dataset.letter;
                         const isCategoryVisible = (activeCategory === 'all' || activeCategory === catId);
-                        const isLetterVisible = (activeLetter.toUpperCase() === 'ALL' || activeLetter.toUpperCase() === letter);
+                        const isLetterVisible = (activeLetter.toUpperCase() === 'ALL' || (letter && activeLetter.toUpperCase() === letter));
                         const isVisible = isCategoryVisible && isLetterVisible;
                         entry.classList.toggle('hidden', !isVisible);
                         if(isVisible) hasVisibleChildren = true;
