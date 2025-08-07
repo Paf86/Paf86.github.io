@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PAF's PROGRAMS SUITE</title>
+    <style>
+        body.fun-mode-on {
+            cursor: none !important;
+        }
+        body.modal-open {
+            overflow: hidden;
+        }
+
+        #cursor-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; color: #333; line-height: 1.6; margin: 0; padding: 20px; }
+
+        .container { max-width: 950px; margin: 0 auto; background-color: #fff; padding: 25px 35px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); position: relative; }
+        
+        h1 { text-align: center; color: #1d3557; border-bottom: 2px solid #457b9d; padding-bottom: 10px; margin-bottom: 10px; }
+        .main-subtitle { text-align: center; font-size: 1.3em; font-weight: 500; color: #e63946; margin: 0 0 5px 0; padding: 0; }
+        #command-counter { text-align: center; border-bottom: none; color: #555; font-weight: normal; margin-top: 0; margin-bottom: 30px; }
+
+        #fun-toggle-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            padding: 8px 15px;
+            font-weight: bold;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 15px;
+            background-color: #f0f2f5;
+            color: #1d3557;
+            border: 2px solid;
+            border-color: #ffffff #a0a0a0 #a0a0a0 #ffffff;
+            border-radius: 6px;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+            transition: all 0.1s ease-out;
+        }
+        #fun-toggle-btn:hover:not(.active) {
+             box-shadow: 3px 3px 7px rgba(0, 0, 0, 0.3);
+             transform: translate(-1px, -1px);
+        }
+        #fun-toggle-btn.active {
+            background-color: #e0e2e5;
+            border-color: #a0a0a0 #ffffff #ffffff #a0a0a0;
+            box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.3);
+            transform: translate(2px, 2px);
+        }
+
+        .header-buttons { position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; }
+        .header-btn { background-color: #e63946; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; transition: background-color: 0.3s; }
+        .header-btn:hover { background-color: #a8202b; }
+        #suggestion-count { background-color: white; color: #e63946; border-radius: 50%; padding: 0px 6px; font-size: 12px; margin-left: 5px; }
+        
+        @keyframes pulse-animation {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(230, 57, 70, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 10px 15px rgba(230, 57, 70, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(230, 57, 70, 0); }
+        }
+
+        .new-suggestion-alert {
+            animation: pulse-animation 1.5s infinite;
+            position: relative; 
+        }
+
+        #new-suggestion-indicator {
+            display: none; 
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: #e63946; 
+            color: white;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 13px;
+            font-weight: bold;
+            text-align: center;
+            line-height: 22px;
+            border: 2px solid white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+        .modal-content { background-color: #fefefe; margin: 0; padding: 20px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 8px; position: relative; }
+        #suggestions-list-modal .modal-content { width: 90%; max-width: 900px; height: 85vh; display: flex; flex-direction: column; padding: 20px 25px; }
+        #suggestions-list-modal h2 { text-align: center; font-size: 1.8em; color: #1d3557; margin: 0 0 15px 0; padding-bottom: 15px; border-bottom: 1px solid #ddd; flex-shrink: 0; }
+        #suggestions-list { flex-grow: 1; overflow-y: auto; padding-right: 15px; }
+        .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; }
+        #suggestion-form label { display: block; margin-top: 10px; font-weight: bold; }
+        #suggestion-form input[type="text"], #suggestion-form textarea { width: 95%; padding: 10px; margin-top: 5px; border-radius: 4px; border: 1px solid #ccc; }
+        #suggestion-form textarea { height: 100px; resize: vertical; }
+        #suggestion-form button { background-color: #457b9d; color: white; padding: 10px 20px; border: none; border-radius: 5px; margin-top: 15px; font-size: 16px; }
+        #suggestions-list .suggestion-item { display: flex; align-items: flex-start; gap: 15px; padding: 15px 5px; border-bottom: 3px double #eee; }
+        .suggestion-content-left { flex: 1; min-width: 0; display: flex; align-items: flex-start; gap: 10px; }
+        .suggestion-number { font-size: 1.1em; font-weight: bold; color: #e63946; min-width: 25px; text-align: right; }
+        .suggestion-details { flex: 1; min-width: 0; }
+        .suggester-info { margin: 0; padding: 0; }
+        .suggested-by-label { font-size: 0.9em; color: #555; }
+        #suggestions-list .suggester-name { font-weight: bold; color: #1d3557; }
+        #suggestions-list .suggestion-text { margin-top: 5px; white-space: pre-wrap; overflow-wrap: break-word; }
+        #suggestions-list .actions-container { display: flex; align-items: flex-start; min-width: 170px; }
+        #suggestions-list .status-container { display: flex; flex-direction: column; align-items: flex-end; width: 100%;}
+        #suggestions-list .status-toggle { border: none; background: none; font-size: 16px; padding: 5px 10px; border-radius: 5px; transition: background-color: 0.3s; width: 100%; text-align: left; }
+        #suggestions-list .status-toggle.is-pending { background-color: #fce8e6; color: #a50e0e; }
+        #suggestions-list .status-toggle.is-done { background-color: #e6f4ea; color: #137333; }
+        .new-command-section { margin-top: 2px; padding-top: 5px; border-top: 1px solid #e9ecef; width: 100%; }
+        .new-command-section .label { color: #555; font-size: 14px; text-align: left; margin: 0; line-height: 1.2; }
+        .new-command-section input[type="text"] { width: 95%; padding: 6px; border-radius: 4px; border: 1px solid #ccc; margin-top: 2px; }
+        .new-command-section .command-name { font-weight: bold; font-size: 1.1em; color: #1d3557; margin-top: 2px; text-align: left; line-height: 1.2; }
+        .delete-suggestion-btn { background-color: transparent; border: none; color: #e63946; font-size: 18px; padding: 5px; margin-left: 10px; opacity: 0.6; transition: opacity 0.3s; }
+        .delete-suggestion-btn:hover { opacity: 1; }
+        .search-container { margin-bottom: 30px; }
+        #search-bar { width: 100%; padding: 12px 15px; font-size: 16px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; transition: border-color 0.3s, box-shadow 0.3s; }
+        #search-bar:focus { outline: none; border-color: #457b9d; box-shadow: 0 0 0 3px rgba(69, 123, 157, 0.2); }
+        .filters-container { display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #e1e1e1; }
+        /* --- CSS КОРЕКЦИЯ --- */
+        #category-filter, #alphabet-filter, #chronological-filter { display: flex; justify-content: center; flex-wrap: wrap; gap: 5px; }
+        .filter-button, .category-filter-button { background-color: #a8dadc; color: #1d3557; border: none; border-radius: 5px; padding: 8px 14px; font-size: 15px; font-weight: bold; transition: background-color 0.3s, transform 0.2s; }
+        .filter-button:hover, .category-filter-button:hover { background-color: #457b9d; color: white; transform: translateY(-2px); }
+        .filter-button.active, .category-filter-button.active { background-color: #1d3557; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        details.hidden, .command-entry.hidden { display: none; }
+        .command-entry { margin-bottom: 8px; border-radius: 6px; overflow: hidden; border: 1px solid #e9ecef; transition: box-shadow 0.3s; margin-left: 15px; margin-right: 15px; }
+        .command-entry:last-child { margin-bottom: 15px; }
+        .command-entry:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .command-header { display: flex; align-items: center; background-color: #f8f9fa; padding: 8px 15px; }
+        .command-button { background-color: #457b9d; color: white; border: none; padding: 8px 12px; border-radius: 5px; font-size: 15px; transition: background-color 0.3s; text-align: center; font-weight: 500; min-width: 180px; text-transform: uppercase; }
+        .command-button:hover { background-color: #1d3557; }
+        .short-description { margin-left: 20px; font-size: 15px; color: #555; flex-grow: 1; }
+        .copy-feedback { padding: 8px 20px; margin: -8px 15px 10px 15px; background-color: #e6f4ea; color: #137333; border-radius: 0 0 6px 6px; text-align: left; font-size: 14px; font-weight: 500; animation: fadeInOut 3.5s ease-in-out forwards; }
+        @keyframes fadeInOut { 0% { opacity: 0; transform: translateY(-10px); } 10% { opacity: 1; transform: translateY(0); } 90% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-10px); } }
+        details.category { border: 1px solid #e9ecef; border-radius: 8px; margin-bottom: 10px; background-color: #fff; transition: box-shadow 0.3s; }
+        details.category[open] { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        summary { background-color: #f8f9fa; padding: 12px 20px; outline: none; transition: background-color 0.3s; border-radius: 8px; }
+        details[open] > summary { border-bottom: 1px solid #e9ecef; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+        summary:hover { background-color: #e9ecef; }
+        summary h2 { display: inline; color: #e63946; margin: 0; padding: 0; border: none; font-size: 1.6em; vertical-align: middle; }
+        mark { background-color: rgba(255, 251, 143, 0.6); padding: 1px 0; border-radius: 3px; color: inherit; }
+        .latest-commands-widget { position: fixed; top: 20px; right: 80px; width: 320px; z-index: 999; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+        .latest-commands-widget summary { padding: 12px 15px; font-weight: bold; color: #1d3557; outline: none; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+        .latest-commands-widget summary::-webkit-details-marker { display: none; }
+        .latest-commands-widget summary::after { content: '▼'; font-size: 12px; transition: transform 0.3s; }
+        .latest-commands-widget details[open] > summary::after { transform: rotate(180deg); }
+        #latest-commands-list { padding: 0 15px 15px 15px; max-height: 60vh; overflow-y: auto; }
+        #latest-commands-list ul { list-style: none; padding: 0; margin: 0; }
+        .latest-command-item { padding: 10px 0; border-bottom: 1px solid #eee; }
+        .latest-command-item:last-child { border-bottom: none; }
+        .latest-command-button { width: 100%; background-color: #457b9d; color: white; border: none; padding: 6px 10px; border-radius: 5px; font-size: 15px; transition: background-color 0.3s; text-align: center; font-weight: 500; text-transform: uppercase; margin-bottom: 5px; }
+        .latest-command-button:hover { background-color: #1d3557; }
+        .latest-command-item-desc { font-size: 0.9em; color: #555; display: block; margin-bottom: 6px; }
+        .latest-command-category-btn { display: inline-block; background: rgba(230, 57, 70, 0.1); border: 1px solid rgba(230, 57, 70, 0.2); padding: 2px 8px; font-size: 12px; font-weight: 500; color: #b12732; border-radius: 12px; text-align: left; transition: all 0.2s ease; }
+        .latest-command-category-btn:hover { background: rgba(230, 57, 70, 0.2); border-color: rgba(230, 57, 70, 0.4); color: #a8202b; }
+        .copy-feedback-latest { padding: 6px 10px; margin-top: 8px; background-color: #e6f4ea; color: #137333; border-radius: 4px; text-align: center; font-size: 13px; font-weight: 500; animation: fadeInOut 3.5s ease-in-out forwards; }
+        #visitor-counter { position: fixed; bottom: 15px; left: 15px; background-color: rgba(29, 53, 87, 0.9); color: white; padding: 8px 15px; border-radius: 8px; font-size: 14px; font-weight: bold; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
+    </style>
+</head>
+<body>
+    <canvas id="cursor-canvas"></canvas>
+
+    <div class="container">
+        <button id="fun-toggle-btn">FUN</button>
+        <div class="header-buttons">
+            <button id="add-suggestion-btn" class="header-btn">Предложение</button>
+            <button id="view-suggestions-btn" class="header-btn">
+                Виж предложенията
+                <span id="suggestion-count">0</span>
+                <span id="new-suggestion-indicator"></span>
+            </button>
+        </div>
+        <h1>PAF's PROGRAMS SUITE</h1><h3 class="main-subtitle">Интерактивен списък на AutoLISP команди</h3><h3 id="command-counter">Зареждане на командите...</h3>
+        <div class="search-container"><input type="text" id="search-bar" placeholder="Търсене по име или описание..."></div>
+        <!-- --- HTML КОРЕКЦИЯ --- -->
+        <div class="filters-container">
+            <div id="category-filter"></div>
+            <div id="chronological-filter">
+                <button class="filter-button" data-filter="chronological">ФИЛТЪР ПО НАЙ-НОВО ДОБАВЕНИ КОМАНДИ</button>
+            </div>
+            <div id="alphabet-filter">
+                <button class="filter-button active" data-filter="all">ВСИЧКИ БУКВИ</button>
+                <script>document.write(Array.from(Array(26)).map((e, i) => `<button class="filter-button" data-filter="${String.fromCharCode(i + 65)}">${String.fromCharCode(i + 65)}</button>`).join(''));</script>
+            </div>
+        </div>
+        <div id="commands-container"></div>
+        <div id="chronological-commands-container" style="display: none;"></div>
+    </div> 
+
+    <div class="latest-commands-widget">
+        <details open>
+            <summary>Последни 5 добавени команди</summary>
+            <div id="latest-commands-list">
+            </div>
+        </details>
+    </div>
+       
+    <div id="suggestion-form-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2>Направи предложение</h2><form id="suggestion-form"><label for="suggester-name">Твоето име:</label><input type="text" id="suggester-name" required><label for="suggestion-text">Предложи нова LISP команда:</label><textarea id="suggestion-text" required></textarea><button type="submit">Изпрати</button></form></div></div>
+    <div id="suggestions-list-modal" class="modal"><div class="modal-content"><span class="close-button">×</span><h2>Списък с предложения</h2><div id="suggestions-list"></div></div></div>
+    
+    <div id="visitor-counter">Зареждане...</div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        const firebaseConfig = {
+          apiKey: "AIzaSyACB9shT_VTr3PGW_1nFjJCGAgwSI55Omw", authDomain: "clickcount-a6e46.firebaseapp.com", databaseURL: "https://clickcount-a6e46-default-rtdb.firebaseio.com", projectId: "clickcount-a6e46", storageBucket: "clickcount-a6e46.appspot.com", messagingSenderId: "53304151952", appId: "1:53304151952:web:ed0c365ace6b1232842d15", measurementId: "G-5S028177MG"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const suggestionsRef = db.ref("suggestions");
+
+        function trackVisitor() {
+            const hourlyUniqueVisitorsRef = db.ref('analytics/unique_visitors_hourly');
+            const visitorCounterElement = document.getElementById('visitor-counter');
+            const storageKey = 'paf-suite-last-visit-timestamp';
+            const ONE_HOUR_IN_MS = 60 * 60 * 1000;
+            const now = Date.now();
+            const lastVisitTimestamp = localStorage.getItem(storageKey);
+            let isUniqueVisit = false;
+
+            if (!lastVisitTimestamp) {
+                isUniqueVisit = true;
+            } else {
+                const timeDifference = now - parseInt(lastVisitTimestamp, 10);
+                if (timeDifference > ONE_HOUR_IN_MS) {
+                    isUniqueVisit = true;
+                }
+            }
+            
+            if (isUniqueVisit) {
+                hourlyUniqueVisitorsRef.transaction(currentValue => (currentValue || 0) + 1);
+                localStorage.setItem(storageKey, now.toString());
+            }
+            
+            hourlyUniqueVisitorsRef.on('value', (snapshot) => {
+                const count = snapshot.val() || 0;
+                if (visitorCounterElement) {
+                    visitorCounterElement.textContent = `Посетители: ${count}`;
+                }
+            });
+        }
+        trackVisitor();
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            let parsedResult;
+            
+            initializeFirebaseFunctionality();
+            initializeFunMode();
+
+            const COMMANDS_FILE_URL = "https://raw.githubusercontent.com/PafApps/lisp/main/HELP_LISP.lsp";
+            const categoryConfig = {
+                "СИТУАЦИЯ": { id: "situation", title: "Команди за Ситуация", filterName: "Ситуация" }, "НАДЛЪЖНИ": { id: "longitudinal-profiles", title: "Команди за Надлъжни профили", filterName: "Надлъжни" }, "НАПРЕЧНИ": { id: "cross-sections", title: "Команди за Напречни профили", filterName: "Напречни" }, "БЛОКОВЕ": { id: "blocks", title: "Команди за Блокове", filterName: "Блокове" }, "ЛЕЙАУТИ": { id: "layouts", title: "Команди за Layouts", filterName: "Layouts" }, "СИВИЛ": { id: "civil", title: "Команди за Civil 3D", filterName: "Civil 3D" }, "РЕГИСТРИ": { id: "registers", title: "Команди за Регистри (Civil 3D)", filterName: "Регистри (Civil)" }, "ДРУГИ": { id: "other", title: "Други команди", filterName: "Други" },
+            };
+            const commandsContainer = document.getElementById('commands-container');
+            const chronoContainer = document.getElementById('chronological-commands-container');
+            const categoryFilterContainer = document.getElementById('category-filter');
+            const commandCounter = document.getElementById('command-counter');
+
+            try {
+                const response = await fetch(COMMANDS_FILE_URL);
+                if (!response.ok) throw new Error(`HTTP грешка! Статус: ${response.status}`);
+                const lispContent = await response.text();
+                parsedResult = parseLispFileImproved(lispContent, categoryConfig);
+                
+                renderAllCommands(parsedResult.categorizedData, commandsContainer, categoryFilterContainer, commandCounter, parsedResult.commandCount, categoryConfig);
+                renderLatestCommands(parsedResult.orderedCommandKeys, parsedResult.commandDetailsMap);
+                renderChronologicalView(parsedResult.orderedCommandKeys.slice().reverse(), parsedResult.commandDetailsMap, chronoContainer);
+                
+                initializeFiltersAndAccordions();
+                initializeLatestCommandsInteraction();
+            } catch (error) {
+                console.error("Грешка при зареждане:", error);
+                commandsContainer.innerHTML = `<p style="color: red; text-align: center;">Възникна грешка при обработка на данните. Проверете конзолата.</p>`;
+                commandCounter.textContent = 'Грешка при зареждане';
+            }
+        });
+
+        function initializeFirebaseFunctionality() {
+            const isAdmin = () => new URLSearchParams(window.location.search).get('admin') === 'true';
+            const adminMode = isAdmin();
+            const addSuggestionBtn = document.getElementById('add-suggestion-btn');
+            const viewSuggestionsBtn = document.getElementById('view-suggestions-btn');
+            const suggestionFormModal = document.getElementById('suggestion-form-modal');
+            const suggestionsListModal = document.getElementById('suggestions-list-modal');
+            const suggestionForm = document.getElementById('suggestion-form');
+            const suggestionsListDiv = document.getElementById('suggestions-list');
+            const suggestionCountSpan = document.getElementById('suggestion-count');
+            const closeButtons = document.querySelectorAll('.close-button');
+            const newSuggestionIndicator = document.getElementById('new-suggestion-indicator');
+
+            const updateAdminNotification = (allSuggestions) => {
+                const pendingSuggestions = allSuggestions.filter(s => s.status === 'pending');
+                const pendingCount = pendingSuggestions.length;
+                if (pendingCount > 0) {
+                    newSuggestionIndicator.textContent = pendingCount;
+                    newSuggestionIndicator.style.display = 'block';
+                    viewSuggestionsBtn.classList.add('new-suggestion-alert');
+                } else {
+                    newSuggestionIndicator.style.display = 'none';
+                    viewSuggestionsBtn.classList.remove('new-suggestion-alert');
+                }
+            };
+
+            const renderSuggestions = (snapshot) => {
+                suggestionsListDiv.innerHTML = '';
+                const suggestionsArray = [];
+                snapshot.forEach(childSnapshot => {
+                    suggestionsArray.push({ key: childSnapshot.key, ...childSnapshot.val() });
+                });
+                suggestionCountSpan.textContent = suggestionsArray.length;
+                updateAdminNotification(suggestionsArray);
+                suggestionsArray.reverse();
+                if (suggestionsArray.length === 0) {
+                    suggestionsListDiv.innerHTML = '<p>Все още няма подадени предложения.</p>';
+                    return;
+                }
+                suggestionsArray.forEach((suggestion, index) => {
+                    const key = suggestion.key;
+                    const item = document.createElement('div');
+                    item.className = 'suggestion-item';
+                    const leftCol = document.createElement('div');
+                    leftCol.className = 'suggestion-content-left';
+                    const numberDiv = document.createElement('div');
+                    numberDiv.className = 'suggestion-number';
+                    numberDiv.textContent = `${index + 1}.`;
+                    leftCol.appendChild(numberDiv);
+                    const detailsDiv = document.createElement('div');
+                    detailsDiv.className = 'suggestion-details';
+                    detailsDiv.innerHTML = `<p class="suggester-info"><span class="suggested-by-label">Предложил:</span> <span class="suggester-name">${suggestion.name || 'Анонимен'}</span></p><p class="suggestion-text">${suggestion.text}</p>`;
+                    leftCol.appendChild(detailsDiv);
+                    const rightCol = document.createElement('div');
+                    rightCol.className = 'actions-container';
+                    const statusContainer = document.createElement('div');
+                    statusContainer.className = 'status-container';
+                    const statusBtn = document.createElement('button');
+                    statusBtn.className = 'status-toggle';
+                    statusBtn.dataset.id = key;
+                    if (suggestion.status === 'done') {
+                        statusBtn.textContent = '✅ Направено';
+                        statusBtn.classList.add('is-done');
+                        const newCommandDiv = document.createElement('div');
+                        newCommandDiv.className = 'new-command-section';
+                        newCommandDiv.innerHTML = `<p class="label">Нова команда:</p>`;
+                        if (adminMode) {
+                            const commandInput = document.createElement('input');
+                            commandInput.type = 'text';
+                            commandInput.value = suggestion.newCommandName || '';
+                            commandInput.placeholder = 'Въведете името';
+                            commandInput.dataset.id = key;
+                            newCommandDiv.appendChild(commandInput);
+                        } else {
+                            const commandDisplay = document.createElement('p');
+                            commandDisplay.className = 'command-name';
+                            commandDisplay.textContent = suggestion.newCommandName || '(няма зададена)';
+                            newCommandDiv.appendChild(commandDisplay);
+                        }
+                        statusContainer.appendChild(statusBtn);
+                        statusContainer.appendChild(newCommandDiv);
+                    } else {
+                        statusBtn.textContent = '❌ Не е направено';
+                        statusBtn.classList.add('is-pending');
+                        statusContainer.appendChild(statusBtn);
+                    }
+                    if (adminMode) statusBtn.classList.add('admin-enabled');
+                    rightCol.appendChild(statusContainer);
+                    if (adminMode) {
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'delete-suggestion-btn';
+                        deleteBtn.innerHTML = '';
+                        deleteBtn.title = 'Изтрий предложението';
+                        deleteBtn.dataset.id = key;
+                        rightCol.appendChild(deleteBtn);
+                    }
+                    item.appendChild(leftCol);
+                    item.appendChild(rightCol);
+                    suggestionsListDiv.appendChild(item);
+                });
+            };
+
+            suggestionsRef.on("value", renderSuggestions);
+            const openModal = (modal) => { modal.style.display = 'flex'; document.body.classList.add('modal-open'); };
+            const closeModal = (modal) => { modal.style.display = 'none'; document.body.classList.remove('modal-open'); };
+            addSuggestionBtn.addEventListener('click', (e) => { e.stopPropagation(); openModal(suggestionFormModal); });
+            viewSuggestionsBtn.addEventListener('click', (e) => { e.stopPropagation(); openModal(suggestionsListModal); });
+            closeButtons.forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); closeModal(suggestionFormModal); closeModal(suggestionsListModal); }));
+            window.addEventListener('click', (event) => { if (event.target == suggestionFormModal) closeModal(suggestionFormModal); if (event.target == suggestionsListModal) closeModal(suggestionsListModal); });
+            suggestionForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const name = document.getElementById('suggester-name').value;
+                const text = document.getElementById('suggestion-text').value;
+                if (!text.trim()) { alert('Моля, въведете текст.'); return; }
+                suggestionsRef.push({ name: name.trim() || 'Анонимен', text: text.trim(), status: 'pending', timestamp: firebase.database.ServerValue.TIMESTAMP })
+                    .then(() => { suggestionForm.reset(); closeModal(suggestionFormModal); alert('Благодарим за предложението!'); })
+                    .catch((error) => console.error("Грешка: ", error));
+            });
+            suggestionsListDiv.addEventListener('click', (e) => {
+                if (e.target.classList.contains('status-toggle') && adminMode) {
+                    const id = e.target.dataset.id;
+                    const docRef = suggestionsRef.child(id);
+                    docRef.get().then((snapshot) => { if (snapshot.exists()) { const newStatus = snapshot.val().status === 'pending' ? 'done' : 'pending'; docRef.update({ status: newStatus }); } });
+                }
+                if (e.target.classList.contains('delete-suggestion-btn') && adminMode) {
+                    const id = e.target.dataset.id;
+                    if (confirm('Наистина ли искате да изтриете това?')) { suggestionsRef.child(id).remove().catch(error => console.error("Грешка: ", error)); }
+                }
+            });
+            suggestionsListDiv.addEventListener('blur', (e) => {
+                if (e.target.tagName === 'INPUT' && e.target.closest('.new-command-section') && adminMode) {
+                    const id = e.target.dataset.id;
+                    const newName = e.target.value.trim();
+                    suggestionsRef.child(id).update({ newCommandName: newName }).catch(error => console.error("Грешка:", error));
+                }
+            }, true);
+        }
+
+        function initializeFunMode() {
+            const funToggleButton = document.getElementById('fun-toggle-btn');
+            const canvas = document.getElementById('cursor-canvas');
+            let isFunModeActive = true; 
+            let animationFrameId;
+
+            const funCursor = {
+                ctx: canvas.getContext('2d'), mouse: { x: 0, y: 0, moved: false }, particles: [], path: [], LINE_THICKNESS: 10, MAX_TRAIL_LENGTH: 25, RETRACTION_SPEED: 2, retractionCounter: 0, hue: 0, PARTICLE_COUNT: 50, GRAVITY: 0.08, PARTICLE_TYPES: ['ruler', 'set_square', 'compass', 'pencil'],
+                resizeCanvas() { this.ctx.canvas.width = window.innerWidth; this.ctx.canvas.height = window.innerHeight; },
+                handleMouseMove(e) { this.mouse.x = e.clientX; this.mouse.y = e.clientY; this.mouse.moved = true; },
+                handleClick(e) { for (let i = 0; i < this.PARTICLE_COUNT; i++) { const angle = Math.random() * Math.PI * 2; const speed = Math.random() * 6 + 2; const type = this.PARTICLE_TYPES[Math.floor(Math.random() * this.PARTICLE_TYPES.length)]; this.particles.push({ x: e.clientX, y: e.clientY, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - 2, type: type, size: Math.random() * 25 + 15, rotation: (Math.random() - 0.5) * Math.PI, rotationSpeed: (Math.random() - 0.5) * 0.15, life: 120 + Math.random() * 60 }); } },
+                drawTrail() { if (this.path.length > 0) { this.ctx.beginPath(); this.ctx.moveTo(this.path[0].x, this.path[0].y); for (let i = 1; i < this.path.length; i++) { this.ctx.lineTo(this.path[i].x, this.path[i].y); } const gradient = this.ctx.createLinearGradient(this.path[0].x, this.path[0].y, this.path[this.path.length - 1].x, this.path[this.path.length - 1].y); gradient.addColorStop(0, `hsl(${this.hue}, 90%, 60%)`); gradient.addColorStop(0.5, `hsl(${(this.hue + 40) % 360}, 90%, 60%)`); gradient.addColorStop(1, `hsl(${(this.hue + 80) % 360}, 90%, 60%)`); this.ctx.strokeStyle = gradient; this.ctx.lineWidth = this.LINE_THICKNESS; this.ctx.lineCap = 'round'; this.ctx.lineJoin = 'round'; this.ctx.stroke(); } },
+                drawParticles() { for (let i = this.particles.length - 1; i >= 0; i--) { const p = this.particles[i]; p.vy += this.GRAVITY; p.x += p.vx; p.y += p.vy; p.rotation += p.rotationSpeed; p.life--; if (p.life <= 0 || p.y > this.ctx.canvas.height + 40) { this.particles.splice(i, 1); } else { this.drawShape(p); } } },
+                drawShape(p) { this.ctx.save(); this.ctx.translate(p.x, p.y); this.ctx.rotate(p.rotation); this.ctx.scale(p.size / 50, p.size / 50); const alpha = Math.max(0, p.life / 100); switch (p.type) { case 'ruler': this.ctx.fillStyle = `rgba(240, 230, 210, ${alpha * 0.8})`; this.ctx.strokeStyle = `rgba(50, 30, 20, ${alpha})`; this.ctx.lineWidth = 1; this.ctx.fillRect(-25, -5, 50, 10); this.ctx.strokeRect(-25, -5, 50, 10); for (let i = -25; i <= 25; i += 2.5) { this.ctx.beginPath(); this.ctx.moveTo(i, -5); this.ctx.lineTo(i, (i % 5 === 0) ? 0 : -2.5); this.ctx.stroke(); } break; case 'set_square': this.ctx.fillStyle = `rgba(135, 206, 235, ${alpha * 0.6})`; this.ctx.strokeStyle = `rgba(30, 30, 30, ${alpha})`; this.ctx.lineWidth = 1; this.ctx.beginPath(); this.ctx.moveTo(-20, 20); this.ctx.lineTo(20, 20); this.ctx.lineTo(-20, -20); this.ctx.closePath(); this.ctx.moveTo(-10, 10); this.ctx.lineTo(10, 10); this.ctx.lineTo(-10, -10); this.ctx.closePath(); this.ctx.fill("evenodd"); this.ctx.stroke(); for (let i = -20; i <= 20; i += 2) { this.ctx.beginPath(); this.ctx.moveTo(i, 20); this.ctx.lineTo(i, 18); this.ctx.stroke(); } break; case 'compass': this.ctx.strokeStyle = `rgba(150, 150, 150, ${alpha})`; this.ctx.lineWidth = 3; this.ctx.beginPath(); this.ctx.moveTo(0, -15); this.ctx.lineTo(-10, 15); this.ctx.stroke(); this.ctx.beginPath(); this.ctx.moveTo(-10, 15); this.ctx.lineTo(-12, 13); this.ctx.stroke(); this.ctx.beginPath(); this.ctx.moveTo(0, -15); this.ctx.lineTo(10, 15); this.ctx.stroke(); this.ctx.fillStyle = `rgba(0, 128, 255, ${alpha})`; this.ctx.beginPath(); this.ctx.arc(0, -15, 5, 0, Math.PI * 2); this.ctx.fill(); this.ctx.fillStyle = `rgba(50, 50, 50, ${alpha})`; this.ctx.fillRect(8, 10, 4, 8); break; case 'pencil': this.ctx.globalAlpha = alpha; this.ctx.fillStyle = `rgb(255, 105, 180)`; this.ctx.fillRect(-5, 18, 10, 6); this.ctx.fillStyle = `rgb(192, 192, 192)`; this.ctx.fillRect(-5, 14, 10, 4); this.ctx.fillStyle = `rgb(255, 221, 89)`; this.ctx.fillRect(-5, -12, 10, 26); this.ctx.beginPath(); this.ctx.moveTo(-5, -12); this.ctx.lineTo(0, -22); this.ctx.lineTo(5, -12); this.ctx.closePath(); this.ctx.fillStyle = `rgb(242, 219, 194)`; this.ctx.fill(); this.ctx.beginPath(); this.ctx.moveTo(0, -22); this.ctx.lineTo(0, -19); this.ctx.closePath(); this.ctx.strokeStyle = 'black'; this.ctx.lineWidth = 2; this.ctx.stroke(); break; } this.ctx.restore(); },
+                update() { if (this.mouse.moved) { this.path.unshift({ x: this.mouse.x, y: this.mouse.y }); if (this.path.length > this.MAX_TRAIL_LENGTH) { this.path.pop(); } this.mouse.moved = false; this.retractionCounter = 0; } else if (this.path.length > 0) { this.retractionCounter++; if (this.retractionCounter >= this.RETRACTION_SPEED) { this.path.pop(); this.retractionCounter = 0; } } },
+                animate() { this.hue = (this.hue + 1.5) % 360; this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height); this.update(); this.drawTrail(); this.drawParticles(); animationFrameId = requestAnimationFrame(this.animate.bind(this)); },
+                start() { this.resizeCanvas(); window.addEventListener('resize', this.boundResize); window.addEventListener('mousemove', this.boundMouseMove); window.addEventListener('click', this.boundHandleClick); this.animate(); },
+                stop() { window.removeEventListener('resize', this.boundResize); window.removeEventListener('mousemove', this.boundMouseMove); window.removeEventListener('click', this.boundHandleClick); cancelAnimationFrame(animationFrameId); this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height); },
+                init() { this.boundResize = this.resizeCanvas.bind(this); this.boundMouseMove = this.handleMouseMove.bind(this); this.boundHandleClick = this.handleClick.bind(this); return this; }
+            }.init();
+
+            const toggleFunMode = () => { isFunModeActive = !isFunModeActive; funToggleButton.classList.toggle('active', isFunModeActive); document.body.classList.toggle('fun-mode-on', isFunModeActive); canvas.style.display = isFunModeActive ? 'block' : 'none'; if (isFunModeActive) { funCursor.start(); } else { funCursor.stop(); } };
+            funToggleButton.addEventListener('click', toggleFunMode);
+            isFunModeActive = funToggleButton.classList.contains('active');
+            document.body.classList.toggle('fun-mode-on', isFunModeActive);
+            canvas.style.display = isFunModeActive ? 'block' : 'none';
+            if (isFunModeActive) { funCursor.start(); }
+        }
+
+        function renderLatestCommands(orderedCommandKeys, commandDetailsMap) {
+            const listContainer = document.getElementById('latest-commands-list');
+            if (!listContainer) return;
+            const latestCommandKeys = orderedCommandKeys.slice(-5).reverse();
+            if (latestCommandKeys.length === 0) { listContainer.innerHTML = '<p style="padding: 10px 0;">Няма намерени команди.</p>'; return; }
+            const ul = document.createElement('ul');
+            latestCommandKeys.forEach(commandName => {
+                const li = document.createElement('li');
+                li.className = 'latest-command-item';
+                const details = commandDetailsMap[commandName] || { description: '(Няма описание)', categoryName: 'Неизвестна', categoryId: null };
+                li.innerHTML = `<button class="latest-command-button" data-command="${details.displayName || commandName}">${details.displayName || commandName}</button><span class="latest-command-item-desc">${details.description}</span><button class="latest-command-category-btn" data-category-id="${details.categoryId}">Категория: ${details.categoryName}</button>`;
+                ul.appendChild(li);
+            });
+            listContainer.innerHTML = '';
+            listContainer.appendChild(ul);
+        }
+
+        function initializeLatestCommandsInteraction() {
+            const latestCommandsList = document.getElementById('latest-commands-list');
+            if (!latestCommandsList) return;
+            latestCommandsList.addEventListener('click', function(e) {
+                const commandButton = e.target.closest('.latest-command-button');
+                const categoryButton = e.target.closest('.latest-command-category-btn');
+                if (commandButton) {
+                    const commandText = commandButton.dataset.command;
+                    navigator.clipboard.writeText(commandText).then(() => {
+                        const existingFeedback = latestCommandsList.querySelector('.copy-feedback-latest');
+                        if (existingFeedback) { existingFeedback.remove(); }
+                        const feedbackElement = document.createElement('div');
+                        feedbackElement.className = 'copy-feedback-latest';
+                        feedbackElement.textContent = `Командата "${commandText}" е копирана!`;
+                        const commandItem = commandButton.closest('.latest-command-item');
+                        commandItem.appendChild(feedbackElement);
+                        setTimeout(() => { feedbackElement.remove(); }, 3500);
+                    }).catch(err => { console.error('Грешка при копиране: ', err); });
+                } else if (categoryButton) {
+                    const categoryId = categoryButton.dataset.categoryId;
+                    if (!categoryId || categoryId === 'null') return;
+                    const mainFilterButton = document.querySelector(`.category-filter-button[data-filter="${categoryId}"]`);
+                    if (mainFilterButton) { mainFilterButton.click(); mainFilterButton.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+                }
+            });
+        }
+        
+        function parseLispFileImproved(content, config) {
+            const categorizedData = {};
+            const commandDetailsMap = {};
+            const allCommandsDataMap = {}; 
+            const orderedCommandKeys = [];
+
+            Object.values(config).forEach(c => {
+                categorizedData[c.id] = [];
+            });
+            const lispNameToIdMap = {};
+            for (const key in config) {
+                lispNameToIdMap[key] = config[key].id;
+            }
+
+            // --- НОВ, ПО-НАДЕЖДЕН МЕТОД ЗА ПАРСВАНЕ ---
+            function parseLispList(listContent) {
+                const items = [];
+                let currentPos = 0;
+                
+                while(currentPos < listContent.length) {
+                    while(currentPos < listContent.length && /\s/.test(listContent[currentPos])) {
+                        currentPos++;
+                    }
+                    if (currentPos >= listContent.length) break;
+
+                    if (listContent[currentPos] === '(') {
+                        let parenLevel = 1;
+                        let itemStart = currentPos + 1;
+                        currentPos++;
+                        while(currentPos < listContent.length && parenLevel > 0) {
+                            if (listContent[currentPos] === '(') parenLevel++;
+                            if (listContent[currentPos] === ')') parenLevel--;
+                            if (parenLevel > 0) currentPos++; else currentPos; 
+                        }
+                        const itemContent = listContent.substring(itemStart, currentPos);
+                        currentPos++;
+                        const parts = parseLispList(itemContent);
+                        if (parts.length > 0) items.push(parts);
+
+                    } else if (listContent[currentPos] === '"') {
+                        let itemStart = currentPos + 1;
+                        currentPos++;
+                        let str = "";
+                        while(currentPos < listContent.length) {
+                            if (listContent[currentPos] === '"' && listContent[currentPos-1] !== '\\') {
+                                break;
+                            }
+                            str += listContent[currentPos];
+                            currentPos++;
+                        }
+                        currentPos++;
+                        items.push(str.replace(/\\"/g, '"'));
+                    } else {
+                       currentPos++;
+                    }
+                }
+                return items;
+            }
+
+            const functionBlocks = content.split(/defun create_dclhelplisp/);
+            functionBlocks.forEach(block => {
+                const categoryMatch = block.match(/^([^\s(]+)/);
+                if (!categoryMatch) return;
+                
+                const lispCategoryName = categoryMatch[1];
+                const categoryId = lispNameToIdMap[lispCategoryName];
+                if (!categoryId) return;
+                
+                const categoryInfo = Object.values(config).find(c => c.id === categoryId);
+                if (!categoryInfo) return;
+
+                const listStartIndex = block.indexOf("'(", block.search(/\(setq\s+(?:command_items|menu_items)\s+'\(/));
+                if (listStartIndex === -1) return;
+
+                let openParenCount = 1;
+                let currentIndex = listStartIndex + 2;
+                let itemsContent = "";
+                while (currentIndex < block.length && openParenCount > 0) {
+                    const char = block[currentIndex];
+                    if (char === '(') openParenCount++;
+                    else if (char === ')') openParenCount--;
+                    if (openParenCount > 0) itemsContent += char;
+                    currentIndex++;
+                }
+
+                if (!itemsContent) return;
+                
+                const commands = parseLispList(itemsContent);
+                commands.forEach(cmd => {
+                    if (Array.isArray(cmd) && cmd.length >= 3) {
+                        const internalKey = (cmd[0] || "").trim();
+                        const displayName = (cmd[1] || "").trim();
+                        let fullDescription = (cmd[2] || "").trim();
+                        
+                        if (internalKey.startsWith("---") || displayName === "") return;
+
+                        fullDescription = fullDescription
+                            .replace(/^- /, '')
+                            .replace(/\\t/g, ' ')
+                            .replace(/\\n/g, ' ')
+                            .replace(/\s+/g, ' ')
+                            .trim();
+
+                        if (!fullDescription) fullDescription = '(Няма описание)';
+                        
+                        allCommandsDataMap[internalKey] = {
+                            displayName: displayName,
+                            description: fullDescription,
+                            categoryName: categoryInfo.filterName,
+                            categoryId: categoryInfo.id
+                        };
+                        
+                        if (categorizedData[categoryInfo.id]) {
+                            categorizedData[categoryInfo.id].push({
+                                name: displayName,
+                                internalKey: internalKey,
+                                description: fullDescription
+                            });
+                        }
+                    }
+                });
+            });
+
+            const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
+            if (commandMapSectionMatch) {
+                const mapContent = commandMapSectionMatch[1];
+                const commandMapRegex = /\(\s*"([^"]+)"\s*\.\s*"[^"]*"\s*\)/g;
+                let match;
+                while ((match = commandMapRegex.exec(mapContent)) !== null) {
+                    const key = match[1];
+                    if (!config[key] && key !== 'back' && key !== 'pps_back' && !/^[А-Я]/.test(key)) {
+                        orderedCommandKeys.push(key);
+                    }
+                }
+            }
+
+            orderedCommandKeys.forEach(commandKey => {
+                const commandDetails = allCommandsDataMap[commandKey];
+                if (commandDetails) {
+                    commandDetailsMap[commandKey] = commandDetails;
+                } else {
+                     console.warn(`Командата "${commandKey}" от command_map не беше намерена в нито един command_items списък.`);
+                }
+            });
+
+            return {
+                categorizedData: categorizedData,
+                commandCount: orderedCommandKeys.length,
+                orderedCommandKeys: orderedCommandKeys,
+                commandDetailsMap: commandDetailsMap
+            };
+        }
+
+        function renderAllCommands(data, container, filterContainer, counterEl, commandCount, config) {
+            container.innerHTML = ''; 
+            filterContainer.innerHTML = '<button class="category-filter-button active" data-filter="all">ВСИЧКИ СЕКЦИИ</button>';
+            for (const categoryId in data) {
+                 if (Object.hasOwnProperty.call(data, categoryId)) {
+                    const commands = data[categoryId]; if (commands.length === 0) continue;
+                    const categoryInfo = Object.values(config).find(c => c.id === categoryId); if (!categoryInfo) continue;
+                    const filterButton = document.createElement('button'); filterButton.className = 'category-filter-button'; filterButton.dataset.filter = categoryId; filterButton.textContent = categoryInfo.filterName; filterContainer.appendChild(filterButton);
+                    const detailsElement = document.createElement('details'); detailsElement.className = 'category'; detailsElement.dataset.category = categoryId;
+                    const summaryElement = document.createElement('summary'); summaryElement.innerHTML = `<h2>${categoryInfo.title}</h2>`; detailsElement.appendChild(summaryElement);
+                    commands.forEach(command => {
+                        const commandEntry = document.createElement('div');
+                        commandEntry.className = 'command-entry';
+                        commandEntry.dataset.letter = command.name.charAt(0).toUpperCase();
+                        const desc = command.description || '(Няма описание)';
+                        const fullDescription = desc.charAt(0).toUpperCase() + desc.slice(1);
+                        commandEntry.innerHTML = `<div class="command-header"><button class="command-button" data-command="${command.name}">${command.name}</button><span class="short-description">${fullDescription}</span></div>`;
+                        commandEntry.querySelector('.command-button').dataset.originalText = command.name;
+                        commandEntry.querySelector('.short-description').dataset.originalText = fullDescription; 
+                        detailsElement.appendChild(commandEntry);
+                    });
+                    container.appendChild(detailsElement);
+                }
+            }
+            counterEl.textContent = `Намерени общо ${commandCount} уникални команди, разпределени в категории`;
+        }
+        
+        function renderChronologicalView(orderedKeys, commandDetailsMap, container) {
+            container.innerHTML = '';
+            if (orderedKeys.length === 0) { container.innerHTML = '<p>Няма команди за показване.</p>'; return; }
+            orderedKeys.forEach(commandName => {
+                const details = commandDetailsMap[commandName] || { displayName: commandName, description: '(Няма описание)', categoryName: 'Неизвестна' };
+                const commandEntry = document.createElement('div');
+                commandEntry.className = 'command-entry';
+                const desc = details.description || '(Няма описание)';
+                const displayName = details.displayName || commandName;
+                const fullDescription = desc.charAt(0).toUpperCase() + desc.slice(1);
+                commandEntry.innerHTML = `<div class="command-header"><button class="command-button" data-command="${displayName}">${displayName}</button><span class="short-description">${fullDescription}</span></div><div style="padding: 0 15px 10px 15px; background-color: #f8f9fa; font-size: 13px; color: #777; margin-top: -8px;"><i>Категория: ${details.categoryName}</i></div>`;
+                commandEntry.querySelector('.command-button').dataset.originalText = displayName;
+                commandEntry.querySelector('.short-description').dataset.originalText = fullDescription;
+                container.appendChild(commandEntry);
+            });
+        }
+
+        function initializeFiltersAndAccordions() {
+            const searchBar = document.getElementById('search-bar');
+            const categoryFilter = document.getElementById('category-filter');
+            // --- JS КОРЕКЦИЯ ---
+            const chronoFilter = document.getElementById('chronological-filter');
+            const alphabetFilter = document.getElementById('alphabet-filter');
+            const commandsContainer = document.getElementById('commands-container');
+            const chronoContainer = document.getElementById('chronological-commands-container');
+            let activeCategory = 'all'; 
+            let activeLetter = 'all'; 
+
+            function escapeRegex(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+            function highlightText(originalText, searchTerm) { if (!searchTerm) { return originalText; } const escapedSearchTerm = escapeRegex(searchTerm); const regex = new RegExp(escapedSearchTerm, 'gi'); return originalText.replace(regex, (match) => `<mark>${match}</mark>`); }
+            function clearHighlights() { const allMarked = document.querySelectorAll('mark'); allMarked.forEach(mark => { const parent = mark.parentNode; parent.replaceChild(document.createTextNode(mark.textContent), mark); parent.normalize(); }); }
+
+            function applyCategorizedSearch(searchTerm) {
+                const searchTermLower = searchTerm.toLowerCase();
+                const allCategories = commandsContainer.querySelectorAll('details.category');
+                allCategories.forEach(category => {
+                    const allCommands = category.querySelectorAll('.command-entry');
+                    let hasVisibleChildren = false;
+                    allCommands.forEach(entry => {
+                        const commandButton = entry.querySelector('.command-button');
+                        const descriptionSpan = entry.querySelector('.short-description');
+                        const originalCommandName = commandButton.dataset.originalText;
+                        const originalDescription = descriptionSpan.dataset.originalText;
+                        commandButton.innerHTML = originalCommandName;
+                        descriptionSpan.innerHTML = originalDescription;
+                        const isMatch = originalCommandName.toLowerCase().includes(searchTermLower) || originalDescription.toLowerCase().includes(searchTermLower);
+                        entry.classList.toggle('hidden', !isMatch);
+                        if (isMatch) { hasVisibleChildren = true; if(searchTerm){ commandButton.innerHTML = highlightText(originalCommandName, searchTerm); descriptionSpan.innerHTML = highlightText(originalDescription, searchTerm); } }
+                    });
+                    category.classList.toggle('hidden', !hasVisibleChildren);
+                    if (hasVisibleChildren && searchTerm) { category.setAttribute('open', ''); } 
+                    else if (!searchTerm) { category.removeAttribute('open'); }
+                });
+            }
+
+            function applyChronologicalSearch(searchTerm) {
+                const searchTermLower = searchTerm.toLowerCase();
+                 const allCommands = chronoContainer.querySelectorAll('.command-entry');
+                 allCommands.forEach(entry => {
+                    const commandButton = entry.querySelector('.command-button');
+                    const descriptionSpan = entry.querySelector('.short-description');
+                    const originalCommandName = commandButton.dataset.originalText;
+                    const originalDescription = descriptionSpan.dataset.originalText;
+                    commandButton.innerHTML = originalCommandName;
+                    descriptionSpan.innerHTML = originalDescription;
+                    const isMatch = originalCommandName.toLowerCase().includes(searchTermLower) || originalDescription.toLowerCase().includes(searchTermLower);
+                    entry.classList.toggle('hidden', !isMatch);
+                     if (isMatch && searchTerm) { commandButton.innerHTML = highlightText(originalCommandName, searchTerm); descriptionSpan.innerHTML = highlightText(originalDescription, searchTerm); }
+                 });
+            }
+
+            searchBar.addEventListener('input', () => {
+                const searchTerm = searchBar.value;
+                const isChronoViewActive = chronoContainer.style.display !== 'none';
+                if (searchTerm.length > 0) {
+                     if (categoryFilter.querySelector('.active')) categoryFilter.querySelector('.active').classList.remove('active');
+                     if (alphabetFilter.querySelector('.active')) alphabetFilter.querySelector('.active').classList.remove('active');
+                     if (chronoFilter.querySelector('.active')) chronoFilter.querySelector('.active').classList.remove('active');
+                     
+                     categoryFilter.querySelector('[data-filter="all"]').classList.add('active');
+
+                     if (isChronoViewActive) { 
+                        chronoFilter.querySelector('.filter-button').classList.add('active');
+                     } else {
+                        alphabetFilter.querySelector('[data-filter="all"]').classList.add('active');
+                     }
+                }
+                if (isChronoViewActive) { applyChronologicalSearch(searchTerm); } 
+                else { applyCategorizedSearch(searchTerm); }
+            });
+
+            function applyCategorizedFilters() {
+                const categories = commandsContainer.querySelectorAll('details.category');
+                categories.forEach(category => {
+                    const commandEntries = category.querySelectorAll('.command-entry');
+                    let hasVisibleChildren = false;
+                    commandEntries.forEach(entry => {
+                        const catId = entry.closest('details.category').dataset.category;
+                        const letter = entry.dataset.letter.toUpperCase();
+                        const isCategoryVisible = (activeCategory === 'all' || activeCategory === catId);
+                        const isLetterVisible = (activeLetter.toUpperCase() === 'ALL' || activeLetter.toUpperCase() === letter);
+                        const isVisible = isCategoryVisible && isLetterVisible;
+                        entry.classList.toggle('hidden', !isVisible);
+                        if(isVisible) hasVisibleChildren = true;
+                    });
+                    category.classList.toggle('hidden', !hasVisibleChildren);
+                });
+                const isAnyFilterActive = activeCategory !== 'all' || activeLetter.toUpperCase() !== 'ALL';
+                const visibleCategories = commandsContainer.querySelectorAll('details.category:not(.hidden)');
+                if (isAnyFilterActive) { visibleCategories.forEach(cat => cat.setAttribute('open', '')); } 
+                else { categories.forEach(cat => cat.removeAttribute('open')); }
+            }
+            
+            function switchToCategorizedView() {
+                commandsContainer.style.display = 'block';
+                chronoContainer.style.display = 'none';
+                const chronoBtn = chronoFilter.querySelector('[data-filter="chronological"]');
+                if (chronoBtn) chronoBtn.classList.remove('active');
+            }
+
+            categoryFilter.addEventListener('click', function(e) {
+                const button = e.target.closest('.category-filter-button'); if (!button) return;
+                searchBar.value = ''; clearHighlights();
+                switchToCategorizedView();
+                activeCategory = button.dataset.filter;
+                if (categoryFilter.querySelector('.active')) { categoryFilter.querySelector('.active').classList.remove('active'); }
+                button.classList.add('active');
+                activeLetter = 'all';
+                if (alphabetFilter.querySelector('.active')) { alphabetFilter.querySelector('.active').classList.remove('active'); }
+                alphabetFilter.querySelector('[data-filter="all"]').classList.add('active');
+                applyCategorizedFilters();
+            });
+            
+            chronoFilter.addEventListener('click', function(e) {
+                const button = e.target.closest('.filter-button');
+                if (!button) return;
+                searchBar.value = ''; clearHighlights();
+
+                commandsContainer.style.display = 'none';
+                chronoContainer.style.display = 'block';
+
+                if (alphabetFilter.querySelector('.active')) { alphabetFilter.querySelector('.active').classList.remove('active'); }
+                if (categoryFilter.querySelector('.active')) { categoryFilter.querySelector('.active').classList.remove('active'); }
+                if (chronoFilter.querySelector('.active')) { chronoFilter.querySelector('.active').classList.remove('active'); }
+
+                button.classList.add('active');
+                categoryFilter.querySelector('[data-filter="all"]').classList.add('active');
+            });
+
+            alphabetFilter.addEventListener('click', function(e) {
+                const button = e.target.closest('.filter-button'); if (!button) return;
+                searchBar.value = ''; clearHighlights();
+                
+                switchToCategorizedView();
+                activeLetter = button.dataset.filter;
+                if (alphabetFilter.querySelector('.active')) { 
+                    alphabetFilter.querySelector('.active').classList.remove('active'); 
+                }
+                button.classList.add('active');
+                applyCategorizedFilters();
+            });
+
+            document.querySelector('.container').addEventListener('click', function(e) {
+                const commandButton = e.target.closest('.command-button');
+                if (!commandButton) return;
+                const commandText = commandButton.dataset.command || commandButton.dataset.originalText;
+                navigator.clipboard.writeText(commandText).then(() => {
+                    const existingFeedback = document.querySelector('.copy-feedback');
+                    if (existingFeedback) { existingFeedback.remove(); }
+                    const feedbackElement = document.createElement('div');
+                    feedbackElement.className = 'copy-feedback';
+                    feedbackElement.textContent = `Командата "${commandText}" е копирана!`;
+                    const commandEntry = commandButton.closest('.command-entry');
+                    commandEntry.insertAdjacentElement('afterend', feedbackElement);
+                    setTimeout(() => { if (feedbackElement) feedbackElement.remove(); }, 3500);
+                }).catch(err => { console.error('Грешка при копиране: ', err); });
+            });
+        }
+    </script>
+</body>
+</html>
