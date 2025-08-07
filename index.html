@@ -123,7 +123,6 @@
         #search-bar { width: 100%; padding: 12px 15px; font-size: 16px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; transition: border-color 0.3s, box-shadow 0.3s; }
         #search-bar:focus { outline: none; border-color: #457b9d; box-shadow: 0 0 0 3px rgba(69, 123, 157, 0.2); }
         .filters-container { display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #e1e1e1; }
-        /* --- CSS КОРЕКЦИЯ --- */
         #category-filter, #alphabet-filter, #chronological-filter { display: flex; justify-content: center; flex-wrap: wrap; gap: 5px; }
         .filter-button, .category-filter-button { background-color: #a8dadc; color: #1d3557; border: none; border-radius: 5px; padding: 8px 14px; font-size: 15px; font-weight: bold; transition: background-color 0.3s, transform 0.2s; }
         .filter-button:hover, .category-filter-button:hover { background-color: #457b9d; color: white; transform: translateY(-2px); }
@@ -178,7 +177,6 @@
         </div>
         <h1>PAF's PROGRAMS SUITE</h1><h3 class="main-subtitle">Интерактивен списък на AutoLISP команди</h3><h3 id="command-counter">Зареждане на командите...</h3>
         <div class="search-container"><input type="text" id="search-bar" placeholder="Търсене по име или описание..."></div>
-        <!-- --- HTML КОРЕКЦИЯ --- -->
         <div class="filters-container">
             <div id="category-filter"></div>
             <div id="chronological-filter">
@@ -255,9 +253,18 @@
             initializeFirebaseFunctionality();
             initializeFunMode();
 
+            // URL адресът остава същият, тъй като сте променили съдържанието на съществуващия файл.
             const COMMANDS_FILE_URL = "https://raw.githubusercontent.com/PafApps/lisp/main/HELP_LISP.lsp";
+            
             const categoryConfig = {
-                "СИТУАЦИЯ": { id: "situation", title: "Команди за Ситуация", filterName: "Ситуация" }, "НАДЛЪЖНИ": { id: "longitudinal-profiles", title: "Команди за Надлъжни профили", filterName: "Надлъжни" }, "НАПРЕЧНИ": { id: "cross-sections", title: "Команди за Напречни профили", filterName: "Напречни" }, "БЛОКОВЕ": { id: "blocks", title: "Команди за Блокове", filterName: "Блокове" }, "ЛЕЙАУТИ": { id: "layouts", title: "Команди за Layouts", filterName: "Layouts" }, "СИВИЛ": { id: "civil", title: "Команди за Civil 3D", filterName: "Civil 3D" }, "РЕГИСТРИ": { id: "registers", title: "Команди за Регистри (Civil 3D)", filterName: "Регистри (Civil)" }, "ДРУГИ": { id: "other", title: "Други команди", filterName: "Други" },
+                "СИТУАЦИЯ": { id: "situation", title: "Команди за Ситуация", filterName: "Ситуация" },
+                "НАДЛЪЖНИ": { id: "longitudinal-profiles", title: "Команди за Надлъжни профили", filterName: "Надлъжни" },
+                "НАПРЕЧНИ": { id: "cross-sections", title: "Команди за Напречни профили", filterName: "Напречни" },
+                "БЛОКОВЕ": { id: "blocks", title: "Команди за Блокове", filterName: "Блокове" },
+                "ЛЕЙАУТИ": { id: "layouts", title: "Команди за Layouts", filterName: "Layouts" },
+                "СИВИЛ": { id: "civil", title: "Команди за Civil 3D", filterName: "Civil 3D" },
+                "РЕГИСТРИ": { id: "registers", title: "Команди за Регистри (Civil 3D)", filterName: "Регистри (Civil)" },
+                "ДРУГИ": { id: "other", title: "Други команди", filterName: "Други" },
             };
             const commandsContainer = document.getElementById('commands-container');
             const chronoContainer = document.getElementById('chronological-commands-container');
@@ -267,8 +274,10 @@
             try {
                 const response = await fetch(COMMANDS_FILE_URL);
                 if (!response.ok) throw new Error(`HTTP грешка! Статус: ${response.status}`);
-                const lispContent = await response.text();
-                parsedResult = parseLispFileImproved(lispContent, categoryConfig);
+                const fileContent = await response.text();
+                
+                // --- ПРОМЯНА: Извикваме новата функция за парсване на C#-подобен синтаксис ---
+                parsedResult = parseCSharpSyntaxFile(fileContent, categoryConfig);
                 
                 renderAllCommands(parsedResult.categorizedData, commandsContainer, categoryFilterContainer, commandCounter, parsedResult.commandCount, categoryConfig);
                 renderLatestCommands(parsedResult.orderedCommandKeys, parsedResult.commandDetailsMap);
@@ -494,118 +503,47 @@
             });
         }
         
-        function parseLispFileImproved(content, config) {
+        // --- НОВА ФУНКЦИЯ ЗА ПАРСВАНЕ НА C#-ПОДОБЕН СИНТАКСИС ---
+        function parseCSharpSyntaxFile(content, config) {
             const categorizedData = {};
             const commandDetailsMap = {};
-            const allCommandsDataMap = {}; 
             const orderedCommandKeys = [];
 
+            // Инициализация на categorizedData
             Object.values(config).forEach(c => {
                 categorizedData[c.id] = [];
             });
-            const lispNameToIdMap = {};
-            for (const key in config) {
-                lispNameToIdMap[key] = config[key].id;
-            }
 
-            // --- НОВ, ПО-НАДЕЖДЕН МЕТОД ЗА ПАРСВАНЕ ---
-            function parseLispList(listContent) {
-                const items = [];
-                let currentPos = 0;
-                
-                while(currentPos < listContent.length) {
-                    while(currentPos < listContent.length && /\s/.test(listContent[currentPos])) {
-                        currentPos++;
-                    }
-                    if (currentPos >= listContent.length) break;
+            // 1. Парсване на Dictionary<string, List<MenuItem>> Menus
+            const menusRegex = /public static readonly Dictionary<string, List<MenuItem>> Menus\s*=\s*new Dictionary<string, List<MenuItem>>\s*{([\s\S]*?)};/;
+            const menusMatch = content.match(menusRegex);
+            
+            if (menusMatch && menusMatch[1]) {
+                const menusContent = menusMatch[1];
+                // Regex за всяка категория
+                const categoryRegex = /{\s*"([^"]+)",\s*new List<MenuItem>\s*{([\s\S]*?)}}\s*}/g;
+                let categoryMatch;
+                while ((categoryMatch = categoryRegex.exec(menusContent)) !== null) {
+                    const categoryNameCS = categoryMatch[1];
+                    const itemsContent = categoryMatch[2];
+                    
+                    const categoryInfo = config[categoryNameCS];
+                    if (!categoryInfo) continue; // Пропускаме, ако категорията не е в конфигурацията
 
-                    if (listContent[currentPos] === '(') {
-                        let parenLevel = 1;
-                        let itemStart = currentPos + 1;
-                        currentPos++;
-                        while(currentPos < listContent.length && parenLevel > 0) {
-                            if (listContent[currentPos] === '(') parenLevel++;
-                            if (listContent[currentPos] === ')') parenLevel--;
-                            if (parenLevel > 0) currentPos++; else currentPos; 
-                        }
-                        const itemContent = listContent.substring(itemStart, currentPos);
-                        currentPos++;
-                        const parts = parseLispList(itemContent);
-                        if (parts.length > 0) items.push(parts);
-
-                    } else if (listContent[currentPos] === '"') {
-                        let itemStart = currentPos + 1;
-                        currentPos++;
-                        let str = "";
-                        while(currentPos < listContent.length) {
-                            if (listContent[currentPos] === '"' && listContent[currentPos-1] !== '\\') {
-                                break;
-                            }
-                            str += listContent[currentPos];
-                            currentPos++;
-                        }
-                        currentPos++;
-                        items.push(str.replace(/\\"/g, '"'));
-                    } else {
-                       currentPos++;
-                    }
-                }
-                return items;
-            }
-
-            const functionBlocks = content.split(/defun create_dclhelplisp/);
-            functionBlocks.forEach(block => {
-                const categoryMatch = block.match(/^([^\s(]+)/);
-                if (!categoryMatch) return;
-                
-                const lispCategoryName = categoryMatch[1];
-                const categoryId = lispNameToIdMap[lispCategoryName];
-                if (!categoryId) return;
-                
-                const categoryInfo = Object.values(config).find(c => c.id === categoryId);
-                if (!categoryInfo) return;
-
-                const listStartIndex = block.indexOf("'(", block.search(/\(setq\s+(?:command_items|menu_items)\s+'\(/));
-                if (listStartIndex === -1) return;
-
-                let openParenCount = 1;
-                let currentIndex = listStartIndex + 2;
-                let itemsContent = "";
-                while (currentIndex < block.length && openParenCount > 0) {
-                    const char = block[currentIndex];
-                    if (char === '(') openParenCount++;
-                    else if (char === ')') openParenCount--;
-                    if (openParenCount > 0) itemsContent += char;
-                    currentIndex++;
-                }
-
-                if (!itemsContent) return;
-                
-                const commands = parseLispList(itemsContent);
-                commands.forEach(cmd => {
-                    if (Array.isArray(cmd) && cmd.length >= 3) {
-                        const internalKey = (cmd[0] || "").trim();
-                        const displayName = (cmd[1] || "").trim();
-                        let fullDescription = (cmd[2] || "").trim();
+                    // Regex за всеки MenuItem
+                    const itemRegex = /new MenuItem\s*{\s*Key\s*=\s*"([^"]*)",\s*Label\s*=\s*"([^"]*)",\s*Description\s*=\s*"([^"]*)",\s*AutoCADCommand\s*=\s*"([^"]*)"\s*}/g;
+                    let itemMatch;
+                    while ((itemMatch = itemRegex.exec(itemsContent)) !== null) {
+                        const internalKey = itemMatch[1].trim();
+                        const displayName = itemMatch[2].trim();
+                        let fullDescription = itemMatch[3].trim();
                         
-                        if (internalKey.startsWith("---") || displayName === "") return;
+                        if (internalKey.startsWith("---") || displayName === "") continue;
 
-                        fullDescription = fullDescription
-                            .replace(/^- /, '')
-                            .replace(/\\t/g, ' ')
-                            .replace(/\\n/g, ' ')
-                            .replace(/\s+/g, ' ')
-                            .trim();
-
+                        fullDescription = fullDescription.replace(/^- /, '').trim();
                         if (!fullDescription) fullDescription = '(Няма описание)';
                         
-                        allCommandsDataMap[internalKey] = {
-                            displayName: displayName,
-                            description: fullDescription,
-                            categoryName: categoryInfo.filterName,
-                            categoryId: categoryInfo.id
-                        };
-                        
+                        // Попълване на categorizedData за рендъринг по категории
                         if (categorizedData[categoryInfo.id]) {
                             categorizedData[categoryInfo.id].push({
                                 name: displayName,
@@ -613,31 +551,32 @@
                                 description: fullDescription
                             });
                         }
-                    }
-                });
-            });
-
-            const commandMapSectionMatch = content.match(/;;; START COMMAND MAP([\s\S]*?);;; END COMMAND MAP/);
-            if (commandMapSectionMatch) {
-                const mapContent = commandMapSectionMatch[1];
-                const commandMapRegex = /\(\s*"([^"]+)"\s*\.\s*"[^"]*"\s*\)/g;
-                let match;
-                while ((match = commandMapRegex.exec(mapContent)) !== null) {
-                    const key = match[1];
-                    if (!config[key] && key !== 'back' && key !== 'pps_back' && !/^[А-Я]/.test(key)) {
-                        orderedCommandKeys.push(key);
+                        
+                        // Попълване на commandDetailsMap за търсене и други функционалности
+                        commandDetailsMap[internalKey] = {
+                            displayName: displayName,
+                            description: fullDescription,
+                            categoryName: categoryInfo.filterName,
+                            categoryId: categoryInfo.id
+                        };
                     }
                 }
             }
 
-            orderedCommandKeys.forEach(commandKey => {
-                const commandDetails = allCommandsDataMap[commandKey];
-                if (commandDetails) {
-                    commandDetailsMap[commandKey] = commandDetails;
-                } else {
-                     console.warn(`Командата "${commandKey}" от command_map не беше намерена в нито един command_items списък.`);
+            // 2. Парсване на Dictionary<string, string> CommandMap за хронологичен ред
+            const commandMapRegex = /public static readonly Dictionary<string, string> CommandMap\s*=\s*new Dictionary<string, string>\s*{([\s\S]*?)};/;
+            const commandMapMatch = content.match(commandMapRegex);
+            if (commandMapMatch && commandMapMatch[1]) {
+                const commandMapContent = commandMapMatch[1];
+                // Regex за всеки ред в CommandMap
+                const mapEntryRegex = /{\s*"([^"]+)"\s*,\s*"[^"]*"\s*}/g;
+                let entryMatch;
+                while ((entryMatch = mapEntryRegex.exec(commandMapContent)) !== null) {
+                    const key = entryMatch[1];
+                    // Добавяме всички ключове, тъй като те дефинират реда
+                    orderedCommandKeys.push(key);
                 }
-            });
+            }
 
             return {
                 categorizedData: categorizedData,
@@ -694,7 +633,6 @@
         function initializeFiltersAndAccordions() {
             const searchBar = document.getElementById('search-bar');
             const categoryFilter = document.getElementById('category-filter');
-            // --- JS КОРЕКЦИЯ ---
             const chronoFilter = document.getElementById('chronological-filter');
             const alphabetFilter = document.getElementById('alphabet-filter');
             const commandsContainer = document.getElementById('commands-container');
