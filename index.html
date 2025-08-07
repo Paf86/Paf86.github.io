@@ -255,15 +255,16 @@
 
             const COMMANDS_FILE_URL = "https://raw.githubusercontent.com/PafApps/lisp/main/HELP_LISP.lsp";
             
+            // --- КОРЕКЦИЯ: Добавяме `markerName` за правилно парсване ---
             const categoryConfig = {
-                "СИТУАЦИЯ": { id: "situation", title: "Команди за Ситуация", filterName: "Ситуация" },
-                "НАДЛЪЖНИ": { id: "longitudinal-profiles", title: "Команди за Надлъжни профили", filterName: "Надлъжни" },
-                "НАПРЕЧНИ": { id: "cross-sections", title: "Команди за Напречни профили", filterName: "Напречни" },
-                "БЛОКОВЕ": { id: "blocks", title: "Команди за Блокове", filterName: "Блокове" },
-                "ЛЕЙАУТИ": { id: "layouts", title: "Команди за Layouts", filterName: "Layouts" },
-                "СИВИЛ": { id: "civil", title: "Команди за Civil 3D", filterName: "Civil 3D" },
-                "РЕГИСТРИ": { id: "registers", title: "Команди за Регистри (Civil 3D)", filterName: "Регистри (Civil)" },
-                "ДРУГИ": { id: "other", title: "Други команди", filterName: "Други" },
+                "СИТУАЦИЯ": { id: "situation", title: "Команди за Ситуация", filterName: "Ситуация", markerName: "SITUACIA" },
+                "НАДЛЪЖНИ": { id: "longitudinal-profiles", title: "Команди за Надлъжни профили", filterName: "Надлъжни", markerName: "NADLZHNI" },
+                "НАПРЕЧНИ": { id: "cross-sections", title: "Команди за Напречни профили", filterName: "Напречни", markerName: "NAPRECHNI" },
+                "БЛОКОВЕ": { id: "blocks", title: "Команди за Блокове", filterName: "Блокове", markerName: "BLOKOVE" },
+                "ЛЕЙАУТИ": { id: "layouts", title: "Команди за Layouts", filterName: "Layouts", markerName: "LAYOUTI" },
+                "СИВИЛ": { id: "civil", title: "Команди за Civil 3D", filterName: "Civil 3D", markerName: "CIVIL" },
+                "РЕГИСТРИ": { id: "registers", title: "Команди за Регистри (Civil 3D)", filterName: "Регистри (Civil)", markerName: "REGISTRI" },
+                "ДРУГИ": { id: "other", title: "Други команди", filterName: "Други", markerName: "DRUGI" },
             };
             const commandsContainer = document.getElementById('commands-container');
             const chronoContainer = document.getElementById('chronological-commands-container');
@@ -467,7 +468,7 @@
                 const li = document.createElement('li');
                 li.className = 'latest-command-item';
                 const details = commandDetailsMap[commandName];
-                if (!details) return; // Пропускаме, ако командата не е намерена
+                if (!details) return;
                 const displayName = details.displayName || commandName;
                 li.innerHTML = `<button class="latest-command-button" data-command="${displayName}">${displayName}</button><span class="latest-command-item-desc">${details.description}</span><button class="latest-command-category-btn" data-category-id="${details.categoryId}">Категория: ${details.categoryName}</button>`;
                 ul.appendChild(li);
@@ -503,7 +504,6 @@
             });
         }
         
-        // --- НОВА, ФИНАЛНА ФУНКЦИЯ ЗА ПАРСВАНЕ (МАРКЕР-БАЗИРАНА) ---
         function parseCSharpSyntaxFile(content, config) {
             const categorizedData = {};
             const commandDetailsMap = {};
@@ -513,20 +513,18 @@
                 categorizedData[c.id] = [];
             });
 
-            // 1. Итерираме през всяка категория от конфигурацията
             for (const categoryNameCS in config) {
                 const categoryInfo = config[categoryNameCS];
-                if (!categoryInfo) continue;
+                if (!categoryInfo || !categoryInfo.markerName) continue;
 
-                // 2. Намираме текстовия блок за всяка категория, използвайки маркерите
-                const blockRegex = new RegExp(`;;; START DCL ${categoryNameCS} ITEMS([\\s\\S]*?);;; END DCL ${categoryNameCS} ITEMS`, 'i');
+                // --- КОРЕКЦИЯ: Използваме markerName за правилния Regex ---
+                const marker = categoryInfo.markerName;
+                const blockRegex = new RegExp(`;;; START DCL ${marker} ITEMS([\\s\\S]*?);;; END DCL ${marker} ITEMS`, 'i');
                 const blockMatch = content.match(blockRegex);
                 
                 if (!blockMatch || !blockMatch[1]) continue;
                 
                 const itemsContent = blockMatch[1];
-                
-                // 3. Парсваме всеки 'new MenuItem' в изолирания блок
                 const menuItemBlockRegex = /new MenuItem\s*{([\s\S]*?)}/g;
                 let menuItemMatch;
                 
@@ -534,7 +532,6 @@
                     const propsContent = menuItemMatch[1];
                     const itemProps = {};
                     
-                    // 4. Извличаме всички свойства (Key, Label и т.н.) независимо от реда им
                     const propRegex = /(\w+)\s*=\s*(?:"([^"]*)"|true|false)/g;
                     let propMatch;
                     
@@ -542,7 +539,7 @@
                         const key = propMatch[1];
                         const stringValue = propMatch[2];
                         const boolValue = propMatch[3];
-                        itemProps[key] = stringValue !== undefined ? stringValue : (boolValue === 'true');
+                        itemProps[key] = stringValue !== undefined ? stringValue.replace(/\\"/g, '"') : (boolValue === 'true');
                     }
 
                     if (itemProps.IsSeparator || itemProps.IsTextOnly) continue;
@@ -573,7 +570,6 @@
                 }
             }
 
-            // 5. Парсване на CommandMap за хронологичен ред (остава същото)
             const commandMapRegex = /public static readonly Dictionary<string, string> CommandMap\s*=\s*new Dictionary<string, string>\s*{([\s\S]*?)};/;
             const commandMapMatch = content.match(commandMapRegex);
             if (commandMapMatch && commandMapMatch[1]) {
@@ -597,16 +593,15 @@
             container.innerHTML = ''; 
             filterContainer.innerHTML = '<button class="category-filter-button active" data-filter="all">ВСИЧКИ СЕКЦИИ</button>';
             
-            // Сортиране на категориите по реда, в който са дефинирани в config
-            const sortedCategoryIds = Object.keys(config).map(key => config[key].id);
+            const sortedCategoryKeys = Object.keys(config);
 
-            sortedCategoryIds.forEach(categoryId => {
+            sortedCategoryKeys.forEach(categoryKey => {
+                const categoryInfo = config[categoryKey];
+                const categoryId = categoryInfo.id;
+
                 if (data.hasOwnProperty(categoryId)) {
                     const commands = data[categoryId]; 
                     if (commands.length === 0) return;
-
-                    const categoryInfo = Object.values(config).find(c => c.id === categoryId); 
-                    if (!categoryInfo) return;
 
                     const filterButton = document.createElement('button'); 
                     filterButton.className = 'category-filter-button'; 
