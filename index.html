@@ -466,7 +466,8 @@
             latestCommandKeys.forEach(commandName => {
                 const li = document.createElement('li');
                 li.className = 'latest-command-item';
-                const details = commandDetailsMap[commandName] || { description: '(Няма описание)', categoryName: 'Неизвестна', categoryId: null };
+                const details = commandDetailsMap[commandName];
+                if (!details) return; // Пропускаме, ако командата не е намерена
                 const displayName = details.displayName || commandName;
                 li.innerHTML = `<button class="latest-command-button" data-command="${displayName}">${displayName}</button><span class="latest-command-item-desc">${details.description}</span><button class="latest-command-category-btn" data-category-id="${details.categoryId}">Категория: ${details.categoryName}</button>`;
                 ul.appendChild(li);
@@ -502,7 +503,7 @@
             });
         }
         
-        // --- НОВА, ПО-НАДЕЖДНА ФУНКЦИЯ ЗА ПАРСВАНЕ ---
+        // --- НОВА, ФИНАЛНА ФУНКЦИЯ ЗА ПАРСВАНЕ (МАРКЕР-БАЗИРАНА) ---
         function parseCSharpSyntaxFile(content, config) {
             const categorizedData = {};
             const commandDetailsMap = {};
@@ -512,73 +513,67 @@
                 categorizedData[c.id] = [];
             });
 
-            // 1. Парсване на Dictionary<string, List<MenuItem>> Menus
-            const menusRegex = /public static readonly Dictionary<string, List<MenuItem>> Menus\s*=\s*new Dictionary<string, List<MenuItem>>\s*{([\s\S]*?)};/;
-            const menusMatch = content.match(menusRegex);
-            
-            if (menusMatch && menusMatch[1]) {
-                const menusContent = menusMatch[1];
-                const categoryRegex = /{\s*"([^"]+)",\s*new List<MenuItem>\s*{([\s\S]*?)}}\s*}/g;
-                let categoryMatch;
+            // 1. Итерираме през всяка категория от конфигурацията
+            for (const categoryNameCS in config) {
+                const categoryInfo = config[categoryNameCS];
+                if (!categoryInfo) continue;
+
+                // 2. Намираме текстовия блок за всяка категория, използвайки маркерите
+                const blockRegex = new RegExp(`;;; START DCL ${categoryNameCS} ITEMS([\\s\\S]*?);;; END DCL ${categoryNameCS} ITEMS`, 'i');
+                const blockMatch = content.match(blockRegex);
                 
-                while ((categoryMatch = categoryRegex.exec(menusContent)) !== null) {
-                    const categoryNameCS = categoryMatch[1];
-                    const itemsContent = categoryMatch[2];
-                    const categoryInfo = config[categoryNameCS];
-                    if (!categoryInfo) continue;
-
-                    // По-надежден regex, който намира всеки MenuItem блок
-                    const menuItemBlockRegex = /new MenuItem\s*{([\s\S]*?)}/g;
-                    let menuItemMatch;
+                if (!blockMatch || !blockMatch[1]) continue;
+                
+                const itemsContent = blockMatch[1];
+                
+                // 3. Парсваме всеки 'new MenuItem' в изолирания блок
+                const menuItemBlockRegex = /new MenuItem\s*{([\s\S]*?)}/g;
+                let menuItemMatch;
+                
+                while((menuItemMatch = menuItemBlockRegex.exec(itemsContent)) !== null) {
+                    const propsContent = menuItemMatch[1];
+                    const itemProps = {};
                     
-                    while((menuItemMatch = menuItemBlockRegex.exec(itemsContent)) !== null) {
-                        const propsContent = menuItemMatch[1];
-                        const itemProps = {};
-                        
-                        // Regex, който намира всяко property (Key, Label, etc.) вътре в блока
-                        const propRegex = /(\w+)\s*=\s*(?:"([^"]*)"|(true|false))/g;
-                        let propMatch;
-                        
-                        while((propMatch = propRegex.exec(propsContent)) !== null) {
-                            const key = propMatch[1];
-                            const stringValue = propMatch[2]; // Стойност в кавички
-                            const boolValue = propMatch[3];   // Стойност true/false
-                            itemProps[key] = stringValue !== undefined ? stringValue : (boolValue === 'true');
-                        }
-
-                        if (itemProps.IsSeparator || itemProps.IsTextOnly) {
-                             // Може да се добави логика за разделители/текст, ако е нужно
-                             continue;
-                        }
-                        
-                        const internalKey = (itemProps.Key || "").trim();
-                        const displayName = (itemProps.Label || "").trim();
-                        let fullDescription = (itemProps.Description || "").trim();
-                        
-                        if (!internalKey || !displayName) continue;
-                        
-                        fullDescription = fullDescription.replace(/^- /, '').trim();
-                        if (!fullDescription) fullDescription = '(Няма описание)';
-                        
-                        if (categorizedData[categoryInfo.id]) {
-                            categorizedData[categoryInfo.id].push({
-                                name: displayName,
-                                internalKey: internalKey,
-                                description: fullDescription
-                            });
-                        }
-                        
-                        commandDetailsMap[internalKey] = {
-                            displayName: displayName,
-                            description: fullDescription,
-                            categoryName: categoryInfo.filterName,
-                            categoryId: categoryInfo.id
-                        };
+                    // 4. Извличаме всички свойства (Key, Label и т.н.) независимо от реда им
+                    const propRegex = /(\w+)\s*=\s*(?:"([^"]*)"|true|false)/g;
+                    let propMatch;
+                    
+                    while((propMatch = propRegex.exec(propsContent)) !== null) {
+                        const key = propMatch[1];
+                        const stringValue = propMatch[2];
+                        const boolValue = propMatch[3];
+                        itemProps[key] = stringValue !== undefined ? stringValue : (boolValue === 'true');
                     }
+
+                    if (itemProps.IsSeparator || itemProps.IsTextOnly) continue;
+                    
+                    const internalKey = (itemProps.Key || "").trim();
+                    const displayName = (itemProps.Label || "").trim();
+                    let fullDescription = (itemProps.Description || "").trim();
+                    
+                    if (!internalKey || !displayName) continue;
+                    
+                    fullDescription = fullDescription.replace(/^- /, '').trim();
+                    if (!fullDescription) fullDescription = '(Няма описание)';
+                    
+                    if (categorizedData[categoryInfo.id]) {
+                        categorizedData[categoryInfo.id].push({
+                            name: displayName,
+                            internalKey: internalKey,
+                            description: fullDescription
+                        });
+                    }
+                    
+                    commandDetailsMap[internalKey] = {
+                        displayName: displayName,
+                        description: fullDescription,
+                        categoryName: categoryInfo.filterName,
+                        categoryId: categoryInfo.id
+                    };
                 }
             }
 
-            // 2. Парсване на Dictionary<string, string> CommandMap за хронологичен ред
+            // 5. Парсване на CommandMap за хронологичен ред (остава същото)
             const commandMapRegex = /public static readonly Dictionary<string, string> CommandMap\s*=\s*new Dictionary<string, string>\s*{([\s\S]*?)};/;
             const commandMapMatch = content.match(commandMapRegex);
             if (commandMapMatch && commandMapMatch[1]) {
@@ -601,23 +596,38 @@
         function renderAllCommands(data, container, filterContainer, counterEl, commandCount, config) {
             container.innerHTML = ''; 
             filterContainer.innerHTML = '<button class="category-filter-button active" data-filter="all">ВСИЧКИ СЕКЦИИ</button>';
-            for (const categoryId in data) {
-                 if (Object.hasOwnProperty.call(data, categoryId)) {
-                    const commands = data[categoryId]; if (commands.length === 0) continue;
-                    const categoryInfo = Object.values(config).find(c => c.id === categoryId); if (!categoryInfo) continue;
-                    const filterButton = document.createElement('button'); filterButton.className = 'category-filter-button'; filterButton.dataset.filter = categoryId; filterButton.textContent = categoryInfo.filterName; filterContainer.appendChild(filterButton);
-                    const detailsElement = document.createElement('details'); detailsElement.className = 'category'; detailsElement.dataset.category = categoryId;
-                    const summaryElement = document.createElement('summary'); summaryElement.innerHTML = `<h2>${categoryInfo.title}</h2>`; detailsElement.appendChild(summaryElement);
+            
+            // Сортиране на категориите по реда, в който са дефинирани в config
+            const sortedCategoryIds = Object.keys(config).map(key => config[key].id);
+
+            sortedCategoryIds.forEach(categoryId => {
+                if (data.hasOwnProperty(categoryId)) {
+                    const commands = data[categoryId]; 
+                    if (commands.length === 0) return;
+
+                    const categoryInfo = Object.values(config).find(c => c.id === categoryId); 
+                    if (!categoryInfo) return;
+
+                    const filterButton = document.createElement('button'); 
+                    filterButton.className = 'category-filter-button'; 
+                    filterButton.dataset.filter = categoryId; 
+                    filterButton.textContent = categoryInfo.filterName; 
+                    filterContainer.appendChild(filterButton);
+
+                    const detailsElement = document.createElement('details'); 
+                    detailsElement.className = 'category'; 
+                    detailsElement.dataset.category = categoryId;
+                    const summaryElement = document.createElement('summary'); 
+                    summaryElement.innerHTML = `<h2>${categoryInfo.title}</h2>`; 
+                    detailsElement.appendChild(summaryElement);
                     
-                    // Сортиране на командите по име (displayName) преди рендъринг
-                    commands.sort((a, b) => a.name.localeCompare(b.name));
+                    commands.sort((a, b) => a.name.localeCompare(b.name, 'bg', { sensitivity: 'base' }));
 
                     commands.forEach(command => {
                         const commandEntry = document.createElement('div');
                         commandEntry.className = 'command-entry';
-                        // Уверяваме се, че има име, преди да вземем първата буква
                         if (command.name) {
-                            commandEntry.dataset.letter = command.name.charAt(0).toUpperCase();
+                            commandEntry.dataset.letter = command.name.trim().charAt(0).toUpperCase();
                         }
                         const desc = command.description || '(Няма описание)';
                         const fullDescription = desc.charAt(0).toUpperCase() + desc.slice(1);
@@ -628,7 +638,7 @@
                     });
                     container.appendChild(detailsElement);
                 }
-            }
+            });
             counterEl.textContent = `Намерени общо ${commandCount} уникални команди, разпределени в категории`;
         }
         
@@ -637,7 +647,6 @@
             if (orderedKeys.length === 0) { container.innerHTML = '<p>Няма команди за показване.</p>'; return; }
             orderedKeys.forEach(commandName => {
                 const details = commandDetailsMap[commandName];
-                // Пропускаме, ако командата от CommandMap не е намерена в Menus (например категориите)
                 if (!details) return;
 
                 const commandEntry = document.createElement('div');
