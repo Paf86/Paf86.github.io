@@ -271,17 +271,13 @@
                     return;
                 }
 
-                const likedSuggestions = JSON.parse(localStorage.getItem('paf-liked-suggestions') || '{}');
-
                 suggestionsArray.forEach((suggestion, index) => {
                     const key = suggestion.key;
                     
-                    const isLiked = !!likedSuggestions[key];
-                    let heartsCount = suggestion.hearts || 0;
-
-                    // КОРИГИРАМЕ визуални аномалии (напр. ако базата е на 0, но ти си го харесал)
-                    if (heartsCount < 0) heartsCount = 0;
-                    if (isLiked && heartsCount === 0) heartsCount = 1;
+                    // Взимаме точния брой сърца от базата
+                    const heartsCount = Math.max(0, suggestion.hearts || 0);
+                    // Оцветяването зависи ЕДИНСТВЕНО от това дали има сърца (>0)
+                    const heartIcon = heartsCount > 0 ? '❤️' : '🤍';
 
                     const item = document.createElement('div');
                     item.className = 'suggestion-item';
@@ -327,12 +323,12 @@
                         statusContainer.appendChild(statusBtn);
                         statusContainer.appendChild(newCommandDiv);
 
-                        // Рендираме сърчицето с pointer-events: none върху текста, за да улавя клика безотказно
+                        // Рендираме сърчицето с pointer-events: none върху спан-а, за да отчита кликовете 100% правилно
                         const heartContainer = document.createElement('div');
                         heartContainer.className = 'heart-container';
                         heartContainer.innerHTML = `
                             <button type="button" class="heart-btn" data-id="${key}" title="Харесай!">
-                                <span style="pointer-events: none;">${isLiked ? '❤️' : '🤍'}</span>
+                                <span style="pointer-events: none;">${heartIcon}</span>
                             </button>
                             <span class="heart-count">${heartsCount}</span>
                         `;
@@ -386,26 +382,46 @@
                     e.stopPropagation();
                     
                     const id = heartBtn.dataset.id;
+                    const countSpan = heartBtn.nextElementSibling;
+                    let currentCount = parseInt(countSpan.textContent) || 0;
+                    const iconSpan = heartBtn.querySelector('span'); // Намираме вътрешния елемент за визуална промяна
+                    
                     const likedMap = JSON.parse(localStorage.getItem('paf-liked-suggestions') || '{}');
                     const heartRef = suggestionsRef.child(id).child('hearts');
 
-                    // Само обновяваме локалната памет и базата данни.
-                    // Firebase автоматично ще извика renderSuggestions и интерфейсът ще се обнови МИГНОВЕНО.
                     if (likedMap[id]) {
-                        delete likedMap[id]; // Премахваме харесването
+                        // Премахване на харесване
+                        delete likedMap[id];
+                        currentCount = Math.max(0, currentCount - 1);
+                        
+                        // Веднага сменяме визуално броя и цвета спрямо НОВОТО състояние
+                        iconSpan.textContent = currentCount > 0 ? '❤️' : '🤍';
+                        countSpan.textContent = currentCount;
+                        
+                        // Запазваме локално
                         localStorage.setItem('paf-liked-suggestions', JSON.stringify(likedMap));
                         
+                        // Пращаме към базата
                         heartRef.transaction(current => {
                             let val = (current || 0) - 1;
-                            return val < 0 ? 0 : val; // Гарантираме, че базата не слиза под 0
+                            return val < 0 ? 0 : val;
                         });
                     } else {
-                        likedMap[id] = true; // Слагаме харесване
+                        // Добавяне на харесване
+                        likedMap[id] = true;
+                        currentCount += 1;
+                        
+                        // Веднага сменяме визуално броя и цвета спрямо НОВОТО състояние
+                        iconSpan.textContent = currentCount > 0 ? '❤️' : '🤍';
+                        countSpan.textContent = currentCount;
+                        
+                        // Запазваме локално
                         localStorage.setItem('paf-liked-suggestions', JSON.stringify(likedMap));
                         
+                        // Пращаме към базата
                         heartRef.transaction(current => (current || 0) + 1);
                     }
-                    return; // Приключваме изпълнението
+                    return; // Край на логиката за сърцето
                 }
 
                 // Логики за админа
